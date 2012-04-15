@@ -8,9 +8,9 @@
 . auto/init
 . auto/sources
 
-test -d $NGX_OBJS || mkdir $NGX_OBJS			#���objs�ļ��У�������ʱ�򴴽�
+test -d $NGX_OBJS || mkdir $NGX_OBJS			#¼ì²éobjsÎÄ¼þ¼Ð£¬²»´æÔÚÊ±Ôò´´½¨
 
-echo > $NGX_AUTO_HEADERS_H
+echo > $NGX_AUTO_HEADERS_H                #“”
 echo > $NGX_AUTOCONF_ERR
 
 echo "#define NGX_CONFIGURE \"$NGX_CONFIGURE\"" > $NGX_AUTO_CONFIG_H
