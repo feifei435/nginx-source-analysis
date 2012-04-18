@@ -8,7 +8,7 @@
 . auto/init
 . auto/sources
 
-test -d $NGX_OBJS || mkdir $NGX_OBJS			#¼ì²éobjsÎÄ¼þ¼Ð£¬²»´æÔÚÊ±Ôò´´½¨
+test -d $NGX_OBJS || mkdir $NGX_OBJS			#检查objs目录是否存在，不存在则创建
 
 echo > $NGX_AUTO_HEADERS_H                #“”
 echo > $NGX_AUTOCONF_ERR
