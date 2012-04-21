@@ -1,3 +1,18 @@
+<<<<<<< .mine
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) Nginx, Inc.
+
+#[trans]	将have变量赋值成0, 并以宏定义的方式写入"objs/ngx_auto_config.h"文件内(定义宏为0)
+
+cat << END >> $NGX_AUTO_CONFIG_H
+
+#ifndef $have
+#define $have  0
+#endif
+
+END
+=======
 
 # Copyright (C) Igor Sysoev
 # Copyright (C) Nginx, Inc.
@@ -10,3 +25,4 @@ cat << END >> $NGX_AUTO_CONFIG_H
 #endif
 
 END
+>>>>>>> .r9
