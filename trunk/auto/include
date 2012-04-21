@@ -1,3 +1,78 @@
+<<<<<<< .mine
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) Nginx, Inc.
+
+
+#	***************************************
+#	1. 将添加的头文件动态写入"objs/autotest.c"文件内，
+#	   通过gcc -o autotest autotest.c编译，检查相应的库是否可使用
+#	2. 将添加的头文件转换成相应格式("unistd.h" -> UNISTD_H), 存在相应库时
+#	   将"#define NGX_HAVE_UNISTD_H	1" 写入 "/objs/ngx_auto_headers.h"文件内.
+#	   定义变量"NGX_INCLUDE_UNISTD_H="#include <unistd.h>"
+#	   定义变量"NGX_UNISTD_H="#include <unistd.h>"
+#	3. 清理autotest* 
+#	***************************************
+
+echo $ngx_n "checking for $ngx_include ...$ngx_c"
+
+cat << END >> $NGX_AUTOCONF_ERR				#	objs/autoconf.err
+
+----------------------------------------
+checking for $ngx_include
+
+END
+
+
+ngx_found=no
+
+cat << END > $NGX_AUTOTEST.c				#	objs/autotest.c
+
+$NGX_INCLUDE_SYS_PARAM_H
+#include <$ngx_include>
+
+int main() {
+    return 0;
+}
+
+END
+
+
+ngx_test="$CC -o $NGX_AUTOTEST $NGX_AUTOTEST.c"		#	gcc -o autotest autotest.c
+
+eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"			#	使用eval执行上一语句
+
+if [ -x $NGX_AUTOTEST ]; then						#	生成了可执行文件
+
+    ngx_found=yes
+
+    echo " found"
+
+	#	将包含文件名转换成大写并将"."转换成__
+    ngx_name=`echo $ngx_include \
+              | tr abcdefghijklmnopqrstuvwxyz/. ABCDEFGHIJKLMNOPQRSTUVWXYZ__`
+
+	#	例子:	将"NGX_HAVE_UNISTD_H"宏赋值为1后写入"/objs/ngx_auto_headers.h"文件内
+    have=NGX_HAVE_$ngx_name . auto/have_headers
+
+	#	根据头文件名定义变量。例子:	变量"NGX_INCLUDE_UNISTD_H="#include <unistd.h>"
+    eval "NGX_INCLUDE_$ngx_name='#include <$ngx_include>'"
+
+    #STUB
+    eval "NGX_$ngx_name='#include <$ngx_include>'"
+
+else
+    echo " not found"
+
+    echo "----------"    >> $NGX_AUTOCONF_ERR
+    cat $NGX_AUTOTEST.c  >> $NGX_AUTOCONF_ERR
+    echo "----------"    >> $NGX_AUTOCONF_ERR
+    echo $ngx_test       >> $NGX_AUTOCONF_ERR
+    echo "----------"    >> $NGX_AUTOCONF_ERR
+fi
+
+rm $NGX_AUTOTEST*
+=======
 
 # Copyright (C) Igor Sysoev
 # Copyright (C) Nginx, Inc.
@@ -59,3 +134,4 @@ else
 fi
 
 rm $NGX_AUTOTEST*
+>>>>>>> .r11
