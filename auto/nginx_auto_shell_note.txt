@@ -78,13 +78,35 @@
 ├── define				#	将have(标示符)和value(字符串)变量以宏定义的方式写入"objs/ngx_auto_config.h"文件内(定义宏)
 ├── endianess			#	字节序检查
 ├── feature
-├── have				#	将have变量(标示符)赋值为1, 并以宏定义的方式写入"/objs/ngx_auto_config.h"文件内(宏值1)
+├── have					#	将have变量(标示符)赋值为1, 并以宏定义的方式写入"/objs/ngx_auto_config.h"文件内(宏值1)
 ├── nohave				#	将have变量赋值成0, 并以宏定义的方式写入"objs/ngx_auto_config.h"文件内(宏值0)
-├── have_headers		#	将have变量(标示符)赋值为1, 并以宏定义的方式写入"/objs/ngx_auto_headers.h"文件内(宏值1)
-├── headers				#	当不是win32系统时，添加相应头文件, 通过调用include脚本添加。
+├── have_headers			#	将have变量(标示符)赋值为1, 并以宏定义的方式写入"/objs/ngx_auto_headers.h"文件内(宏值1)
+├── headers				#	添加相应头文件, 通过调用auto/include脚本添加到。
 ├── include				#	测试和检查头文件是否可用(例子:	将"#define NGX_HAVE_UNISTD_H 1" 写入 "/objs/ngx_auto_headers.h"文件内)和定义shell变量
-├── init				#	变量定义 + 测试echo的option(-n, \c) + 生成Makefile文件
+├── init					#	变量定义 + 测试echo的option(-n, \c) + 生成Makefile文件
 ├── install
 ├── make
 ├── modules
-├── options				#	设置配置选项，定义对应变量。
+├── options				#	处理配置参数选项，并将配置选项解析到相应的变量中
+
+
+
+==============================================================================
+
+
+configure是自动脚本入口, 运行了几个脚本:
+	auto/options
+	auto/init
+	auto/sources
+		
+	创建objs目录
+	生成文件 "/objs/ngx_auto_headers.h"
+	生成文件 "/objs/autoconf.err"
+	生成文件 "/objs/ngx_auto_config.h"文件, 并写入命令行参数配置字符串
+	
+	检查NGX_DEBUG变量是否为YES
+	检查操作系统平台
+	
+	auto/cc/conf
+	
+	auto/headers

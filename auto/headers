@@ -4,6 +4,10 @@
 
 #	***************************************
 #	1. 通过auto/include添加头文件
+#	2. 通过调用动态生成全局变量，例子：
+#		"NGX_INCLUDE_UNISTD_H="#include <unistd.h>"
+#		"NGX_UNISTD_H="#include <unistd.h>"
+#		将"#define NGX_HAVE_UNISTD_H	1" 写入 "/objs/ngx_auto_headers.h"文件内.
 #	***************************************
 
 ngx_include="unistd.h";      . auto/include

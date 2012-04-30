@@ -311,7 +311,7 @@ use the \"--without-http_limit_conn_module\" option instead"
 done
 
 
-NGX_CONFIGURE="$opt"
+NGX_CONFIGURE="$opt"			#[trans]	将空格分隔配置选项值赋值给NGX_CONFIGURE变量
 
 #[trans]	当help变量=yes时，输出一下帮助信息，直到遇到END时结束并退出
 if [ $help = yes ]; then

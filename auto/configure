@@ -13,10 +13,10 @@ test -d $NGX_OBJS || mkdir $NGX_OBJS			#[trans]	检查objs目录是否存在，�
 echo > $NGX_AUTO_HEADERS_H						#[trans]	生成文件 "/objs/ngx_auto_headers.h"
 echo > $NGX_AUTOCONF_ERR						#[trans]	生成文件 "/objs/autoconf.err"
 
-#[trans]	生成"/objs/ngx_auto_config.h"文件, 并写入命令行参数字符串
+#[trans]	生成"/objs/ngx_auto_config.h"文件, 并写入命令行参数配置字符串
 echo "#define NGX_CONFIGURE \"$NGX_CONFIGURE\"" > $NGX_AUTO_CONFIG_H			
 
-
+#[trans]	默认NGX_DEBUG变量为NO，通过命令行配置选项进行修改
 if [ $NGX_DEBUG = YES ]; then
     have=NGX_DEBUG . auto/have
 fi
@@ -47,6 +47,8 @@ fi
 #[trans]	加载auto/cc/conf文件
 . auto/cc/conf
 
+
+#[trans]	当不是win32系统时，调用auto/headers文件
 if [ "$NGX_PLATFORM" != win32 ]; then
     . auto/headers
 fi
