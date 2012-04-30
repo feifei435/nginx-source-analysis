@@ -2,6 +2,11 @@
 # Copyright (C) Igor Sysoev
 # Copyright (C) Nginx, Inc.
 
+#	***************************************
+#	1. 对特定变量进行测试
+#		
+#	***************************************
+
 
 echo $ngx_n "checking for $ngx_feature ...$ngx_c"
 
@@ -14,17 +19,21 @@ END
 
 ngx_found=no
 
+#[trans]	当"ngx_feature_name"变量非零时
 if test -n "$ngx_feature_name"; then
     ngx_have_feature=`echo $ngx_feature_name \
                    | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ`
 fi
 
+#[trans]	当"ngx_feature_path"变量非零时
 if test -n "$ngx_feature_path"; then
     for ngx_temp in $ngx_feature_path; do
         ngx_feature_inc_path="$ngx_feature_inc_path -I $ngx_temp"
     done
 fi
 
+
+#[trans]	创建自动测试程序
 cat << END > $NGX_AUTOTEST.c
 
 #include <sys/types.h>

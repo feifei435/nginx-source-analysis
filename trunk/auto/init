@@ -4,7 +4,12 @@
 
 #	***************************************
 #	1. 变量定义
-#	2. 测试echo的option(-n, \c)
+#	   objs/Makefile
+#	   objs/ngx_modules.c
+#	   objs/ngx_auto_headers.h
+#	   objs/ngx_auto_config.h
+#	   objs/autoconf.err
+#	2. 测试echo的option(-n, \c)，并用全局变量ngx_n、ngx_c来代替。
 #	3. 生成Makefile文件
 #	***************************************
 
