@@ -35,10 +35,10 @@ struct ngx_shm_zone_s {
 
 
 struct ngx_cycle_s {
-    void                  ****conf_ctx;
-    ngx_pool_t               *pool;
+    void                  ****conf_ctx;								//	配置上下文数组(含所有模块)  
+    ngx_pool_t               *pool;									//	内存池
 
-    ngx_log_t                *log;
+    ngx_log_t                *log;									//	日志指针
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
