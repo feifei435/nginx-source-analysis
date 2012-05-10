@@ -274,7 +274,8 @@ main(int argc, char *const *argv)
 #endif
 
     ngx_pid = ngx_getpid();
-
+	
+	/* [analysis]	初始化ngx_log */
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
@@ -289,7 +290,8 @@ main(int argc, char *const *argv)
      * init_cycle->log is required for signal handlers and
      * ngx_process_options()
      */
-
+	
+	/* [analysis]	启动时创建内存池 */
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
@@ -338,6 +340,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	/* [analysis]	命令行参数指定"-t"选项时，到此处后退出 */
     if (ngx_test_config) {
         if (!ngx_quiet_mode) {
             ngx_log_stderr(0, "configuration file %s test is successful",
@@ -347,10 +350,12 @@ main(int argc, char *const *argv)
         return 0;
     }
 
+	/* [analysis]	命令行参数指定"-s"选项, 调用信号处理流程 */
     if (ngx_signal) {
         return ngx_signal_process(cycle, ngx_signal);
     }
 
+	/* [analysis]	打印系统信息 */
     ngx_os_status(cycle->log);
 
     ngx_cycle = cycle;
