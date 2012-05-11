@@ -35,10 +35,10 @@ struct ngx_shm_zone_s {
 
 
 struct ngx_cycle_s {
-    void                  ****conf_ctx;								//	配置上下文数组(含所有模块)  
-    ngx_pool_t               *pool;									//	内存池
+    void                  ****conf_ctx;								/* [analysis]	配置上下文数组(含所有模块)   */
+    ngx_pool_t               *pool;									/* [analysis]	内存池   */
 
-    ngx_log_t                *log;									//	日志指针
+    ngx_log_t                *log;									/* [analysis]   日志指针   */
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
@@ -61,10 +61,10 @@ struct ngx_cycle_s {
 
     ngx_cycle_t              *old_cycle;
 
-    ngx_str_t                 conf_file;
-    ngx_str_t                 conf_param;
-    ngx_str_t                 conf_prefix;
-    ngx_str_t                 prefix;
+    ngx_str_t                 conf_file;								/* [analysis]	配置文件 */
+    ngx_str_t                 conf_param;								/* [analysis]	配置指令 */
+    ngx_str_t                 conf_prefix;								/* [analysis]	配置前缀(工作目录) */
+    ngx_str_t                 prefix;									/* [analysis]	命令行前缀"-p"设置 */
     ngx_str_t                 lock_file;
     ngx_str_t                 hostname;
 };

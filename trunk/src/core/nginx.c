@@ -184,16 +184,16 @@ ngx_module_t  ngx_core_module = {
 
 ngx_uint_t          ngx_max_module;
 
-static ngx_uint_t   ngx_show_help;
-static ngx_uint_t   ngx_show_version;
-static ngx_uint_t   ngx_show_configure;
-static u_char      *ngx_prefix;
-static u_char      *ngx_conf_file;
-static u_char      *ngx_conf_params;
+static ngx_uint_t   ngx_show_help;				/* [analysis]	命令行参数中指定了"-h"选项 */
+static ngx_uint_t   ngx_show_version;			/* [analysis]	命令行参数中指定了"-v|-V|-?"选项 */
+static ngx_uint_t   ngx_show_configure;			/* [analysis]	命令行参数中指定了"-V"选项 */
+static u_char      *ngx_prefix;					/* [analysis]	命令行参数中指定了"-p"选项 */
+static u_char      *ngx_conf_file;				/* [analysis]	命令行参数中指定了"-c"选项（配置文件的位置） */
+static u_char      *ngx_conf_params;			/* [analysis]	命令行参数中指定了"-g"选项（nginx的指令） */	
 static char        *ngx_signal;
 
 
-static char **ngx_os_environ;
+static char **ngx_os_environ;					/* [analysis]	存放操作系统的环境变量 */
 
 
 int ngx_cdecl
@@ -301,18 +301,23 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	/* [analysis]	保存环境变量和命令行参数 */
     if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
         return 1;
     }
 
+	/* [analysis]	初始化cycle */
     if (ngx_process_options(&init_cycle) != NGX_OK) {
         return 1;
     }
 
+	/* [analysis]	初始化系统信息 */
     if (ngx_os_init(log) != NGX_OK) {
         return 1;
     }
 
+
+	/* [analysis]	crc算法初始化 */
     /*
      * ngx_crc32_table_init() requires ngx_cacheline_size set in ngx_os_init()
      */
@@ -919,6 +924,7 @@ ngx_process_options(ngx_cycle_t *cycle)
         cycle->conf_param.data = ngx_conf_params;
     }
 
+	/* [analysis]	指定测试标记时, 将log级别改成NGX_LOG_INFO */
     if (ngx_test_config) {
         cycle->log->log_level = NGX_LOG_INFO;
     }
