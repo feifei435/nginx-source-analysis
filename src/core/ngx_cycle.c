@@ -24,7 +24,7 @@ ngx_array_t            ngx_old_cycles;
 static ngx_pool_t     *ngx_temp_pool;
 static ngx_event_t     ngx_cleaner_event;
 
-ngx_uint_t             ngx_test_config;
+ngx_uint_t             ngx_test_config;					/* [analysis]	命令行中指定"-t" */
 ngx_uint_t             ngx_quiet_mode;
 
 #if (NGX_THREADS)
