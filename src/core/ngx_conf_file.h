@@ -109,9 +109,9 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
 struct ngx_module_s {
-    ngx_uint_t            ctx_index;
-    ngx_uint_t            index;
-
+    ngx_uint_t            ctx_index;							/* [analysis]	分类的模块计数器   */
+    ngx_uint_t            index;								/* [analysis]	模块计数器   */
+	
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
     ngx_uint_t            spare2;
@@ -119,9 +119,11 @@ struct ngx_module_s {
 
     ngx_uint_t            version;
 
-    void                 *ctx;
-    ngx_command_t        *commands;
-    ngx_uint_t            type;
+    void                 *ctx;									/* [analysis]	ctx是模块的上下文，不同种类的模块有不同的上下文   */
+    ngx_command_t        *commands;								/* [analysis]	commands 是模块的指令集，nginx的每个模块都可以实现一些自定义的指令，
+																				这些指令写在配置文件的适当配置项中，每一个指令在源码中对应着一个 ngx_command_t结构的变量 */
+   
+	ngx_uint_t            type;
 
     ngx_int_t           (*init_master)(ngx_log_t *log);
 
