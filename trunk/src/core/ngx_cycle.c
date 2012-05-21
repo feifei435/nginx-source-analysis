@@ -119,6 +119,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
+	/* [analysis]   文件路径分配空间并初始化   */
     n = old_cycle->pathes.nelts ? old_cycle->pathes.nelts : 10;
 
     cycle->pathes.elts = ngx_pcalloc(pool, n * sizeof(ngx_path_t *));
@@ -143,6 +144,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         n = 20;
     }
 
+	/* [analysis]   初始化list链表   */
     if (ngx_list_init(&cycle->open_files, pool, n, sizeof(ngx_open_file_t))
         != NGX_OK)
     {
@@ -193,6 +195,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
+	/* [analysis]	获取系统主机名并设置到cycle   */
     if (gethostname(hostname, NGX_MAXHOSTNAMELEN) == -1) {
         ngx_log_error(NGX_LOG_EMERG, log, ngx_errno, "gethostname() failed");
         ngx_destroy_pool(pool);

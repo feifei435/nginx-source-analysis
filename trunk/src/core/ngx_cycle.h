@@ -48,9 +48,9 @@ struct ngx_cycle_s {
     ngx_queue_t               reusable_connections_queue;
 
     ngx_array_t               listening;
-    ngx_array_t               pathes;
-    ngx_list_t                open_files;
-    ngx_list_t                shared_memory;
+    ngx_array_t               pathes;								/* [analysis]   路径数组	   */					
+    ngx_list_t                open_files;							/* [analysis]   打开文件列表   */	
+    ngx_list_t                shared_memory;						/* [analysis]   共享内存列表   */		
 
     ngx_uint_t                connection_n;
     ngx_uint_t                files_n;
@@ -59,14 +59,14 @@ struct ngx_cycle_s {
     ngx_event_t              *read_events;
     ngx_event_t              *write_events;
 
-    ngx_cycle_t              *old_cycle;
+    ngx_cycle_t              *old_cycle;							/* [analysis]	旧的cycle(old_cycle) */
 
-    ngx_str_t                 conf_file;								/* [analysis]	配置文件 */
-    ngx_str_t                 conf_param;								/* [analysis]	配置指令 */
-    ngx_str_t                 conf_prefix;								/* [analysis]	配置前缀(工作目录) */
-    ngx_str_t                 prefix;									/* [analysis]	命令行前缀"-p"设置 */
+    ngx_str_t                 conf_file;							/* [analysis]	配置文件 */
+    ngx_str_t                 conf_param;							/* [analysis]	配置指令 */
+    ngx_str_t                 conf_prefix;							/* [analysis]	配置前缀(工作目录) */
+    ngx_str_t                 prefix;								/* [analysis]	命令行前缀"-p"设置 */
     ngx_str_t                 lock_file;
-    ngx_str_t                 hostname;
+    ngx_str_t                 hostname;								/* [analysis]	主机名 */
 };
 
 

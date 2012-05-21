@@ -1,4 +1,18 @@
 **********************	core directory	**********************
+core/nginx.h							//	入口文件
+core/nginx.c
+
+core/ngx_array.h						//	内部结构array		
+core/ngx_array.c
+core/ngx_list.h							//	内部结构list
+core/ngx_list.c
+
+core/ngx_palloc.h						//	内存池操作
+core/ngx_palloc.c
+
+core/ngx_string.h						//	
+core/ngx_string.c
+
 core/ngx_murmurhash.c
 core/ngx_file.c
 core/ngx_crypt.c
@@ -9,7 +23,6 @@ core/ngx_output_chain.c
 core/ngx_log.c
 core/ngx_connection.h
 core/ngx_slab.h
-core/ngx_list.c
 
 core/ngx_times.c
 core/ngx_hash.c
@@ -25,14 +38,13 @@ core/ngx_md5.c
 core/ngx_shmtx.h
 core/ngx_crypt.h
 
-core/ngx_palloc.h							//	内存池操作
-core/ngx_palloc.c
+
 
 core/ngx_regex.c
 core/ngx_cycle.h
 core/ngx_parse.h
-core/ngx_array.h
-core/ngx_string.c
+
+
 core/ngx_resolver.c
 core/ngx_config.h
 core/ngx_open_file_cache.h
@@ -43,11 +55,12 @@ core/ngx_hash.h
 
 core/ngx_slab.c
 core/ngx_cycle.c
-core/ngx_list.h
+
 core/ngx_radix_tree.c
 core/ngx_rbtree.h
 core/ngx_regex.h
-core/nginx.h
+
+
 core/ngx_open_file_cache.c
 core/ngx_queue.h
 core/ngx_buf.h
@@ -56,21 +69,23 @@ core/ngx_shmtx.c
 core/ngx_radix_tree.h
 core/ngx_cpuinfo.c
 core/ngx_file.h
-core/nginx.c
+
 core/ngx_log.h
 core/ngx_murmurhash.h
 core/ngx_buf.c
 core/ngx_times.h
-core/ngx_array.c
+
 core/ngx_queue.c
 core/ngx_connection.c
 core/ngx_conf_file.c
 core/ngx_parse.c
-core/ngx_string.h
 
 
 
 **********************	os/unix/ directory	**********************
+os/unix/ngx_alloc.c												//	申请内存操作
+os/unix/ngx_alloc.h	
+
 os/unix/ngx_linux.h
 os/unix/ngx_aio_read_chain.c
 os/unix/ngx_darwin_sendfile_chain.c
@@ -106,8 +121,7 @@ os/unix/ngx_gcc_atomic_amd64.h
 os/unix/ngx_shmem.h
 os/unix/ngx_sunpro_sparc64.il
 
-os/unix/ngx_alloc.c												//	申请内存操作
-os/unix/ngx_alloc.h			
+		
 
 os/unix/ngx_setproctitle.c
 os/unix/ngx_udp_recv.c
