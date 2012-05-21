@@ -10,7 +10,7 @@ core/ngx_log.c
 core/ngx_connection.h
 core/ngx_slab.h
 core/ngx_list.c
-core/ngx_palloc.h
+
 core/ngx_times.c
 core/ngx_hash.c
 core/ngx_conf_file.h
@@ -24,7 +24,10 @@ core/ngx_md5.c
 
 core/ngx_shmtx.h
 core/ngx_crypt.h
+
+core/ngx_palloc.h							//	ÄÚ´æ³Ø²Ù×÷
 core/ngx_palloc.c
+
 core/ngx_regex.c
 core/ngx_cycle.h
 core/ngx_parse.h
@@ -94,7 +97,6 @@ os/unix/ngx_readv_chain.c
 os/unix/ngx_linux_sendfile_chain.c
 os/unix/ngx_solaris_config.h
 os/unix/ngx_writev_chain.c
-os/unix/ngx_alloc.h
 os/unix/ngx_darwin_config.h
 os/unix/ngx_linux_config.h
 os/unix/ngx_shmem.c
@@ -103,7 +105,10 @@ os/unix/ngx_process.c
 os/unix/ngx_gcc_atomic_amd64.h
 os/unix/ngx_shmem.h
 os/unix/ngx_sunpro_sparc64.il
-os/unix/ngx_alloc.c
+
+os/unix/ngx_alloc.c												//	ÉêÇëÄÚ´æ²Ù×÷
+os/unix/ngx_alloc.h			
+
 os/unix/ngx_setproctitle.c
 os/unix/ngx_udp_recv.c
 os/unix/ngx_solaris_sendfilev_chain.c
