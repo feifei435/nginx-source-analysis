@@ -1,0 +1,6 @@
+1. Ä£¿éÀàÐÍ
+#define NGX_CORE_MODULE      0x45524F43  /* "CORE" */				core/ngx_conf_file.h:
+#define NGX_CONF_MODULE      0x464E4F43  /* "CONF" */				core/ngx_conf_file.h:
+#define NGX_EVENT_MODULE     0x544E5645  /* "EVNT" */				event/ngx_event.h:
+#define NGX_HTTP_MODULE      0x50545448  /* "HTTP" */				http/ngx_http_config.h:
+#define NGX_MAIL_MODULE      0x4C49414D  /* "MAIL" */				mail/ngx_mail.h:
