@@ -4,3 +4,124 @@
 #define NGX_EVENT_MODULE     0x544E5645  /* "EVNT" */				event/ngx_event.h:
 #define NGX_HTTP_MODULE      0x50545448  /* "HTTP" */				http/ngx_http_config.h:
 #define NGX_MAIL_MODULE      0x4C49414D  /* "MAIL" */				mail/ngx_mail.h:
+
+2. nginx把所有模块分为四类（core/event/http/mail），nginx也认为模块的上下文是四种，分别用四个结构体表示：   
+	src/core/ngx_conf_file.h: 			ngx_core_module_t;
+	src/mail/ngx_mail.h: 				ngx_mail_module_t;
+	src/event/ngx_event.h: 				ngx_event_module_t;
+	src/http/ngx_http_config.h: 		ngx_http_module_t;
+	
+typedef struct {
+    ngx_str_t             name;
+    void               *(*create_conf)(ngx_cycle_t *cycle);
+    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
+} ngx_core_module_t;
+
+
+typedef struct {
+    ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);
+    ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);
+
+    void       *(*create_main_conf)(ngx_conf_t *cf);
+    char       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
+
+    void       *(*create_srv_conf)(ngx_conf_t *cf);
+    char       *(*merge_srv_conf)(ngx_conf_t *cf, void *prev, void *conf);
+
+    void       *(*create_loc_conf)(ngx_conf_t *cf);
+    char       *(*merge_loc_conf)(ngx_conf_t *cf, void *prev, void *conf);
+} ngx_http_module_t;
+
+typedef struct {
+    ngx_str_t              *name;
+
+    void                 *(*create_conf)(ngx_cycle_t *cycle);
+    char                 *(*init_conf)(ngx_cycle_t *cycle, void *conf);
+
+    ngx_event_actions_t     actions;
+} ngx_event_module_t;
+
+ typedef struct {
+    ngx_mail_protocol_t        *protocol;
+
+    void                       *(*create_main_conf)(ngx_conf_t *cf);
+    char                       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
+
+    void                       *(*create_srv_conf)(ngx_conf_t *cf);
+    char                       *(*merge_srv_conf)(ngx_conf_t *cf, void *prev, void *conf);
+} ngx_mail_module_t;
+  
+   
+3. 模块的指令
+struct ngx_command_s {
+    ngx_str_t             name;						/* [analysis]   指令名称	   */		
+    ngx_uint_t            type;						/* [analysis]   type是标识符集，标识指令在配置文件中的合法位置和指令的参数个数.
+													 				这是一个至少有32bit的无符号整形，前16bit用于标识位置，后16bit用于标识参数 */													 
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		/* [analysis]   函数执行解析并获取配置项值的操作 */
+    ngx_uint_t            conf;						/* [analysis]   字段conf被NGX_HTTP_MODULE类型模块所用，该字段指定当前配置项所在的大致位置 */
+    ngx_uint_t            offset;					/* [analysis]   解析出来的配置项值所存放的地址 */
+    void                 *post;
+};
+
+指令的位域:
+src/http/ngx_http_config.h:			#define NGX_HTTP_MAIN_CONF        0x02000000
+src/http/ngx_http_config.h:			#define NGX_HTTP_SRV_CONF         0x04000000
+src/http/ngx_http_config.h:			#define NGX_HTTP_LOC_CONF         0x08000000
+src/http/ngx_http_config.h:			#define NGX_HTTP_UPS_CONF         0x10000000
+src/http/ngx_http_config.h:			#define NGX_HTTP_SIF_CONF         0x20000000
+src/http/ngx_http_config.h:			#define NGX_HTTP_LIF_CONF         0x40000000
+src/http/ngx_http_config.h:			#define NGX_HTTP_LMT_CONF         0x80000000
+src/mail/ngx_mail.h:				#define NGX_MAIL_MAIN_CONF        0x02000000
+src/mail/ngx_mail.h:				#define NGX_MAIL_SRV_CONF         0x04000000
+src/core/ngx_conf_file.h:			#define NGX_DIRECT_CONF      	  0x00010000
+src/core/ngx_conf_file.h:			#define NGX_MAIN_CONF        	  0x01000000
+src/core/ngx_conf_file.h:			#define NGX_ANY_CONF         	  0x0F000000
+src/event/ngx_event.h:				#define NGX_EVENT_CONF        	  0x02000000
+   
+   
+4. 模块的配置结构 (命名格式为:ngx_*_conf_t)
+src/core/ngx_cycle.h:	 											ngx_core_conf_t;
+src/mail/ngx_mail_ssl_module.h:	 									ngx_mail_ssl_conf_t;
+src/mail/ngx_mail_imap_module.h:     								ngx_mail_imap_srv_conf_t;
+src/mail/ngx_mail_pop3_module.h:     								gx_mail_pop3_srv_conf_t;
+src/mail/ngx_mail.h:     											ngx_mail_addr_conf_t;
+src/mail/ngx_mail.h:     											ngx_mail_core_main_conf_t;
+src/mail/ngx_mail.h:     											ngx_mail_core_srv_conf_t;
+src/mail/ngx_mail_smtp_module.h:     								ngx_mail_smtp_srv_conf_t;
+src/event/ngx_event.h:     											ngx_event_conf_t;
+src/http/ngx_http_core_module.h:typedef struct ngx_http_core_loc_conf_s  ngx_http_core_loc_conf_t;
+src/http/ngx_http_core_module.h:     								ngx_http_core_main_conf_t;
+src/http/ngx_http_core_module.h:    								ngx_http_core_srv_conf_t;
+src/http/ngx_http_core_module.h:     								ngx_http_addr_conf_t;
+src/http/modules/ngx_http_ssi_filter_module.h:	 					ngx_http_ssi_main_conf_t;
+src/http/modules/ngx_http_ssl_module.h:	 							ngx_http_ssl_srv_conf_t;
+src/http/ngx_http_upstream.h:	 									ngx_http_upstream_main_conf_t;
+src/http/ngx_http_upstream.h:typedef struct ngx_http_upstream_srv_conf_s  ngx_http_upstream_srv_conf_t;
+src/http/ngx_http_upstream.h:	 									ngx_http_upstream_conf_t;  
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   

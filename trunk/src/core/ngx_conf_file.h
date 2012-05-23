@@ -19,38 +19,38 @@
  *    TT        command type, i.e. HTTP "location" or "server" command
  */
 
-#define NGX_CONF_NOARGS      0x00000001
-#define NGX_CONF_TAKE1       0x00000002
-#define NGX_CONF_TAKE2       0x00000004
-#define NGX_CONF_TAKE3       0x00000008
-#define NGX_CONF_TAKE4       0x00000010
-#define NGX_CONF_TAKE5       0x00000020
-#define NGX_CONF_TAKE6       0x00000040
-#define NGX_CONF_TAKE7       0x00000080
+#define NGX_CONF_NOARGS      0x00000001								/* [analysis]   无参数	   		*/
+#define NGX_CONF_TAKE1       0x00000002								/* [analysis]   1个参数	   		*/
+#define NGX_CONF_TAKE2       0x00000004								/* [analysis]   2个参数	   		*/
+#define NGX_CONF_TAKE3       0x00000008								/* [analysis]   3个参数	   		*/
+#define NGX_CONF_TAKE4       0x00000010								/* [analysis]   4个参数	   		*/
+#define NGX_CONF_TAKE5       0x00000020								/* [analysis]   5个参数	   		*/
+#define NGX_CONF_TAKE6       0x00000040								/* [analysis]   6个参数	   		*/
+#define NGX_CONF_TAKE7       0x00000080								/* [analysis]   7个参数	   		*/
 
-#define NGX_CONF_MAX_ARGS    8
+#define NGX_CONF_MAX_ARGS    8										/* [analysis]   最大参数个数	*/
 
-#define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)
-#define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)
+#define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)		/* [analysis]   有1个或2个参数  */
+#define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)		/* [analysis]   有1个或3个参数  */
 
-#define NGX_CONF_TAKE23      (NGX_CONF_TAKE2|NGX_CONF_TAKE3)
+#define NGX_CONF_TAKE23      (NGX_CONF_TAKE2|NGX_CONF_TAKE3)		/* [analysis]   有2个或3个参数  */
 
 #define NGX_CONF_TAKE123     (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3)
 #define NGX_CONF_TAKE1234    (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3   \
                               |NGX_CONF_TAKE4)
 
 #define NGX_CONF_ARGS_NUMBER 0x000000ff
-#define NGX_CONF_BLOCK       0x00000100
-#define NGX_CONF_FLAG        0x00000200
+#define NGX_CONF_BLOCK       0x00000100								/* [analysis]   标识该配置项为块类型值   i.e. "events" or "http"  */
+#define NGX_CONF_FLAG        0x00000200								/* [analysis]   标识该配置项为布尔类型值 i.e. "on" or "off"		 */
 #define NGX_CONF_ANY         0x00000400
-#define NGX_CONF_1MORE       0x00000800
-#define NGX_CONF_2MORE       0x00001000
+#define NGX_CONF_1MORE       0x00000800								/* [analysis]   最多有一个参数		 */
+#define NGX_CONF_2MORE       0x00001000								/* [analysis]   最多有两个参数		 */
 #define NGX_CONF_MULTI       0x00002000
 
 #define NGX_DIRECT_CONF      0x00010000
 
 #define NGX_MAIN_CONF        0x01000000
-#define NGX_ANY_CONF         0x0F000000
+#define NGX_ANY_CONF         0x0F000000								/* [analysis]   i.e. include指令	 */	
 
 
 
@@ -76,11 +76,12 @@
 
 
 struct ngx_command_s {
-    ngx_str_t             name;
-    ngx_uint_t            type;
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-    ngx_uint_t            conf;
-    ngx_uint_t            offset;
+    ngx_str_t             name;						/* [analysis]   指令名称	   */		
+    ngx_uint_t            type;						/* [analysis]   type是标识符集，标识指令在配置文件中的合法位置和指令的参数个数.
+													 				这是一个至少有32bit的无符号整形，前16bit用于标识位置，后16bit用于标识参数 */													 
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		/* [analysis]   函数执行解析并获取配置项值的操作 */
+    ngx_uint_t            conf;						/* [analysis]   字段conf被NGX_HTTP_MODULE类型模块所用，该字段指定当前配置项所在的大致位置 */
+    ngx_uint_t            offset;					/* [analysis]   解析出来的配置项值所存放的地址 */
     void                 *post;
 };
 
