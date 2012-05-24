@@ -850,7 +850,9 @@ ngx_dns_strcmp(u_char *s1, u_char *s2)
     }
 }
 
-
+/* 
+ * [analysis]	将字符串转换整数
+ */
 ngx_int_t
 ngx_atoi(u_char *line, size_t n)
 {
