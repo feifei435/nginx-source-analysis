@@ -150,8 +150,8 @@ struct ngx_module_s {
 
 typedef struct {
     ngx_str_t             name;
-    void               *(*create_conf)(ngx_cycle_t *cycle);
-    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
+    void               *(*create_conf)(ngx_cycle_t *cycle);					/* [analysis]	创建并初始化模块配置结构变量   */
+    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);		/* [analysis]	设置配置结构变量   */
 } ngx_core_module_t;
 
 

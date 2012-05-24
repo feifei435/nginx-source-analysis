@@ -24,8 +24,8 @@ ngx_array_t            ngx_old_cycles;
 static ngx_pool_t     *ngx_temp_pool;
 static ngx_event_t     ngx_cleaner_event;
 
-ngx_uint_t             ngx_test_config;					/* [analysis]	命令行中指定"-t" */
-ngx_uint_t             ngx_quiet_mode;
+ngx_uint_t             ngx_test_config;					/* [analysis]	命令行中指定"-t",  */
+ngx_uint_t             ngx_quiet_mode;					/* [analysis]	命令行中指定"-q", 测试配置文件期间，不打印错误信息 */
 
 #if (NGX_THREADS)
 ngx_tls_key_t          ngx_core_tls_key;
@@ -215,7 +215,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_strlow(cycle->hostname.data, (u_char *) hostname, cycle->hostname.len);
 
-
+	/* [analysis]	core module配置变量创建和初始化   */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
@@ -984,6 +984,7 @@ ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
     file.name = *name;
     file.log = log;
 
+	/* [analysis]	当命令行指定-t测试配置文件时，文件打开方式=读写 */
     create = ngx_test_config ? NGX_FILE_CREATE_OR_OPEN : NGX_FILE_TRUNCATE;
 
     file.fd = ngx_open_file(file.name.data, NGX_FILE_RDWR,
@@ -995,6 +996,7 @@ ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
         return NGX_ERROR;
     }
 
+	/* [analysis]	命令行未指定-t测试配置文件时，写入PID到指定文件 */
     if (!ngx_test_config) {
         len = ngx_snprintf(pid, NGX_INT64_LEN + 2, "%P%N", ngx_pid) - pid;
 
