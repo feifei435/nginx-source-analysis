@@ -32,8 +32,8 @@ static void ngx_cache_manager_process_handler(ngx_event_t *ev);
 static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
-ngx_uint_t    ngx_process;
-ngx_pid_t     ngx_pid;
+ngx_uint_t    ngx_process;							/* [analysis]	进程类型(默认是NGX_PROCESS_SINGLE) */
+ngx_pid_t     ngx_pid;								/* [analysis]	进程PID */
 ngx_uint_t    ngx_threaded;
 
 sig_atomic_t  ngx_reap;
@@ -114,7 +114,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
     sigemptyset(&set);
 
-
+	/* [analysis]	设置进程标题 */
     size = sizeof(master_process);
 
     for (i = 0; i < ngx_argc; i++) {
@@ -129,7 +129,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         p = ngx_cpystrn(p, (u_char *) ngx_argv[i], size);
     }
 
-    ngx_setproctitle(title);
+    ngx_setproctitle(title);				/* [analysis?]	进程标题相关待整理 */
 
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);

@@ -12,10 +12,10 @@
 
 
 typedef struct {
-    int     signo;
-    char   *signame;
-    char   *name;
-    void  (*handler)(int signo);
+    int     signo;											/* [analysis]	信号值			e.g. SIGHUP、SIGQUIT	 */
+    char   *signame;										/* [analysis]	信号名字		e.g. "SIGHUP"、"SIGQUIT" */			
+    char   *name;											/* [analysis]	信号可读名字	e.g. "reload"、"reopen"  */
+    void  (*handler)(int signo);							/* [analysis]	信号处理程序							 */
 } ngx_signal_t;
 
 
