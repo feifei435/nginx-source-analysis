@@ -367,12 +367,14 @@ main(int argc, char *const *argv)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
+	/* [analysis]	配置master_process=on,并且还为设置进程类型，设置进程类型为master类型 */
     if (ccf->master && ngx_process == NGX_PROCESS_SINGLE) {
         ngx_process = NGX_PROCESS_MASTER;
     }
 
 #if !(NGX_WIN32)
 
+	/* [analysis]	信号初始化 */
     if (ngx_init_signals(cycle->log) != NGX_OK) {
         return 1;
     }
@@ -391,6 +393,7 @@ main(int argc, char *const *argv)
 
 #endif
 
+	/* [analysis]	创建存放进程pid的文件 */
     if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {
         return 1;
     }
