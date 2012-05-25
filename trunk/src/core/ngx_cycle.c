@@ -280,6 +280,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
                        cycle->conf_file.data);
     }
 
+	/* [analysis]	core module配置变量赋值(根据ngx_conf_parse解析后的数据进行设置)   */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
@@ -298,10 +299,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
     }
 
+	/* [analysis]	当进程类型:信号类型时，返回   */
     if (ngx_process == NGX_PROCESS_SIGNALLER) {
         return cycle;
     }
 
+	/* [analysis]	创建进程pid文件   */
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
     if (ngx_test_config) {
@@ -594,6 +597,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     pool->log = cycle->log;
 
+	/* [analysis]	初始化所有模块 */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_module) {
             if (ngx_modules[i]->init_module(cycle) != NGX_OK) {
