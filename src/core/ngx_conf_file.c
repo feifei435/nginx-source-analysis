@@ -844,7 +844,9 @@ ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
     return NGX_OK;
 }
 
-
+/* 
+ * [analysis]	检查文件名是否为完整路径( 以"/"开头的)
+ */
 static ngx_int_t
 ngx_conf_test_full_name(ngx_str_t *name)
 {

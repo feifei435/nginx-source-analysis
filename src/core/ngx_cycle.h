@@ -35,7 +35,7 @@ struct ngx_shm_zone_s {
 
 
 struct ngx_cycle_s {
-    void                  ****conf_ctx;								/* [analysis]	配置上下文数组(含所有模块)   */
+    void                  ****conf_ctx;								/* [analysis]	模块配置结构指针数组(含所有模块)   */
     ngx_pool_t               *pool;									/* [analysis]	内存池   */
 
     ngx_log_t                *log;									/* [analysis]   日志指针   */

@@ -34,7 +34,7 @@ core/ngx_times.c
 
 core/ngx_cpuinfo.c						//	获取CPU信息		
 
-core/ngx_core.h							//	核心结构的命名，头文件inlcude
+core/ngx_core.h							//	包含所有实现代码的头文件和核心数据结构(包含此文件可以访问所有数据结构和函数接口)
 
 core/ngx_shmtx.h						//	锁操作相关
 core/ngx_shmtx.c
@@ -84,7 +84,7 @@ core/ngx_cycle.c
 core/ngx_open_file_cache.h
 core/ngx_open_file_cache.c
 
-core/ngx_config.h
+core/ngx_config.h						//	包含了与当前系统有关的文件(e.g. ngx_darwin_config.h、ngx_solaris_config.h等)
 core/ngx_spinlock.c
 core/ngx_output_chain.c
 
@@ -103,6 +103,12 @@ os/unix/ngx_time.c
 
 os/unix/ngx_setproctitle.h							//	设置进程标题
 os/unix/ngx_setproctitle.c
+
+os/unix/ngx_darwin_config.h							//	包含特定系统头文件
+os/unix/ngx_posix_config.h
+os/unix/ngx_linux_config.h
+os/unix/ngx_solaris_config.h
+os/unix/ngx_freebsd_config.h
 
 os/unix/ngx_aio_write_chain.c
 os/unix/ngx_aio_read_chain.c
@@ -139,7 +145,6 @@ os/unix/ngx_pthread_thread.c
 os/unix/ngx_thread.h
 
 os/unix/ngx_darwin.h
-os/unix/ngx_darwin_config.h
 os/unix/ngx_darwin_init.c
 os/unix/ngx_darwin_sendfile_chain.c
 
@@ -148,7 +153,7 @@ os/unix/ngx_gcc_atomic_amd64.h
 os/unix/ngx_gcc_atomic_ppc.h
 os/unix/ngx_gcc_atomic_x86.h
 
-os/unix/ngx_freebsd_config.h
+
 os/unix/ngx_freebsd_sendfile_chain.c
 os/unix/ngx_freebsd_rfork_thread.h
 os/unix/ngx_freebsd.h
@@ -161,16 +166,13 @@ os/unix/ngx_sunpro_sparc64.il
 os/unix/ngx_sunpro_x86.il
 
 os/unix/ngx_solaris.h
-os/unix/ngx_solaris_config.h
 os/unix/ngx_solaris_sendfilev_chain.c
 os/unix/ngx_solaris_init.c
 
 os/unix/ngx_linux.h
 os/unix/ngx_linux_init.c
-os/unix/ngx_linux_config.h
 os/unix/ngx_linux_sendfile_chain.c
 
-os/unix/ngx_posix_config.h
 os/unix/ngx_posix_init.c
 
 os/unix/ngx_udp_recv.c
