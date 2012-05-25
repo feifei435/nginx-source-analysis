@@ -109,6 +109,7 @@ os/unix/ngx_aio_read_chain.c
 os/unix/ngx_aio_read.c
 os/unix/ngx_aio_write.c
 os/unix/ngx_linux_aio_read.c
+os/unix/ngx_file_aio_read.c
 
 os/unix/ngx_channel.h
 os/unix/ngx_channel.c
@@ -171,8 +172,6 @@ os/unix/ngx_linux_sendfile_chain.c
 
 os/unix/ngx_posix_config.h
 os/unix/ngx_posix_init.c
-
-os/unix/ngx_file_aio_read.c
 
 os/unix/ngx_udp_recv.c
 
