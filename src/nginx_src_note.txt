@@ -72,7 +72,7 @@ core/ngx_conf_file.c
 core/ngx_crypt.h
 core/ngx_crypt.c
 
-core/ngx_regex.h
+core/ngx_regex.h						//	正则表达式封装(PCRE库)
 core/ngx_regex.c
 
 core/ngx_resolver.h
