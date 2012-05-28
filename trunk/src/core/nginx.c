@@ -379,6 +379,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	/* [analysis]	???? 并且开启守护进程方式 */
     if (!ngx_inherited && ccf->daemon) {
         if (ngx_daemon(cycle->log) != NGX_OK) {
             return 1;
