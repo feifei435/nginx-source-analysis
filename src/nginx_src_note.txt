@@ -181,6 +181,6 @@ os/unix/ngx_os.h
 
 os/unix/ngx_atomic.h
 
-os/unix/ngx_daemon.c
+os/unix/ngx_daemon.c								//	实现守护进程函数
 
 os/unix/rfork_thread.S
