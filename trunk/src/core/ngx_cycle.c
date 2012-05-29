@@ -213,6 +213,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
+	/* [analysis]	转换成小写   */
     ngx_strlow(cycle->hostname.data, (u_char *) hostname, cycle->hostname.len);
 
 	/* [analysis]	core module配置变量创建和初始化   */
@@ -336,11 +337,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
+	/* [analysis]	测试锁文件   */
     if (ngx_test_lockfile(cycle->lock_file.data, log) != NGX_OK) {
         goto failed;
     }
 
 
+	/* [analysis]	ccf->user=502(www用户的组ID)   */
     if (ngx_create_pathes(cycle, ccf->user) != NGX_OK) {
         goto failed;
     }

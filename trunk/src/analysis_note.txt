@@ -108,12 +108,25 @@ src/http/ngx_http_upstream.h:	 									ngx_http_upstream_conf_t;
    
    
    
+=================== 启动初始化流程 =====================      
+ngx_strerror_init();
+ngx_get_options(argc, argv);
+ngx_time_init();
+ngx_regex_init();
+ngx_log_init(ngx_prefix);   
+ngx_ssl_init(log);
+初始化init_cycle
+ngx_save_argv(&init_cycle, argc, argv)
+ngx_process_options(&init_cycle)			//	设置cycle变量
+ngx_os_init(log)
+ngx_crc32_table_init();
+ngx_add_inherited_sockets(&init_cycle);
+ngx_init_cycle(&init_cycle);
    
    
-   
-   
-   
-   
+=================== ngx_init_cycle()流程 =====================   
+ngx_timezone_update();
+ngx_time_update();   
    
    
    
