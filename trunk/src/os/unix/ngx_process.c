@@ -12,10 +12,10 @@
 
 
 typedef struct {
-    int     signo;											/* [analysis]	信号值			e.g. SIGHUP、SIGQUIT	 */
-    char   *signame;										/* [analysis]	信号名字		e.g. "SIGHUP"、"SIGQUIT" */			
-    char   *name;											/* [analysis]	信号可读名字	e.g. "reload"、"reopen"  */
-    void  (*handler)(int signo);							/* [analysis]	信号处理程序							 */
+    int     signo;											/* [analysis]	信号值				e.g. SIGHUP、SIGQUIT	 */
+    char   *signame;										/* [analysis]	信号名字(系统)		e.g. "SIGHUP"、"SIGQUIT" */			
+    char   *name;											/* [analysis]	信号名字(自定义)	e.g. "reload"、"reopen"  */
+    void  (*handler)(int signo);							/* [analysis]	信号处理程序								 */
 } ngx_signal_t;
 
 
@@ -30,39 +30,39 @@ int              ngx_argc;									/* [analysis]	命令行参数个数 */
 char           **ngx_argv;									/* [analysis]	在当前空间内备份命令行参数 */
 char           **ngx_os_argv;								/* [analysis]	指向系统命令行参数 */
 
-ngx_int_t        ngx_process_slot;
-ngx_socket_t     ngx_channel;
-ngx_int_t        ngx_last_process;
-ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];
+ngx_int_t        ngx_process_slot;							/* [analysis]	当前worker进程在[ngx_processes]里的槽位置 */
+ngx_socket_t     ngx_channel;								/* [analysis]	在子进程中，使用此句柄与父进程通信(channel[1]) */
+ngx_int_t        ngx_last_process;		
+ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];			/* [analysis]	进程表 */
 
 
 ngx_signal_t  signals[] = {
-    { ngx_signal_value(NGX_RECONFIGURE_SIGNAL),
+    { ngx_signal_value(NGX_RECONFIGURE_SIGNAL),			/* [analysis]	SIGHUP */	
       "SIG" ngx_value(NGX_RECONFIGURE_SIGNAL),
       "reload",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_REOPEN_SIGNAL),
+    { ngx_signal_value(NGX_REOPEN_SIGNAL),				/* [analysis]	SIGUSR1 */
       "SIG" ngx_value(NGX_REOPEN_SIGNAL),
       "reopen",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_NOACCEPT_SIGNAL),
+    { ngx_signal_value(NGX_NOACCEPT_SIGNAL),			/* [analysis]	SIGWINCH */
       "SIG" ngx_value(NGX_NOACCEPT_SIGNAL),
       "",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_TERMINATE_SIGNAL),
+    { ngx_signal_value(NGX_TERMINATE_SIGNAL),			/* [analysis]	SIGTERM */
       "SIG" ngx_value(NGX_TERMINATE_SIGNAL),
       "stop",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_SHUTDOWN_SIGNAL),
+    { ngx_signal_value(NGX_SHUTDOWN_SIGNAL),			/* [analysis]	SIGQUIT */
       "SIG" ngx_value(NGX_SHUTDOWN_SIGNAL),
       "quit",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_CHANGEBIN_SIGNAL),
+    { ngx_signal_value(NGX_CHANGEBIN_SIGNAL),			/* [analysis]	SIGUSR2 */
       "SIG" ngx_value(NGX_CHANGEBIN_SIGNAL),
       "",
       ngx_signal_handler },
@@ -126,6 +126,8 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
                        ngx_processes[s].channel[0],
                        ngx_processes[s].channel[1]);
 
+		
+		/* [analysis]	设置socket非阻塞 */
         if (ngx_nonblocking(ngx_processes[s].channel[0]) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           ngx_nonblocking_n " failed while spawning \"%s\"",
@@ -157,6 +159,8 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
             return NGX_INVALID_PID;
         }
 
+
+		/* [analysis]	设置exec族调用后不保留当前进程已打开的socket */
         if (fcntl(ngx_processes[s].channel[0], F_SETFD, FD_CLOEXEC) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           "fcntl(FD_CLOEXEC) failed while spawning \"%s\"",
@@ -173,7 +177,8 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
             return NGX_INVALID_PID;
         }
 
-        ngx_channel = ngx_processes[s].channel[1];
+		/* [analysis]	设置子进程句柄(在子进程用于与父进程通信) */ 
+        ngx_channel = ngx_processes[s].channel[1];		
 
     } else {
         ngx_processes[s].channel[0] = -1;
@@ -193,7 +198,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
         ngx_close_channel(ngx_processes[s].channel, cycle->log);
         return NGX_INVALID_PID;
 
-    case 0:
+    case 0:			/* [analysis]	孵化worker进程开始，调用 ngx_worker_process_cycle() 运行子进程 */
         ngx_pid = ngx_getpid();
         proc(cycle, data);
         break;
@@ -204,18 +209,18 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
 
     ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "start %s %P", name, pid);
 
-    ngx_processes[s].pid = pid;
-    ngx_processes[s].exited = 0;
+    ngx_processes[s].pid = pid;			/* [analysis]	子进程pid		*/		
+    ngx_processes[s].exited = 0;		/* [analysis]	进程退出状态	*/		
 
     if (respawn >= 0) {
         return pid;
     }
 
-    ngx_processes[s].proc = proc;
-    ngx_processes[s].data = data;
-    ngx_processes[s].name = name;
-    ngx_processes[s].exiting = 0;
-
+    ngx_processes[s].proc = proc;		/* [analysis]	进程的执行函数	*/ 	
+    ngx_processes[s].data = data;		/* [analysis]	proc的参数		*/ 
+    ngx_processes[s].name = name;		/* [analysis]	进程描述		*/
+    ngx_processes[s].exiting = 0;		/* [analysis]	进程状态		*/
+	
     switch (respawn) {
 
     case NGX_PROCESS_NORESPAWN:
@@ -608,7 +613,10 @@ ngx_debug_point(void)
     }
 }
 
-
+/* 
+ * [analysis]	
+ * 根据内部定义的信号名称发送信号 
+ */
 ngx_int_t
 ngx_os_signal_process(ngx_cycle_t *cycle, char *name, ngx_int_t pid)
 {

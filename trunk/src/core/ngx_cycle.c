@@ -1038,6 +1038,10 @@ ngx_delete_pidfile(ngx_cycle_t *cycle)
 }
 
 
+
+/* 
+ *	[analysis]	通过命令行指定-s向master进程发送信号处理函数
+ */
 ngx_int_t
 ngx_signal_process(ngx_cycle_t *cycle, char *sig)
 {

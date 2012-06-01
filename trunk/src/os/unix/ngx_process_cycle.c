@@ -33,13 +33,13 @@ static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
 ngx_uint_t    ngx_process;							/* [analysis]	进程类型(默认是NGX_PROCESS_SINGLE) */
-ngx_pid_t     ngx_pid;								/* [analysis]	进程PID */
+ngx_pid_t     ngx_pid;								/* [analysis]	备份当前进程PID(在父进程中时，是父进程的；在子进程中就是子进程的) */
 ngx_uint_t    ngx_threaded;
 
 sig_atomic_t  ngx_reap;
 sig_atomic_t  ngx_sigio;
 sig_atomic_t  ngx_sigalrm;
-sig_atomic_t  ngx_terminate;
+sig_atomic_t  ngx_terminate;						/* [analysis]	接收到命令行stop,或信号SIGTERM和SIGINT */			
 sig_atomic_t  ngx_quit;
 sig_atomic_t  ngx_debug_quit;
 ngx_uint_t    ngx_exiting;
@@ -154,6 +154,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                            "termination cycle: %d", delay);
 
+			/* [analysis]	设置定时器，只执行一次 */
             itv.it_interval.tv_sec = 0;
             itv.it_interval.tv_usec = 0;
             itv.it_value.tv_sec = delay / 1000;
@@ -358,6 +359,7 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
 
     ch.command = NGX_CMD_OPEN_CHANNEL;
 
+	/* [analysis]	循环启动worker进程 */
     for (i = 0; i < n; i++) {
 
         cpu_affinity = ngx_get_cpu_affinity(i);
@@ -995,6 +997,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
         }
     }
 
+	/* [analysis]	子进程将channel[0]关闭，仅监听channel[1] */
     if (close(ngx_processes[ngx_process_slot].channel[0]) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "close() channel failed");

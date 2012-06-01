@@ -100,13 +100,27 @@ src/http/ngx_http_upstream.h:typedef struct ngx_http_upstream_srv_conf_s  ngx_ht
 src/http/ngx_http_upstream.h:	 									ngx_http_upstream_conf_t;  
    
    
-   
-   
-   
-   
-   
-   
-   
+5. 信号
+通过nginx -s 命令行方式指定的信号只有
+stop	停止(快速停止不保存相关信息)
+quit	停止(quit是一种优雅的停止，也就是进程如果还在服务中，那么就不会关闭该进程，直到进程完成服务为止。当然这个过程中不能再接受新的任务了)
+reopen	重新打开日志文件
+reload  当修改了配置文件以后，需要重新加载配置文件(平滑重启) 
+可以通过查看ngx_process.c:	ngx_signal_t  signals[]数组, 定义了信号处理的方式。
+
+共监控12个信号，这些信号均可以通过kill命令向master进程发送(其中两个忽略，其他均执行ngx_signal_handler).
+SIGHUP 	- 平滑重启(reload)
+SIGUSR1 - 重新打开日志文件(reopen)
+SIGWINCH -   
+SIGTERM - stop  
+SIGQUIT - quit  
+SIGUSR2 - 
+SIGALRM - 
+SIGINT -
+SIGIO - 
+SIGCHLD - 
+SIGSYS - 
+SIGPIPE -
    
 =================== 启动初始化流程 =====================      
 ngx_strerror_init();
