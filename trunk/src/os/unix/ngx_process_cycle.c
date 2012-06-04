@@ -32,7 +32,8 @@ static void ngx_cache_manager_process_handler(ngx_event_t *ev);
 static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
-ngx_uint_t    ngx_process;							/* [analysis]	进程类型(默认是NGX_PROCESS_SINGLE) */
+ngx_uint_t    ngx_process;							/* [analysis]	进程类型(默认是NGX_PROCESS_SINGLE)，
+																	master中NGX_PROCESS_MASTER， worker中NGX_PROCESS_WORKER */
 ngx_pid_t     ngx_pid;								/* [analysis]	备份当前进程PID(在父进程中时，是父进程的；在子进程中就是子进程的) */
 ngx_uint_t    ngx_threaded;
 
@@ -721,13 +722,16 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
 }
 
 
+/* 
+ *	[analysis]	子进程入口函数
+ */
 static void
 ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 {
     ngx_uint_t         i;
     ngx_connection_t  *c;
 
-    ngx_process = NGX_PROCESS_WORKER;
+    ngx_process = NGX_PROCESS_WORKER;		/* [analysis]	设置进程类型 */
 
     ngx_worker_process_init(cycle, 1);
 
@@ -835,7 +839,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
 
 static void
-ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
+ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
 {
     sigset_t          set;
     ngx_int_t         n;
@@ -851,6 +855,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
+	/* [analysis]	设置进程优先级 */
     if (priority && ccf->priority != 0) {
         if (setpriority(PRIO_PROCESS, 0, ccf->priority) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
@@ -858,6 +863,8 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
         }
     }
 
+
+	/* [analysis]	设置进程打开的文件个数，通过[worker_rlimit_nofile] 指令指定 */
     if (ccf->rlimit_nofile != NGX_CONF_UNSET) {
         rlmt.rlim_cur = (rlim_t) ccf->rlimit_nofile;
         rlmt.rlim_max = (rlim_t) ccf->rlimit_nofile;
@@ -869,6 +876,8 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
         }
     }
 
+
+	/* [analysis]	设置core文件的大小，通过[worker_rlimit_core 500M;]指令指定大小; */
     if (ccf->rlimit_core != NGX_CONF_UNSET) {
         rlmt.rlim_cur = (rlim_t) ccf->rlimit_core;
         rlmt.rlim_max = (rlim_t) ccf->rlimit_core;
@@ -880,6 +889,8 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
         }
     }
 
+
+	/* [analysis]	设置未决信号数量的最大值，通过[worker_rlimit_sigpending ]指定 */
 #ifdef RLIMIT_SIGPENDING
     if (ccf->rlimit_sigpending != NGX_CONF_UNSET) {
         rlmt.rlim_cur = (rlim_t) ccf->rlimit_sigpending;
@@ -893,6 +904,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
     }
 #endif
 
+	/* [analysis]	检查有效用户ID是否等于特权用户 */
     if (geteuid() == 0) {
         if (setgid(ccf->group) == -1) {
             ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
@@ -976,7 +988,12 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
             }
         }
     }
-
+	
+	/* 
+		[analysis]		
+		关闭从之前进程创建后继承而来的其他worker的channel[1]句柄， 当后续worker被创建，master会广播正在被创建worker的channel[0]到
+		其他worker， 当前worker使用channel[0]与其他进程进行通信
+	*/
     for (n = 0; n < ngx_last_process; n++) {
 
         if (ngx_processes[n].pid == -1) {
@@ -997,7 +1014,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
         }
     }
 
-	/* [analysis]	子进程将channel[0]关闭，仅监听channel[1] */
+	/* [analysis]	子进程将当前channel[0]关闭，使用当前channel[1]句柄监听可读事件 */
     if (close(ngx_processes[ngx_process_slot].channel[0]) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "close() channel failed");
