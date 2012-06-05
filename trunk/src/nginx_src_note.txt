@@ -117,7 +117,7 @@ os/unix/ngx_aio_write.c
 os/unix/ngx_linux_aio_read.c
 os/unix/ngx_file_aio_read.c
 
-os/unix/ngx_channel.h
+os/unix/ngx_channel.h								//	父子进程间通信管道
 os/unix/ngx_channel.c
 
 os/unix/ngx_user.h
