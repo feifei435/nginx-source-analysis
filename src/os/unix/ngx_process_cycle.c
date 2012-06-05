@@ -809,6 +809,8 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
+
+		/* [analysis]	捕获事件，分发事件 */
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate) {
