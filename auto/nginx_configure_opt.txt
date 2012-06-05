@@ -1,0 +1,118 @@
+  --help                             显示本帮助信息
+
+  --prefix=PATH                      设置安装路径
+  --sbin-path=PATH                   设置 nginx 二进制文件路径
+  --conf-path=PATH                   设置 nginx.conf 配置文件路径
+  --error-log-path=PATH              设置错误日志文件路径
+  --pid-path=PATH                    设置 nginx.pid 文件路径
+  --lock-path=PATH                   设置 nginx.lock 文件路径
+
+  --user=USER                        nginx 默认用户
+  --group=GROUP                      nginx 默认用户组
+
+  --builddir=DIR                     设置编译目录
+
+  --with-rtsig_module                启用 rtsig 模块
+  --with-select_module               启用 select 模块
+  --without-select_module            关闭 select 模块
+  --with-poll_module                 启用 poll 模块
+  --without-poll_module              关闭 poll 模块
+
+  --with-file-aio                    启用文件的异步输入/输出支持(File AIO)
+  --with-ipv6                        启用 IPv6 支持
+
+  --with-http_ssl_module             启用 http ssl 模块
+  --with-http_realip_module          启用 http realip 模块
+  --with-http_addition_module        启用 http addition 模块
+  --with-http_xslt_module            启用 http xslt 模块
+  --with-http_image_filter_module    启用 http image filter 模块
+  --with-http_geoip_module           启用 http geoip 模块
+  --with-http_sub_module             启用 http sub 模块
+  --with-http_dav_module             启用 http dav 模块
+  --with-http_flv_module             启用 http flv 模块
+  --with-http_gzip_static_module     启用 http gzip static 模块
+  --with-http_random_index_module    启用 http random index 模块
+  --with-http_secure_link_module     启用 http secure link 模块
+  --with-http_degradation_module     启用 http degradation 模块
+  --with-http_stub_status_module     启用 http stub status 模块
+
+  --without-http_charset_module              关闭 http charset 模块
+  --without-http_gzip_module                 关闭 http gzip 模块
+  --without-http_ssi_module                  关闭 http ssi 模块
+  --without-http_userid_module               关闭 http userid 模块
+  --without-http_access_module               关闭 http access 模块
+  --without-http_auth_basic_module           关闭 http auth basic 模块
+  --without-http_autoindex_module            关闭 http autoindex 模块
+  --without-http_geo_module                  关闭 http geo 模块
+  --without-http_map_module                  关闭 http map 模块
+  --without-http_split_clients_module         关闭 http spli clients 模块
+  --without-http_referer_module              关闭 http referer 模块
+  --without-http_rewrite_module              关闭 http rewrite 模块
+  --without-http_proxy_module                关闭 http proxy 模块
+  --without-http_fastcgi_module              关闭 http fastcgi 模块
+  --without-http_uwsgi_module                关闭 http uwsgi 模块
+  --without-http_scgi_module                 关闭 http scgi 模块
+  --without-http_memcached_module            关闭 http memcached 模块
+  --without-http_limit_zone_module           关闭 http limit zone 模块
+  --without-http_limit_req_module            关闭 http limit req 模块
+  --without-http_empty_gif_module           关闭 http empty gif 模块
+  --without-http_browser_module              关闭 http browser 模块
+  --without-http_upstream_ip_hash_module       关闭 http upstream ip hash 模块
+
+  --with-http_perl_module            启用 perl 模块
+  --with-perl_modules_path=PATH      设置 perl 模块路径
+  --with-perl=PATH                   设置 perl 二进制文件路径
+
+  --http-log-path=PATH               设置 http 访问日志的路径
+  --http-client-body-temp-path=PATH  设置 http 客户端请求体临时文件的路径
+
+  --http-proxy-temp-path=PATH        设置 http 代理临时文件的路径
+  --http-fastcgi-temp-path=PATH      设置 http fastcgi 临时文件的路径
+
+  --http-uwsgi-temp-path=PATH        设置 http uwsgi 临时文件的路径
+  --http-scgi-temp-path=PATH         设置 http scgi 临时文件的路径
+
+  --without-http                     关闭 HTTP 服务器
+  --without-http-cache               关闭 HTTP 缓存
+
+  --with-mail                        启用 POP3/IMAP4/SMTP 代理模块
+  --with-mail_ssl_module             启用 mail ssl 模块
+  --without-mail_pop3_module         启用 mail pop3 模块
+  --without-mail_imap_module         启用 mail imap 模块
+  --without-mail_smtp_module         启用 mail smtp 模块
+
+  --with-google_perftools_module     启用 google perftools 模块
+  --with-cpp_test_module             启用 cpp test 模块
+
+  --add-module=PATH                  启用外部模块
+
+  --with-cc=PATH                     设置 C 编译器的路径
+  --with-cpp=PATH                    设置 C 处理器的路径
+  --with-cc-opt=OPTIONS              设置 C 编译器的附加选项
+  --with-ld-opt=OPTIONS              设置连接器的附加选项
+  --with-cpu-opt=CPU                 为特定的CPU进行编译, 合法的值可能为: pentium, pentiumpro, pentium3, pentium4,athlon, opteron, sparc32, sparc64, ppc64
+
+  --without-pcre                     关闭 PCRE 库的使用
+  --with-pcre                        强制 PCRE 库的使用
+  --with-pcre=DIR                    设置 PCRE 库的源码的路径
+  --with-pcre-opt=OPTIONS            设置 PCRE 编译的附加选项
+
+  --with-md5=DIR                     设置 md5 库源码的路径
+  --with-md5-opt=OPTIONS             设置 md5 编译的附加选项
+  --with-md5-asm                     使用 md5 汇编源码
+
+  --with-sha1=DIR                    设置 sha1 库源码的路径
+  --with-sha1-opt=OPTIONS            设置 sha1 编译的附加选项
+  --with-sha1-asm                    使用 sha1 汇编源码
+
+  --with-zlib=DIR                    设置 zlib 库源码的路径
+  --with-zlib-opt=OPTIONS            设置 zlib 编译的附加选项
+  --with-zlib-asm=CPU                为特定 CPU 使用 zlib 汇编源码优化, 合法的值可能为: pentium, pentiumpro
+
+  --with-libatomic                   强制 libatomic ops 库的使用
+  --with-libatomic=DIR               设置 libatomic ops 库源码的路径
+
+  --with-openssl=DIR                 设置 OpenSSL 库源码的路径
+  --with-openssl-opt=OPTIONS         设置 OpenSSL 编译的附加选项
+
+  --with-debug                       启用调试日志
