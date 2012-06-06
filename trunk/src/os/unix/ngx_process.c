@@ -451,6 +451,10 @@ ngx_signal_handler(int signo)
 }
 
 
+/* 
+ * [analysis]	替worker进程收尸处理
+ *
+ */
 static void
 ngx_process_get_status(void)
 {
@@ -464,9 +468,9 @@ ngx_process_get_status(void)
     one = 0;
 
     for ( ;; ) {
-        pid = waitpid(-1, &status, WNOHANG);
+        pid = waitpid(-1, &status, WNOHANG);		/* [analysis]	设置如果没有子进程退出立即返回 */
 
-        if (pid == 0) {
+        if (pid == 0) {								/* [analysis]	当没有已退出的worker进程可收集，直接返回 */
             return;
         }
 

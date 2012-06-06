@@ -36,7 +36,7 @@ ngx_tls_key_t          ngx_core_tls_key;
 static ngx_connection_t  dumb;
 /* STUB */
 
-static ngx_str_t  error_log = ngx_string(NGX_ERROR_LOG_PATH);
+static ngx_str_t  error_log = ngx_string(NGX_ERROR_LOG_PATH);			/* [analysis]	Ä¬ÈÏlogs/error.log */
 
 
 ngx_cycle_t *
