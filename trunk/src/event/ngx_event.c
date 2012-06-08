@@ -607,6 +607,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
+	/* [analysis]	调用事件处理模块(epoll)初始化函数 */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -1210,6 +1211,8 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 
 #endif
 
+	
+	/* [analysis]	获取event类型事件处理模块，目前仅针对epoll */
     if (module == NULL) {
         for (i = 0; ngx_modules[i]; i++) {
 
@@ -1239,6 +1242,8 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 
     ngx_conf_init_uint_value(ecf->use, module->ctx_index);
 
+	
+	/* [analysis]	获取模块上下文(ngx_epoll_module_ctx, 仅针对epoll) */
     event_module = module->ctx;
     ngx_conf_init_ptr_value(ecf->name, event_module->name->data);
 

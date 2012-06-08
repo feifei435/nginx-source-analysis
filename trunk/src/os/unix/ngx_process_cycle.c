@@ -966,6 +966,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
         }
     }
 
+	/* [analysis]	设置信号屏蔽集，此时将不阻塞任何信号 */
     sigemptyset(&set);
 
     if (sigprocmask(SIG_SETMASK, &set, NULL) == -1) {
