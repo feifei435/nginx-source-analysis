@@ -170,6 +170,14 @@ ngx_timezone_update();
 ngx_time_update();   
 
 
+ EVENT解析配置文件
+ ngx_events_block(对event模块进行点数, 确认模块类型中的序号)
+	|__create_conf
+	|__init_conf
+		|__先获取模块上下文(定位ngx_epoll_module模块), 设置模块类型的序号
+		
+		
+worker进程初始化时，调用所有模块的init_process(ngx_event_process_init), 根据init_conf中设置的模块类型序号查找到ngx_epoll_module模块后(ngx_event_module_t), 调用->actions.init(ngx_epoll_init)
 
 
 
