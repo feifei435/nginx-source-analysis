@@ -241,7 +241,7 @@ typedef struct {
     ngx_int_t  (*process_events)(ngx_cycle_t *cycle, ngx_msec_t timer,
                    ngx_uint_t flags);
 
-    ngx_int_t  (*init)(ngx_cycle_t *cycle, ngx_msec_t timer);
+    ngx_int_t  (*init)(ngx_cycle_t *cycle, ngx_msec_t timer);					/* [analysis]	在worker进程初始化时会调用 */
     void       (*done)(ngx_cycle_t *cycle);
 } ngx_event_actions_t;
 
@@ -444,8 +444,11 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define NGX_CLEAR_EVENT    0    /* dummy declaration */
 #endif
 
-
-#define ngx_process_changes  ngx_event_actions.process_changes
+/* 
+ *	[analysis]	定义IO复用模块各种操作的宏定义
+ *		由于ngx_event_actions已指向选定的IO复用模块，所以通过调用宏定义就能调用的IO复用模块的各种IO事件操作
+ */
+#define ngx_process_changes  ngx_event_actions.process_changes	
 #define ngx_process_events   ngx_event_actions.process_events
 #define ngx_done_events      ngx_event_actions.done
 

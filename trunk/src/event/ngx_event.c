@@ -41,7 +41,7 @@ sig_atomic_t          ngx_event_timer_alarm;
 static ngx_uint_t     ngx_event_max_module;
 
 ngx_uint_t            ngx_event_flags;
-ngx_event_actions_t   ngx_event_actions;
+ngx_event_actions_t   ngx_event_actions;					/* [analysis]	指向各IO复用模块的actions结构体，对IO事件各种操作的封装	*/
 
 
 static ngx_atomic_t   connection_counter = 1;
