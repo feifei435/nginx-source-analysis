@@ -144,7 +144,10 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
             return NGX_INVALID_PID;
         }
 
-		/* [analysis]	设置信号驱动IO， 此句等价于fcntl(fd, F_SETFL, flags|O_ASYNC) */
+		/* [analysis]	设置信号驱动IO， 此句等价于fcntl(fd, F_SETFL, flags|O_ASYNC) 		
+						根据ioctl()的第三个参数指向一个0值或非0值分别清除或设置针对本套接口的信号驱动异步I/O 标志， 
+						它决定当fd可以IO时是否能收到针对本套接口的异步I/O信号（SIGIO ）
+		*/
         on = 1;
         if (ioctl(ngx_processes[s].channel[0], FIOASYNC, &on) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
