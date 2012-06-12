@@ -406,7 +406,7 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define NGX_WRITE_EVENT    EPOLLOUT
 
 #define NGX_LEVEL_EVENT    0
-#define NGX_CLEAR_EVENT    EPOLLET
+#define NGX_CLEAR_EVENT    EPOLLET						/* [analysis]	Edge Triggered   */
 #define NGX_ONESHOT_EVENT  0x70000000
 #if 0
 #define NGX_ONESHOT_EVENT  EPOLLONESHOT

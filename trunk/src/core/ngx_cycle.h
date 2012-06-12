@@ -42,8 +42,8 @@ struct ngx_cycle_s {
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
-    ngx_connection_t         *free_connections;
-    ngx_uint_t                free_connection_n;
+    ngx_connection_t         *free_connections;						/* [analysis]   空闲连接池		*/
+    ngx_uint_t                free_connection_n;					/* [analysis]   空闲连接的个数 */
 
     ngx_queue_t               reusable_connections_queue;
 
@@ -52,7 +52,7 @@ struct ngx_cycle_s {
     ngx_list_t                open_files;							/* [analysis]   打开文件列表   */	
     ngx_list_t                shared_memory;						/* [analysis]   共享内存列表   */		
 
-    ngx_uint_t                connection_n;
+    ngx_uint_t                connection_n;							/* [analysis]   每个进程预先创建的connection数目(worker_connections指令指定) */
     ngx_uint_t                files_n;
 
     ngx_connection_t         *connections;
