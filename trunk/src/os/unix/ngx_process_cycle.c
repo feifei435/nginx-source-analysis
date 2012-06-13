@@ -169,7 +169,10 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
-        sigsuspend(&set);
+		/* [analysis]	临时设置信号屏蔽集，此时等待任何信号，信号到来后恢复函数开始时注册的信号屏蔽集。
+						并执行处理流程，这时将对函数开始时注册的信号屏蔽集中的信号阻塞，
+					*/
+        sigsuspend(&set);				
 
         ngx_time_update();
 
