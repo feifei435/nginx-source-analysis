@@ -16,18 +16,18 @@
 typedef struct ngx_listening_s  ngx_listening_t;
 
 struct ngx_listening_s {
-    ngx_socket_t        fd;
+    ngx_socket_t        fd;										/* [analysis]   监听套接口的套接字描述符 */
 
-    struct sockaddr    *sockaddr;
-    socklen_t           socklen;    /* size of sockaddr */
+    struct sockaddr    *sockaddr;								/* [analysis]   监听的套接口协议地址 */
+    socklen_t           socklen;								/* size of sockaddr */
     size_t              addr_text_max_len;
-    ngx_str_t           addr_text;
+    ngx_str_t           addr_text;								/* [analysis]   套接口的IP地址 */
 
-    int                 type;
+    int                 type;									/* [analysis]   socket的类型 -> SOCK_STREAM */
 
-    int                 backlog;
-    int                 rcvbuf;
-    int                 sndbuf;
+    int                 backlog;								/* [analysis]   listen的backlog */
+    int                 rcvbuf;									/* [analysis]   监听套接口的接收缓冲区的长度 */					
+    int                 sndbuf;									/* [analysis]   监听套接口的发送缓冲区的长度 */
 #if (NGX_HAVE_KEEPALIVE_TUNABLE)
     int                 keepidle;
     int                 keepintvl;
@@ -49,7 +49,7 @@ struct ngx_listening_s {
     ngx_msec_t          post_accept_timeout;
 
     ngx_listening_t    *previous;
-    ngx_connection_t   *connection;
+    ngx_connection_t   *connection;								/* [analysis]   监听也是一个连接，要分配给监听一个连接资源 */	
 
     unsigned            open:1;
     unsigned            remain:1;
@@ -111,8 +111,8 @@ typedef enum {
 
 
 struct ngx_connection_s {
-    void               *data;
-    ngx_event_t        *read;				/* [analysis]	读事件 */
+	void               *data;				/* [analysis]	指向连接池中下一个元素，最后一个元素此字段等于NULL */
+    ngx_event_t        *read;				/* [analysis]	读事件，与cycle字段中read_events数组对应 */
     ngx_event_t        *write;				/* [analysis]	写事件 */
 
     ngx_socket_t        fd;					/* [analysis]	用于通信的socket描述符 */
@@ -122,7 +122,7 @@ struct ngx_connection_s {
     ngx_recv_chain_pt   recv_chain;
     ngx_send_chain_pt   send_chain;
 
-    ngx_listening_t    *listening;
+    ngx_listening_t    *listening;			/* [analysis]	该连接对应的监听 */
 
     off_t               sent;
 

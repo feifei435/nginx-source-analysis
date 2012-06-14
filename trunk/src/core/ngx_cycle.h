@@ -42,7 +42,7 @@ struct ngx_cycle_s {
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
-    ngx_connection_t         *free_connections;						/* [analysis]   空闲连接池		*/
+    ngx_connection_t         *free_connections;						/* [analysis]   指向空闲连接的结构  */
     ngx_uint_t                free_connection_n;					/* [analysis]   空闲连接的个数 */
 
     ngx_queue_t               reusable_connections_queue;
