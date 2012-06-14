@@ -112,10 +112,10 @@ typedef enum {
 
 struct ngx_connection_s {
     void               *data;
-    ngx_event_t        *read;
-    ngx_event_t        *write;
+    ngx_event_t        *read;				/* [analysis]	读事件 */
+    ngx_event_t        *write;				/* [analysis]	写事件 */
 
-    ngx_socket_t        fd;
+    ngx_socket_t        fd;					/* [analysis]	用于通信的socket描述符 */
 
     ngx_recv_pt         recv;
     ngx_send_pt         send;
@@ -126,11 +126,11 @@ struct ngx_connection_s {
 
     off_t               sent;
 
-    ngx_log_t          *log;
+    ngx_log_t          *log;				/* [analysis]	日志指针 */
 
-    ngx_pool_t         *pool;
+    ngx_pool_t         *pool;				/* [analysis]	内存池指针 */
 
-    struct sockaddr    *sockaddr;
+    struct sockaddr    *sockaddr;			/* [analysis]	 */
     socklen_t           socklen;
     ngx_str_t           addr_text;
 

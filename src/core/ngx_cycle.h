@@ -55,9 +55,9 @@ struct ngx_cycle_s {
     ngx_uint_t                connection_n;							/* [analysis]   每个进程预先创建的connection数目(worker_connections指令指定) */
     ngx_uint_t                files_n;
 
-    ngx_connection_t         *connections;
-    ngx_event_t              *read_events;
-    ngx_event_t              *write_events;
+    ngx_connection_t         *connections;							/* [analysis]   连接池   */	
+    ngx_event_t              *read_events;							/* [analysis]   读事件   */	
+    ngx_event_t              *write_events;							/* [analysis]   写事件   */	
 
     ngx_cycle_t              *old_cycle;							/* [analysis]	旧的cycle(old_cycle) */
 
