@@ -674,6 +674,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
+	/* [analysis]	为连接池申请空间，根据配置worker_connections指令指定的个数申请 */
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
@@ -681,7 +682,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
     c = cycle->connections;
-
+	
+	/* [analysis]	为连接池申请空间，根据配置worker_connections指令指定的个数申请 */
     cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                    cycle->log);
     if (cycle->read_events == NULL) {
