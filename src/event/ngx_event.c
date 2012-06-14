@@ -617,6 +617,15 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             continue;
         }
 
+		/* [analysis]
+			由于Nginx实现了很多的事件模块，比如：epoll，poll，select, kqueue,aio 
+			（这些模块位于src/event/modules目录中）等等，所以Nginx对事件模块进行 
+			了一层抽象，方便在不同的系统上使用不同的事件模型，也便于扩展新的事件 
+			模型
+			此处的init回调，其实就是调用了ngx_epoll_init函数。module->actions结构 
+			封装了epoll的所有接口函数。Nginx就是通过actions结构将epoll注册到事件 
+			抽象层中。actions的类型是ngx_event_actions_t
+		*/
         module = ngx_modules[m]->ctx;
 
         if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {
@@ -674,7 +683,9 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
-	/* [analysis]	为连接池申请空间，根据配置worker_connections指令指定的个数申请 */
+	/* [analysis]	为连接池申请空间，由于此处在worker进程初始化时进行的，所以
+					每个worker都会拥有一个自己的connections连接池	
+					根据配置worker_connections指令指定的个数申请 */
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
@@ -683,7 +694,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     c = cycle->connections;
 	
-	/* [analysis]	为连接池申请空间，根据配置worker_connections指令指定的个数申请 */
+	/* [analysis]	为读事件队列申请空间 */
     cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                    cycle->log);
     if (cycle->read_events == NULL) {
@@ -700,6 +711,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     }
 
+	/* [analysis]	为写事件队列申请空间 */
     cycle->write_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                     cycle->log);
     if (cycle->write_events == NULL) {
@@ -715,6 +727,13 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     }
 
+	/* [analysis]	初始化connections数组
+					data字段指向下一个元素
+					read事件指针指向read_events对应下标的元素
+					write事件指针指向write_events对应下标的元素
+					fd初始化-1
+	*/
+
     i = cycle->connection_n;
     next = NULL;
 
@@ -722,8 +741,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         i--;
 
         c[i].data = next;
-        c[i].read = &cycle->read_events[i];
-        c[i].write = &cycle->write_events[i];
+        c[i].read = &cycle->read_events[i];			/* [analysis]	将连接池中connections的read事件与read_events数组中的对应下标的元素关联 */
+        c[i].write = &cycle->write_events[i];		/* [analysis]	将连接池中connections的write事件与write_events数组中对应下标元素关联 */
         c[i].fd = (ngx_socket_t) -1;
 
         next = &c[i];
@@ -733,11 +752,12 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     } while (i);
 
+	/* [analysis]	初始化free_connections空闲连接池和空闲连接个数;指向connections连接池首地址 */
     cycle->free_connections = next;
     cycle->free_connection_n = cycle->connection_n;
 
+	/* [analysis]	为每一个套接口分配一个空闲的连接 */
     /* for each listening socket */
-
     ls = cycle->listening.elts;
     for (i = 0; i < cycle->listening.nelts; i++) {
 
@@ -749,13 +769,13 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
         c->log = &ls[i].log;
 
-        c->listening = &ls[i];
-        ls[i].connection = c;
-
+        c->listening = &ls[i];					/* [analysis]	connection的listening指针指向cycle->listening[n] */	
+        ls[i].connection = c;					/* [analysis]	cycle->listening[n]->connection指针指向了申请的空闲connection */	
+			
         rev = c->read;
 
         rev->log = c->log;
-        rev->accept = 1;
+        rev->accept = 1;						/* [analysis???] accpet=1 why?*/
 
 #if (NGX_HAVE_DEFERRED_ACCEPT)
         rev->deferred_accept = ls[i].deferred_accept;
@@ -819,7 +839,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #else
 
-        rev->handler = ngx_event_accept;
+        rev->handler = ngx_event_accept;			/* [analysis]	设置accpet回调处理函数 */	
 
         if (ngx_use_accept_mutex) {
             continue;
@@ -831,7 +851,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             }
 
         } else {
-            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {
+            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {			/* [analysis]	将event送进epoll队列中 */
                 return NGX_ERROR;
             }
         }
