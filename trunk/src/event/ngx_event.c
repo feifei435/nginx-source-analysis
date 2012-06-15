@@ -50,7 +50,7 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
 ngx_shmtx_t           ngx_accept_mutex;
-ngx_uint_t            ngx_use_accept_mutex;
+ngx_uint_t            ngx_use_accept_mutex;				/* [analysis]	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开。 */
 ngx_uint_t            ngx_accept_events;
 ngx_uint_t            ngx_accept_mutex_held;
 ngx_msec_t            ngx_accept_mutex_delay;
@@ -587,6 +587,9 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
+	/* [analysis]  ngx_use_accept_mutex表示是否需要通过对accept加锁来解决惊群问题。
+					当nginx worker进程数>1时且配置文件中打开accept_mutex时，这个标志置为1 
+	*/
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
         ngx_use_accept_mutex = 1;
         ngx_accept_mutex_held = 0;
@@ -1259,20 +1262,20 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    ngx_conf_init_uint_value(ecf->connections, DEFAULT_CONNECTIONS);
+    ngx_conf_init_uint_value(ecf->connections, DEFAULT_CONNECTIONS);		/* [analysis]	配置文件中未指定时，默认为512 */	
     cycle->connection_n = ecf->connections;
 
-    ngx_conf_init_uint_value(ecf->use, module->ctx_index);
+    ngx_conf_init_uint_value(ecf->use, module->ctx_index);					/* [analysis]	默认根据系统最优事件模型设定 */
 
 	
 	/* [analysis]	获取模块上下文(ngx_epoll_module_ctx, 仅针对epoll) */
     event_module = module->ctx;
-    ngx_conf_init_ptr_value(ecf->name, event_module->name->data);
+    ngx_conf_init_ptr_value(ecf->name, event_module->name->data);			/* [analysis]	默认是epoll */
 
     ngx_conf_init_value(ecf->multi_accept, 0);
-    ngx_conf_init_value(ecf->accept_mutex, 1);
-    ngx_conf_init_msec_value(ecf->accept_mutex_delay, 500);
-
+    ngx_conf_init_value(ecf->accept_mutex, 1);								/* [analysis]	默认是打开on */	
+    ngx_conf_init_msec_value(ecf->accept_mutex_delay, 500);					/* [analysis]	默认500ms */	
+	
 
 #if (NGX_HAVE_RTSIG)
 

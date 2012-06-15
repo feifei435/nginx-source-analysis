@@ -170,7 +170,8 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
 		/* [analysis]	临时设置信号屏蔽集，此时等待任何信号，信号到来后恢复函数开始时注册的信号屏蔽集。
-						并执行处理流程，这时将对函数开始时注册的信号屏蔽集中的信号阻塞，
+						并执行以下处理流程，这时将对函数开始时注册的信号屏蔽集中的信号阻塞，屏蔽集中的
+						信号不能打断以下处理流程
 					*/
         sigsuspend(&set);				
 
@@ -280,6 +281,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
                                         ngx_signal_value(NGX_REOPEN_SIGNAL));
         }
 
+		/* [analysis]	接到SIGUSR2信号时，平滑重启 */
         if (ngx_change_binary) {
             ngx_change_binary = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "changing binary");
