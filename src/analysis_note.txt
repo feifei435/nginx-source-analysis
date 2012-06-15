@@ -138,10 +138,10 @@ reload  当修改了配置文件以后，需要重新加载配置文件(平滑重启)
 共监控12个信号，这些信号均可以通过kill命令向master进程发送(其中两个忽略，其他均执行ngx_signal_handler).
 SIGHUP 	- 平滑重启(reload)
 SIGUSR1 - 重新打开日志文件(reopen)
-SIGWINCH -   
+SIGWINCH - 从容关闭工作进程   
 SIGTERM - stop  
 SIGQUIT - quit  
-SIGUSR2 - 
+SIGUSR2 - 平滑升级可执行程序
 SIGALRM - 
 SIGINT -
 SIGIO - 
