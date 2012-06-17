@@ -14,11 +14,11 @@
 
 
 struct ngx_array_s {
-    void        *elts;							/* [analysis]	数组数据区的起始位置	*/
-    ngx_uint_t   nelts;							/* [analysis]	实际占用的元素个数		*/
-    size_t       size;							/* [analysis]	元素的大小				*/
-    ngx_uint_t   nalloc;						/* [analysis]	数组含的元素个数		*/
-    ngx_pool_t  *pool;							/* [analysis]	分配数组数据的内存池	*/
+    void        *elts;							/* [analy]	数组数据区的起始位置	*/
+    ngx_uint_t   nelts;							/* [analy]	实际占用的元素个数		*/
+    size_t       size;							/* [analy]	元素的大小				*/
+    ngx_uint_t   nalloc;						/* [analy]	数组含的元素个数		*/
+    ngx_pool_t  *pool;							/* [analy]	分配数组数据的内存池	*/
 };
 
 

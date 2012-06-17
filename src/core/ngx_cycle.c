@@ -24,8 +24,8 @@ ngx_array_t            ngx_old_cycles;
 static ngx_pool_t     *ngx_temp_pool;
 static ngx_event_t     ngx_cleaner_event;
 
-ngx_uint_t             ngx_test_config;					/* [analysis]	命令行中指定"-t",  */
-ngx_uint_t             ngx_quiet_mode;					/* [analysis]	命令行中指定"-q", 测试配置文件期间，不打印错误信息 */
+ngx_uint_t             ngx_test_config;					/* [analy]	命令行中指定"-t",  */
+ngx_uint_t             ngx_quiet_mode;					/* [analy]	命令行中指定"-q", 测试配置文件期间，不打印错误信息 */
 
 #if (NGX_THREADS)
 ngx_tls_key_t          ngx_core_tls_key;
@@ -36,7 +36,7 @@ ngx_tls_key_t          ngx_core_tls_key;
 static ngx_connection_t  dumb;
 /* STUB */
 
-static ngx_str_t  error_log = ngx_string(NGX_ERROR_LOG_PATH);			/* [analysis]	默认logs/error.log */
+static ngx_str_t  error_log = ngx_string(NGX_ERROR_LOG_PATH);			/* [analy]	默认logs/error.log */
 
 
 ngx_cycle_t *
@@ -58,6 +58,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_core_module_t   *module;
     char                 hostname[NGX_MAXHOSTNAMELEN];
 
+/* [analy]   step.1	???????????????   */
     ngx_timezone_update();
 
     /* force localtime update with a new timezone */
@@ -67,7 +68,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_time_update();
 
-
+/* [analy]   step.2	创建cycle管理申请的资源   */
     log = old_cycle->log;
 
     pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
@@ -82,26 +83,26 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-    cycle->pool = pool;
-    cycle->log = log;
-    cycle->new_log.log_level = NGX_LOG_ERR;
-    cycle->old_cycle = old_cycle;
+    cycle->pool = pool;																/* [analy]  对pool赋值（cycle->pool）   */		
+    cycle->log = log;																/* [analy]  对log赋值（cycle->log）   */
+    cycle->new_log.log_level = NGX_LOG_ERR;											/* [analy]  对new_log赋值（cycle->new_log）   */
+    cycle->old_cycle = old_cycle;													/* [analy]  对old_cycle赋值（cycle->old_cycle）   */
 
-    cycle->conf_prefix.len = old_cycle->conf_prefix.len;
+    cycle->conf_prefix.len = old_cycle->conf_prefix.len;							/* [analy]  对配置文件路径前缀进行赋值（cycle->conf_prefix）   */
     cycle->conf_prefix.data = ngx_pstrdup(pool, &old_cycle->conf_prefix);
     if (cycle->conf_prefix.data == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
-    cycle->prefix.len = old_cycle->prefix.len;
+    cycle->prefix.len = old_cycle->prefix.len;										/* [analy]  对工作路径前缀进行赋值（cycle->prefix）   */
     cycle->prefix.data = ngx_pstrdup(pool, &old_cycle->prefix);
     if (cycle->prefix.data == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
-    cycle->conf_file.len = old_cycle->conf_file.len;
+    cycle->conf_file.len = old_cycle->conf_file.len;								/* [analy]  对配置文件进行赋值（cycle->conf_file）   */
     cycle->conf_file.data = ngx_pnalloc(pool, old_cycle->conf_file.len + 1);
     if (cycle->conf_file.data == NULL) {
         ngx_destroy_pool(pool);
@@ -111,7 +112,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_cpystrn(cycle->conf_file.data, old_cycle->conf_file.data,
                 old_cycle->conf_file.len + 1);
 
-    cycle->conf_param.len = old_cycle->conf_param.len;
+    cycle->conf_param.len = old_cycle->conf_param.len;								/* [analy]   对配置指令进行赋值（cycle->conf_param）   */
     cycle->conf_param.data = ngx_pstrdup(pool, &old_cycle->conf_param);
     if (cycle->conf_param.data == NULL) {
         ngx_destroy_pool(pool);
@@ -119,8 +120,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-	/* [analysis]   文件路径分配空间并初始化   */
-    n = old_cycle->pathes.nelts ? old_cycle->pathes.nelts : 10;
+    n = old_cycle->pathes.nelts ? old_cycle->pathes.nelts : 10;						/* [analy]   文件路径初始化（cycle->pathes）   */
 
     cycle->pathes.elts = ngx_pcalloc(pool, n * sizeof(ngx_path_t *));
     if (cycle->pathes.elts == NULL) {
@@ -134,7 +134,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     cycle->pathes.pool = pool;
 
 
-    if (old_cycle->open_files.part.nelts) {
+    if (old_cycle->open_files.part.nelts) {											/* [analy]   初始化open_files链表（cycle->open_files）   */
         n = old_cycle->open_files.part.nelts;
         for (part = old_cycle->open_files.part.next; part; part = part->next) {
             n += part->nelts;
@@ -144,8 +144,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         n = 20;
     }
 
-	/* [analysis]   初始化list链表   */
-    if (ngx_list_init(&cycle->open_files, pool, n, sizeof(ngx_open_file_t))
+
+    if (ngx_list_init(&cycle->open_files, pool, n, sizeof(ngx_open_file_t))			
         != NGX_OK)
     {
         ngx_destroy_pool(pool);
@@ -153,7 +153,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-    if (old_cycle->shared_memory.part.nelts) {
+    if (old_cycle->shared_memory.part.nelts) {										/* [analy]   初始化shared_memory链表（cycle->shared_memory） */				
         n = old_cycle->shared_memory.part.nelts;
         for (part = old_cycle->shared_memory.part.next; part; part = part->next)
         {
@@ -164,15 +164,15 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         n = 1;
     }
 
-    if (ngx_list_init(&cycle->shared_memory, pool, n, sizeof(ngx_shm_zone_t))
+    if (ngx_list_init(&cycle->shared_memory, pool, n, sizeof(ngx_shm_zone_t))		
         != NGX_OK)
     {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
-	/* [analysis]   为listening组数分配空间   */
-    n = old_cycle->listening.nelts ? old_cycle->listening.nelts : 10;
+	
+    n = old_cycle->listening.nelts ? old_cycle->listening.nelts : 10;				/* [analy]   为listening组数分配空间并初始化（cycle->listening） */
 
     cycle->listening.elts = ngx_pcalloc(pool, n * sizeof(ngx_listening_t));
     if (cycle->listening.elts == NULL) {
@@ -186,25 +186,23 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     cycle->listening.pool = pool;
 
 
-    ngx_queue_init(&cycle->reusable_connections_queue);
+    ngx_queue_init(&cycle->reusable_connections_queue);								/* [analy]   what?（cycle->reusable_connections_queue）   */
 
 
-    cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));
+    cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));			/* [analy]   为conf_ctx配置文件存放区申请空间（cycle->conf_ctx） */
     if (cycle->conf_ctx == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
 
-	/* [analysis]	获取系统主机名并设置到cycle   */
-    if (gethostname(hostname, NGX_MAXHOSTNAMELEN) == -1) {
+    if (gethostname(hostname, NGX_MAXHOSTNAMELEN) == -1) {							/* [analy]	设置主机名hostname字段（cycle->hostname）*/
         ngx_log_error(NGX_LOG_EMERG, log, ngx_errno, "gethostname() failed");
         ngx_destroy_pool(pool);
         return NULL;
     }
 
     /* on Linux gethostname() silently truncates name that does not fit */
-
     hostname[NGX_MAXHOSTNAMELEN - 1] = '\0';
     cycle->hostname.len = ngx_strlen(hostname);
 
@@ -214,17 +212,27 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-	/* [analysis]	转换成小写   */
     ngx_strlow(cycle->hostname.data, (u_char *) hostname, cycle->hostname.len);
 
-	/* [analysis]	core module配置变量创建和初始化   */
-    for (i = 0; ngx_modules[i]; i++) {
+	
+    for (i = 0; ngx_modules[i]; i++) {												/* [analy]	NGX_CORE_MODULE配置变量创建和初始化   */
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
         }
 
         module = ngx_modules[i]->ctx;
 
+		/*	[analy] 此处共调用8个core模块，其中4个模块有create_conf
+			ngx_core_module
+			ngx_regex_module
+			ngx_openssl_module
+			ngx_google_perftools_module;
+			另外4个则不需要调用
+			ngx_errlog_module
+			ngx_events_module
+			ngx_http_module
+			ngx_mail_module
+		*/
         if (module->create_conf) {
             rv = module->create_conf(cycle);
             if (rv == NULL) {
@@ -253,24 +261,28 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-
+	/* [analy]	设置ngx_conf_t 然后传递给ngx_conf_parse解析 */
     conf.ctx = cycle->conf_ctx;
     conf.cycle = cycle;
     conf.pool = pool;
     conf.log = log;
-    conf.module_type = NGX_CORE_MODULE;
-    conf.cmd_type = NGX_MAIN_CONF;
+	conf.module_type = NGX_CORE_MODULE;
+	conf.cmd_type = NGX_MAIN_CONF;
 
 #if 0
     log->log_level = NGX_LOG_DEBUG_ALL;
 #endif
 
+	/* [analy]	此处解析通过命令行-g指定的指令参数 */
     if (ngx_conf_param(&conf) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
     }
 
+	/* [analy]	对NGX_CORE_MODULE模块的配置项进行赋值
+		cycle->conf_file；默认时/usr/local/nginx/conf/nginx.conf
+	*/
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
@@ -282,7 +294,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
                        cycle->conf_file.data);
     }
 
-	/* [analysis]	core module配置变量赋值(根据ngx_conf_parse解析后的数据进行设置)   */
+	/* [analy]	NGX_CORE_MODULE配置变量赋值(根据ngx_conf_parse解析后的数据进行设置)   */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
@@ -301,12 +313,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
     }
 
-	/* [analysis]	当进程类型:信号类型时，返回   */
+	/* [analy]	当进程类型:信号类型时，返回   */
     if (ngx_process == NGX_PROCESS_SIGNALLER) {
         return cycle;
     }
 
-	/* [analysis]	创建进程pid文件   */
+	/* [analy]	创建进程pid文件   */
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
     if (ngx_test_config) {
@@ -338,13 +350,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-	/* [analysis]	测试锁文件   */
+	/* [analy]	测试锁文件是否能正常创建   */
     if (ngx_test_lockfile(cycle->lock_file.data, log) != NGX_OK) {
         goto failed;
     }
 
 
-	/* [analysis]	ccf->user=502(www用户的组ID)   */
+	/* [analy]	ccf->user=502(www用户的组ID)   */
     if (ngx_create_pathes(cycle, ccf->user) != NGX_OK) {
         goto failed;
     }
@@ -601,7 +613,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     pool->log = cycle->log;
 
-	/* [analysis]	初始化所有模块 */
+	/* [analy]	初始化所有模块 */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_module) {
             if (ngx_modules[i]->init_module(cycle) != NGX_OK) {
@@ -992,7 +1004,7 @@ ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
     file.name = *name;
     file.log = log;
 
-	/* [analysis]	当命令行指定-t测试配置文件时，文件打开方式=读写 */
+	/* [analy]	当命令行指定-t测试配置文件时，文件打开方式=读写 */
     create = ngx_test_config ? NGX_FILE_CREATE_OR_OPEN : NGX_FILE_TRUNCATE;
 
     file.fd = ngx_open_file(file.name.data, NGX_FILE_RDWR,
@@ -1004,7 +1016,7 @@ ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
         return NGX_ERROR;
     }
 
-	/* [analysis]	命令行未指定-t测试配置文件时，写入PID到指定文件 */
+	/* [analy]	命令行未指定-t测试配置文件时，写入PID到指定文件 */
     if (!ngx_test_config) {
         len = ngx_snprintf(pid, NGX_INT64_LEN + 2, "%P%N", ngx_pid) - pid;
 
@@ -1041,7 +1053,7 @@ ngx_delete_pidfile(ngx_cycle_t *cycle)
 
 
 /* 
- *	[analysis]	通过命令行指定-s向master进程发送信号处理函数
+ *	[analy]	通过命令行指定-s向master进程发送信号处理函数
  */
 ngx_int_t
 ngx_signal_process(ngx_cycle_t *cycle, char *sig)

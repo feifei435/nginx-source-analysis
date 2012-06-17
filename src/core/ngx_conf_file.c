@@ -108,9 +108,9 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     ngx_buf_t         buf;
     ngx_conf_file_t  *prev, conf_file;
     enum {
-        parse_file = 0,
-        parse_block,
-        parse_param
+        parse_file = 0,				/* [analy]	解析一个配置文件 */
+        parse_block,				/* [analy]	解析一个配置块 */
+        parse_param					/* [analy]	用户通过命令行-g参数输入的配置信息进行解析时处于这种状态；nginx -g ‘daemon on;’ */
     } type;
 
 #if (NGX_SUPPRESS_WARN)
@@ -239,7 +239,9 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
-
+		/* [analy]	此函数将调用ngx_command_t中的char *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+						对特定配置ctx上下文进行赋值
+		*/
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -390,7 +392,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
-            rv = cmd->set(cf, cmd, conf);
+            rv = cmd->set(cf, cmd, conf);					/* [analy]	调用指令自定义解析函数 */
 
             if (rv == NGX_CONF_OK) {
                 return NGX_OK;
@@ -845,7 +847,7 @@ ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
 }
 
 /* 
- * [analysis]	检查文件名是否为完整路径( 以"/"开头的)
+ * [analy]	检查文件名是否为完整路径( 以"/"开头的)
  */
 static ngx_int_t
 ngx_conf_test_full_name(ngx_str_t *name)

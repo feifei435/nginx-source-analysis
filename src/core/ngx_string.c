@@ -15,7 +15,7 @@ static ngx_int_t ngx_decode_base64_internal(ngx_str_t *dst, ngx_str_t *src,
     const u_char *basis);
 
 /* 
- *	[analysis]	将字符串转换为小写 
+ *	[analy]	将字符串转换为小写 
  */
 void
 ngx_strlow(u_char *dst, u_char *src, size_t n)
@@ -52,7 +52,10 @@ ngx_cpystrn(u_char *dst, u_char *src, size_t n)
     return dst;
 }
 
-
+/* 
+ *	[analy]	在内存池上申请空间，并将参数src拷贝到申请的空间
+ *				返回：在内存池申请空间的首地址
+ */				
 u_char *
 ngx_pstrdup(ngx_pool_t *pool, ngx_str_t *src)
 {
@@ -851,7 +854,7 @@ ngx_dns_strcmp(u_char *s1, u_char *s2)
 }
 
 /* 
- * [analysis]	将字符串转换整数
+ * [analy]	将字符串转换整数
  */
 ngx_int_t
 ngx_atoi(u_char *line, size_t n)

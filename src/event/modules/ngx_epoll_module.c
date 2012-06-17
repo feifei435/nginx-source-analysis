@@ -110,7 +110,7 @@ static void ngx_epoll_eventfd_handler(ngx_event_t *ev);
 static void *ngx_epoll_create_conf(ngx_cycle_t *cycle);
 static char *ngx_epoll_init_conf(ngx_cycle_t *cycle, void *conf);
 
-static int                  ep = -1;							/* [analysis] epoll描述符 */
+static int                  ep = -1;							/* [analy] epoll描述符 */
 static struct epoll_event  *event_list;
 static ngx_uint_t           nevents;
 
@@ -290,7 +290,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 {
     ngx_epoll_conf_t  *epcf;
 
-    epcf = ngx_event_get_conf(cycle->conf_ctx, ngx_epoll_module);		/* [analysis]	获取epoll配置结构 */
+    epcf = ngx_event_get_conf(cycle->conf_ctx, ngx_epoll_module);		/* [analy]	获取epoll配置结构 */
 
     if (ep == -1) {														/* [analysis???why divide 2?]	创建epoll句柄 */
         ep = epoll_create(cycle->connection_n / 2);
@@ -308,7 +308,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 #endif
     }
 
-    if (nevents < epcf->events) {				/* [analysis]	event_list是被监听的句柄的列表，默认最大为512个句柄 */
+    if (nevents < epcf->events) {				/* [analy]	event_list是被监听的句柄的列表，默认最大为512个句柄 */
         if (event_list) {
             ngx_free(event_list);
         }
@@ -324,15 +324,15 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 
     ngx_io = ngx_os_io;
 
-    ngx_event_actions = ngx_epoll_module_ctx.actions;			/* [analysis]	通过宏定义很容易访问到事件处理模块的各个操作 */
+    ngx_event_actions = ngx_epoll_module_ctx.actions;			/* [analy]	通过宏定义很容易访问到事件处理模块的各个操作 */
 
 #if (NGX_HAVE_CLEAR_EVENT)
-    ngx_event_flags = NGX_USE_CLEAR_EVENT					/* [analysis]	使用edge triggered */		
+    ngx_event_flags = NGX_USE_CLEAR_EVENT					/* [analy]	使用edge triggered */		
 #else
-    ngx_event_flags = NGX_USE_LEVEL_EVENT					/* [analysis]	使用level triggered */
+    ngx_event_flags = NGX_USE_LEVEL_EVENT					/* [analy]	使用level triggered */
 #endif
-                      |NGX_USE_GREEDY_EVENT					/* [analysis]	io的时候，直到EAGAIN为止 */
-                      |NGX_USE_EPOLL_EVENT;					/* [analysis]	epoll标志 */
+                      |NGX_USE_GREEDY_EVENT					/* [analy]	io的时候，直到EAGAIN为止 */
+                      |NGX_USE_EPOLL_EVENT;					/* [analy]	epoll标志 */
 
     return NGX_OK;
 }

@@ -261,7 +261,7 @@ ngx_log_errno(u_char *buf, u_char *last, ngx_err_t err)
     return buf;
 }
 
-/* [analysis]	
+/* [analy]	
  * 对 ngx_log_t ngx_log变量进行赋值
  * ngx_uint_t           log_level;
  * ngx_open_file_t     *file;
@@ -272,11 +272,11 @@ ngx_log_init(u_char *prefix)
     u_char  *p, *name;
     size_t   nlen, plen;
 
-	/* [analysis]	初始化ngx_log */
+	/* [analy]	初始化ngx_log */
     ngx_log.file = &ngx_log_file;
     ngx_log.log_level = NGX_LOG_NOTICE;
 
-	/* [analysis]	logs/error.log */
+	/* [analy]	logs/error.log */
     name = (u_char *) NGX_ERROR_LOG_PATH;
 
     /*
@@ -284,7 +284,7 @@ ngx_log_init(u_char *prefix)
      * condition is always false and unreachable code
      */
 
-	/* [analysis]	根据"--error-log-path"选项，设置日志写入文件  */
+	/* [analy]	根据"--error-log-path"选项，设置日志写入文件  */
     nlen = ngx_strlen(name);
 
     if (nlen == 0) {
