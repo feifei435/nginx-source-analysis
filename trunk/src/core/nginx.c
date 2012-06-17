@@ -184,16 +184,16 @@ ngx_module_t  ngx_core_module = {
 
 ngx_uint_t          ngx_max_module;
 
-static ngx_uint_t   ngx_show_help;				/* [analysis]	命令行参数中指定了"-h"选项 */
-static ngx_uint_t   ngx_show_version;			/* [analysis]	命令行参数中指定了"-v|-V|-?"选项 */
-static ngx_uint_t   ngx_show_configure;			/* [analysis]	命令行参数中指定了"-V"选项 */
-static u_char      *ngx_prefix;					/* [analysis]	命令行参数中指定了"-p"选项 */
-static u_char      *ngx_conf_file;				/* [analysis]	命令行参数中指定了"-c"选项（配置文件的位置） */
-static u_char      *ngx_conf_params;			/* [analysis]	命令行参数中指定了"-g"选项（nginx的指令） */	
+static ngx_uint_t   ngx_show_help;				/* [analy]	命令行参数中指定了"-h"选项 */
+static ngx_uint_t   ngx_show_version;			/* [analy]	命令行参数中指定了"-v|-V|-?"选项 */
+static ngx_uint_t   ngx_show_configure;			/* [analy]	命令行参数中指定了"-V"选项 */
+static u_char      *ngx_prefix;					/* [analy]	命令行参数中指定了"-p"选项 */
+static u_char      *ngx_conf_file;				/* [analy]	命令行参数中指定了"-c"选项（配置文件的位置） */
+static u_char      *ngx_conf_params;			/* [analy]	命令行参数中指定了"-g"选项（nginx的指令） */	
 static char        *ngx_signal;
 
 
-static char **ngx_os_environ;					/* [analysis]	存放操作系统的环境变量 */
+static char **ngx_os_environ;					/* [analy]	存放操作系统的环境变量 */
 
 
 int ngx_cdecl
@@ -275,7 +275,7 @@ main(int argc, char *const *argv)
 
     ngx_pid = ngx_getpid();
 	
-	/* [analysis]	初始化ngx_log */
+	/* [analy]	初始化ngx_log */
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
@@ -291,7 +291,7 @@ main(int argc, char *const *argv)
      * ngx_process_options()
      */
 	
-	/* [analysis]	启动时创建内存池 */
+	/* [analy]	启动时创建内存池 */
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
@@ -301,23 +301,23 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-	/* [analysis]	保存环境变量和命令行参数 */
+	/* [analy]	保存环境变量和命令行参数 */
     if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
         return 1;
     }
 
-	/* [analysis]	初始化cycle */
+	/* [analy]	初始化cycle */
     if (ngx_process_options(&init_cycle) != NGX_OK) {
         return 1;
     }
 
-	/* [analysis]	初始化系统信息 */
+	/* [analy]	初始化系统信息 */
     if (ngx_os_init(log) != NGX_OK) {
         return 1;
     }
 
 
-	/* [analysis]	crc算法初始化 */
+	/* [analy]	crc算法初始化 */
     /*
      * ngx_crc32_table_init() requires ngx_cacheline_size set in ngx_os_init()
      */
@@ -345,7 +345,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-	/* [analysis]	命令行参数指定"-t"选项时，到此处后退出 */
+	/* [analy]	命令行参数指定"-t"选项时，到此处后退出 */
     if (ngx_test_config) {
         if (!ngx_quiet_mode) {
             ngx_log_stderr(0, "configuration file %s test is successful",
@@ -355,31 +355,31 @@ main(int argc, char *const *argv)
         return 0;
     }
 
-	/* [analysis]	命令行参数指定"-s"选项, 调用信号处理流程 */
+	/* [analy]	命令行参数指定"-s"选项, 调用信号处理流程 */
     if (ngx_signal) {
         return ngx_signal_process(cycle, ngx_signal);
     }
 
-	/* [analysis]	打印系统信息 */
+	/* [analy]	打印系统信息 */
     ngx_os_status(cycle->log);
 
     ngx_cycle = cycle;
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-	/* [analysis]	配置master_process=on,并且还为设置进程类型，设置进程类型为master类型 */
+	/* [analy]	配置master_process=on,并且还为设置进程类型，设置进程类型为master类型 */
     if (ccf->master && ngx_process == NGX_PROCESS_SINGLE) {
         ngx_process = NGX_PROCESS_MASTER;
     }
 
 #if !(NGX_WIN32)
 
-	/* [analysis]	信号初始化 */
+	/* [analy]	信号初始化 */
     if (ngx_init_signals(cycle->log) != NGX_OK) {
         return 1;
     }
 
-	/* [analysis]	???? 并且开启守护进程方式 */
+	/* [analy]	???? 并且开启守护进程方式 */
     if (!ngx_inherited && ccf->daemon) {
         if (ngx_daemon(cycle->log) != NGX_OK) {
             return 1;
@@ -394,7 +394,7 @@ main(int argc, char *const *argv)
 
 #endif
 
-	/* [analysis]	创建存放进程pid的文件 */
+	/* [analy]	创建存放进程pid的文件 */
     if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {
         return 1;
     }
@@ -928,7 +928,7 @@ ngx_process_options(ngx_cycle_t *cycle)
         cycle->conf_param.data = ngx_conf_params;
     }
 
-	/* [analysis]	指定测试标记时, 将log级别改成NGX_LOG_INFO */
+	/* [analy]	指定测试标记时, 将log级别改成NGX_LOG_INFO */
     if (ngx_test_config) {
         cycle->log->log_level = NGX_LOG_INFO;
     }
@@ -1020,8 +1020,8 @@ ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
 
 #endif
 
-
-    if (ccf->pid.len == 0) {
+		
+    if (ccf->pid.len == 0) {							/* [analy]	指令pid如果没有指定文件路径，则使用默认“logs/nginx.pid” */
         ngx_str_set(&ccf->pid, NGX_PID_PATH);
     }
 
@@ -1069,7 +1069,7 @@ ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
     }
 
 
-    if (ccf->lock_file.len == 0) {
+    if (ccf->lock_file.len == 0) {								/* [analy]	指令lock_file如果没有指定文件路径，则使用默认“logs/nginx.lock” */
         ngx_str_set(&ccf->lock_file, NGX_LOCK_PATH);
     }
 

@@ -32,9 +32,9 @@ typedef void (*ngx_pool_cleanup_pt)(void *data);
 typedef struct ngx_pool_cleanup_s  ngx_pool_cleanup_t;
 
 struct ngx_pool_cleanup_s {
-    ngx_pool_cleanup_pt   handler;					/* [analysis]	清理函数 */	
-    void                 *data;						/* [analysis]	需要清除的数据 */	
-    ngx_pool_cleanup_t   *next;						/* [analysis]	下一个cleanup callback */
+    ngx_pool_cleanup_pt   handler;					/* [analy]	清理函数 */	
+    void                 *data;						/* [analy]	需要清除的数据 */	
+    ngx_pool_cleanup_t   *next;						/* [analy]	下一个cleanup callback */
 };
 
 
@@ -46,28 +46,28 @@ struct ngx_pool_large_s {
 };
 
 /* 
- * [analysis]	
+ * [analy]	
  * 内存池的数据块位置信息
  */
 typedef struct {
-    u_char               *last;						/* [analysis]	当前内存池分配到此处，即下一次分配从此处开始 */
-    u_char               *end;						/* [analysis]	内存池结束位置 */
-    ngx_pool_t           *next;						/* [analysis]	内存池里面有很多块内存，这些内存块就是通过该指针连成链表的 */
-    ngx_uint_t            failed;					/* [analysis]	内存池分配失败次数 */
+    u_char               *last;						/* [analy]	当前内存池分配到此处，即下一次分配从此处开始 */
+    u_char               *end;						/* [analy]	内存池结束位置 */
+    ngx_pool_t           *next;						/* [analy]	内存池里面有很多块内存，这些内存块就是通过该指针连成链表的 */
+    ngx_uint_t            failed;					/* [analy]	内存池分配失败次数 */
 } ngx_pool_data_t;
 
 /* 
- * [analysis]	
+ * [analy]	
  * 内存池头部结构
  */
 struct ngx_pool_s {
-    ngx_pool_data_t       d;						/* [analysis]	内存池中的数据块 */
-    size_t                max;						/* [analysis]	数据块的大小，即可分配的内存的最大值 */
-    ngx_pool_t           *current;					/* [analysis]	指向当前内存池 */
-    ngx_chain_t          *chain;					/* [analysis]	挂接一个ngx_chain_t结构链表 */
-    ngx_pool_large_t     *large;					/* [analysis]	大块内存链表，即分配空间超过max的内存 */
-    ngx_pool_cleanup_t   *cleanup;					/* [analysis]	释放内存池的callback */
-    ngx_log_t            *log;						/* [analysis]	日志信息 */
+    ngx_pool_data_t       d;						/* [analy]	内存池中的数据块 */
+    size_t                max;						/* [analy]	数据块的大小，即可分配的内存的最大值 */
+    ngx_pool_t           *current;					/* [analy]	指向当前内存池 */
+    ngx_chain_t          *chain;					/* [analy]	挂接一个ngx_chain_t结构链表 */
+    ngx_pool_large_t     *large;					/* [analy]	大块内存链表，即分配空间超过max的内存 */
+    ngx_pool_cleanup_t   *cleanup;					/* [analy]	释放内存池的callback */
+    ngx_log_t            *log;						/* [analy]	日志信息 */
 };
 
 

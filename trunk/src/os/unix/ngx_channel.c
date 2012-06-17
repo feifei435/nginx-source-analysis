@@ -19,24 +19,24 @@ ngx_write_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size,
     struct iovec        iov[1];
     struct msghdr       msg;
 
-#if (NGX_HAVE_MSGHDR_MSG_CONTROL)								/* [analysis]	用此宏支持旧的UNIX系统的发送文件描述符方式 */
+#if (NGX_HAVE_MSGHDR_MSG_CONTROL)								/* [analy]	用此宏支持旧的UNIX系统的发送文件描述符方式 */
 
     union {
         struct cmsghdr  cm;
         char            space[CMSG_SPACE(sizeof(int))];
     } cmsg;
 
-    if (ch->fd == -1) {										/* [analysis]	文件描述符=-1时，附属数据信息设置为NULL */		
+    if (ch->fd == -1) {										/* [analy]	文件描述符=-1时，附属数据信息设置为NULL */		
         msg.msg_control = NULL;
         msg.msg_controllen = 0;
 
     } else {
-        msg.msg_control = (caddr_t) &cmsg;					/* [analysis]	设置附属数据 */
-        msg.msg_controllen = sizeof(cmsg);					/* [analysis]	设置附属数据长度(包括控制信息头) */
+        msg.msg_control = (caddr_t) &cmsg;					/* [analy]	设置附属数据 */
+        msg.msg_controllen = sizeof(cmsg);					/* [analy]	设置附属数据长度(包括控制信息头) */
 
-        cmsg.cm.cmsg_len = CMSG_LEN(sizeof(int));			/* [analysis]	设置控制信息头， 计算附属数据长度 */
-        cmsg.cm.cmsg_level = SOL_SOCKET;					/* [analysis]	设置控制信息头， socket layer. */
-        cmsg.cm.cmsg_type = SCM_RIGHTS;						/* [analysis]	设置控制信息头， 附属数据对象是一个文件描述符 */
+        cmsg.cm.cmsg_len = CMSG_LEN(sizeof(int));			/* [analy]	设置控制信息头， 计算附属数据长度 */
+        cmsg.cm.cmsg_level = SOL_SOCKET;					/* [analy]	设置控制信息头， socket layer. */
+        cmsg.cm.cmsg_type = SCM_RIGHTS;						/* [analy]	设置控制信息头， 附属数据对象是一个文件描述符 */
 
         /*
          * We have to use ngx_memcpy() instead of simple

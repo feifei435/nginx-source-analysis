@@ -41,7 +41,7 @@ sig_atomic_t          ngx_event_timer_alarm;
 static ngx_uint_t     ngx_event_max_module;
 
 ngx_uint_t            ngx_event_flags;
-ngx_event_actions_t   ngx_event_actions;					/* [analysis]	指向各IO复用模块的actions结构体，对IO事件各种操作的封装	*/
+ngx_event_actions_t   ngx_event_actions;					/* [analy]	指向各IO复用模块的actions结构体，对IO事件各种操作的封装	*/
 
 
 static ngx_atomic_t   connection_counter = 1;
@@ -50,7 +50,7 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
 ngx_shmtx_t           ngx_accept_mutex;
-ngx_uint_t            ngx_use_accept_mutex;				/* [analysis]	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开。 */
+ngx_uint_t            ngx_use_accept_mutex;				/* [analy]	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开。 */
 ngx_uint_t            ngx_accept_events;
 ngx_uint_t            ngx_accept_mutex_held;
 ngx_msec_t            ngx_accept_mutex_delay;
@@ -587,7 +587,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
-	/* [analysis]  ngx_use_accept_mutex表示是否需要通过对accept加锁来解决惊群问题。
+	/* [analy]  ngx_use_accept_mutex表示是否需要通过对accept加锁来解决惊群问题。
 					当nginx worker进程数>1时且配置文件中打开accept_mutex时，这个标志置为1 
 	*/
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
@@ -610,7 +610,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
-	/* [analysis]	调用事件处理模块(epoll)初始化函数 */
+	/* [analy]	调用事件处理模块(epoll)初始化函数 */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -620,7 +620,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             continue;
         }
 
-		/* [analysis]
+		/* [analy]
 			由于Nginx实现了很多的事件模块，比如：epoll，poll，select, kqueue,aio 
 			（这些模块位于src/event/modules目录中）等等，所以Nginx对事件模块进行 
 			了一层抽象，方便在不同的系统上使用不同的事件模型，也便于扩展新的事件 
@@ -686,7 +686,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
-	/* [analysis]	为连接池申请空间，由于此处在worker进程初始化时进行的，所以
+	/* [analy]	为连接池申请空间，由于此处在worker进程初始化时进行的，所以
 					每个worker都会拥有一个自己的connections连接池	
 					根据配置worker_connections指令指定的个数申请 */
     cycle->connections =
@@ -697,7 +697,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     c = cycle->connections;
 	
-	/* [analysis]	为读事件队列申请空间 */
+	/* [analy]	为读事件队列申请空间 */
     cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                    cycle->log);
     if (cycle->read_events == NULL) {
@@ -714,7 +714,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     }
 
-	/* [analysis]	为写事件队列申请空间 */
+	/* [analy]	为写事件队列申请空间 */
     cycle->write_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                     cycle->log);
     if (cycle->write_events == NULL) {
@@ -730,7 +730,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     }
 
-	/* [analysis]	初始化connections数组
+	/* [analy]	初始化connections数组
 					data字段指向下一个元素
 					read事件指针指向read_events对应下标的元素
 					write事件指针指向write_events对应下标的元素
@@ -744,8 +744,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         i--;
 
         c[i].data = next;
-        c[i].read = &cycle->read_events[i];			/* [analysis]	将连接池中connections的read事件与read_events数组中的对应下标的元素关联 */
-        c[i].write = &cycle->write_events[i];		/* [analysis]	将连接池中connections的write事件与write_events数组中对应下标元素关联 */
+        c[i].read = &cycle->read_events[i];			/* [analy]	将连接池中connections的read事件与read_events数组中的对应下标的元素关联 */
+        c[i].write = &cycle->write_events[i];		/* [analy]	将连接池中connections的write事件与write_events数组中对应下标元素关联 */
         c[i].fd = (ngx_socket_t) -1;
 
         next = &c[i];
@@ -755,11 +755,11 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     } while (i);
 
-	/* [analysis]	初始化free_connections空闲连接池和空闲连接个数;指向connections连接池首地址 */
+	/* [analy]	初始化free_connections空闲连接池和空闲连接个数;指向connections连接池首地址 */
     cycle->free_connections = next;
     cycle->free_connection_n = cycle->connection_n;
 
-	/* [analysis]	为每一个套接口分配一个空闲的连接 */
+	/* [analy]	为每一个套接口分配一个空闲的连接 */
     /* for each listening socket */
     ls = cycle->listening.elts;
     for (i = 0; i < cycle->listening.nelts; i++) {
@@ -772,8 +772,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
         c->log = &ls[i].log;
 
-        c->listening = &ls[i];					/* [analysis]	connection的listening指针指向cycle->listening[n] */	
-        ls[i].connection = c;					/* [analysis]	cycle->listening[n]->connection指针指向了申请的空闲connection */	
+        c->listening = &ls[i];					/* [analy]	connection的listening指针指向cycle->listening[n] */	
+        ls[i].connection = c;					/* [analy]	cycle->listening[n]->connection指针指向了申请的空闲connection */	
 			
         rev = c->read;
 
@@ -842,7 +842,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #else
 
-        rev->handler = ngx_event_accept;			/* [analysis]	设置accpet回调处理函数 */	
+        rev->handler = ngx_event_accept;			/* [analy]	设置accpet回调处理函数 */	
 
         if (ngx_use_accept_mutex) {
             continue;
@@ -854,7 +854,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             }
 
         } else {
-            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {			/* [analysis]	将event送进epoll队列中 */
+            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {			/* [analy]	将event送进epoll队列中 */
                 return NGX_ERROR;
             }
         }
@@ -1237,7 +1237,7 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 #endif
 
 	
-	/* [analysis]	获取event类型事件处理模块，目前仅针对epoll */
+	/* [analy]	获取event类型事件处理模块，目前仅针对epoll */
     if (module == NULL) {
         for (i = 0; ngx_modules[i]; i++) {
 
@@ -1262,19 +1262,19 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    ngx_conf_init_uint_value(ecf->connections, DEFAULT_CONNECTIONS);		/* [analysis]	配置文件中未指定时，默认为512 */	
+    ngx_conf_init_uint_value(ecf->connections, DEFAULT_CONNECTIONS);		/* [analy]	配置文件中未指定时，默认为512 */	
     cycle->connection_n = ecf->connections;
 
-    ngx_conf_init_uint_value(ecf->use, module->ctx_index);					/* [analysis]	默认根据系统最优事件模型设定 */
+    ngx_conf_init_uint_value(ecf->use, module->ctx_index);					/* [analy]	默认根据系统最优事件模型设定 */
 
 	
-	/* [analysis]	获取模块上下文(ngx_epoll_module_ctx, 仅针对epoll) */
+	/* [analy]	获取模块上下文(ngx_epoll_module_ctx, 仅针对epoll) */
     event_module = module->ctx;
-    ngx_conf_init_ptr_value(ecf->name, event_module->name->data);			/* [analysis]	默认是epoll */
+    ngx_conf_init_ptr_value(ecf->name, event_module->name->data);			/* [analy]	默认是epoll */
 
     ngx_conf_init_value(ecf->multi_accept, 0);
-    ngx_conf_init_value(ecf->accept_mutex, 1);								/* [analysis]	默认是打开on */	
-    ngx_conf_init_msec_value(ecf->accept_mutex_delay, 500);					/* [analysis]	默认500ms */	
+    ngx_conf_init_value(ecf->accept_mutex, 1);								/* [analy]	默认是打开on */	
+    ngx_conf_init_msec_value(ecf->accept_mutex_delay, 500);					/* [analy]	默认500ms */	
 	
 
 #if (NGX_HAVE_RTSIG)

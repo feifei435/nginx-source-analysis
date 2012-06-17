@@ -19,19 +19,19 @@ typedef pid_t       ngx_pid_t;
 typedef void (*ngx_spawn_proc_pt) (ngx_cycle_t *cycle, void *data);
 
 typedef struct {
-    ngx_pid_t           pid;				/* [analysis]	worker的PID						 */ 
-    int                 status;				/* [analysis]	进程的状态，重新创建			 */ 
-    ngx_socket_t        channel[2];			/* [analysis]	socketpair创建的一对socket句柄	 */ 
+    ngx_pid_t           pid;				/* [analy]	worker的PID						 */ 
+    int                 status;				/* [analy]	进程的状态，重新创建			 */ 
+    ngx_socket_t        channel[2];			/* [analy]	socketpair创建的一对socket句柄	 */ 
 
-    ngx_spawn_proc_pt   proc;				/* [analysis]	进程的执行函数				     */ 
-    void               *data;				/* [analysis]	proc的参数					     */ 	
-    char               *name;				/* [analysis]	进程的描述					     */
+    ngx_spawn_proc_pt   proc;				/* [analy]	进程的执行函数				     */ 
+    void               *data;				/* [analy]	proc的参数					     */ 	
+    char               *name;				/* [analy]	进程的描述					     */
 
-    unsigned            respawn:1;			/* [analysis]	进程的状态，重新创建		     */	
-    unsigned            just_spawn:1;		/* [analysis]	进程的状态，第一次创建		     */	
-    unsigned            detached:1;			/* [analysis]	进程的状态，分离				 */	
-    unsigned            exiting:1;			/* [analysis]	进程的状态，正在退出			 */
-    unsigned            exited:1;			/* [analysis]	进程的状态，已经退出			 */
+    unsigned            respawn:1;			/* [analy]	进程的状态，重新创建		     */	
+    unsigned            just_spawn:1;		/* [analy]	进程的状态，第一次创建		     */	
+    unsigned            detached:1;			/* [analy]	进程的状态，分离				 */	
+    unsigned            exiting:1;			/* [analy]	进程的状态，正在退出			 */
+    unsigned            exited:1;			/* [analy]	进程的状态，已经退出			 */
 } ngx_process_t;
 
 

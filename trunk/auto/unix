@@ -619,7 +619,7 @@ ngx_feature_test='void *p; int  fd;
                   if (p == MAP_FAILED) return 1;'
 . auto/feature
 
-/* [analysis]	检查系统是否支持SysV共享内存操作 */
+/* [analy]	检查系统是否支持SysV共享内存操作 */
 ngx_feature="System V shared memory"
 ngx_feature_name="NGX_HAVE_SYSVSHM"
 ngx_feature_run=yes

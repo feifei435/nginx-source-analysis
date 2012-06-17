@@ -19,38 +19,38 @@
  *    TT        command type, i.e. HTTP "location" or "server" command
  */
 
-#define NGX_CONF_NOARGS      0x00000001								/* [analysis]   无参数	   		*/
-#define NGX_CONF_TAKE1       0x00000002								/* [analysis]   1个参数	   		*/
-#define NGX_CONF_TAKE2       0x00000004								/* [analysis]   2个参数	   		*/
-#define NGX_CONF_TAKE3       0x00000008								/* [analysis]   3个参数	   		*/
-#define NGX_CONF_TAKE4       0x00000010								/* [analysis]   4个参数	   		*/
-#define NGX_CONF_TAKE5       0x00000020								/* [analysis]   5个参数	   		*/
-#define NGX_CONF_TAKE6       0x00000040								/* [analysis]   6个参数	   		*/
-#define NGX_CONF_TAKE7       0x00000080								/* [analysis]   7个参数	   		*/
+#define NGX_CONF_NOARGS      0x00000001								/* [analy]   无参数	   		*/
+#define NGX_CONF_TAKE1       0x00000002								/* [analy]   1个参数	   		*/
+#define NGX_CONF_TAKE2       0x00000004								/* [analy]   2个参数	   		*/
+#define NGX_CONF_TAKE3       0x00000008								/* [analy]   3个参数	   		*/
+#define NGX_CONF_TAKE4       0x00000010								/* [analy]   4个参数	   		*/
+#define NGX_CONF_TAKE5       0x00000020								/* [analy]   5个参数	   		*/
+#define NGX_CONF_TAKE6       0x00000040								/* [analy]   6个参数	   		*/
+#define NGX_CONF_TAKE7       0x00000080								/* [analy]   7个参数	   		*/
 
-#define NGX_CONF_MAX_ARGS    8										/* [analysis]   最大参数个数	*/
+#define NGX_CONF_MAX_ARGS    8										/* [analy]   最大参数个数	*/
 
-#define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)		/* [analysis]   有1个或2个参数  */
-#define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)		/* [analysis]   有1个或3个参数  */
+#define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)		/* [analy]   有1个或2个参数  */
+#define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)		/* [analy]   有1个或3个参数  */
 
-#define NGX_CONF_TAKE23      (NGX_CONF_TAKE2|NGX_CONF_TAKE3)		/* [analysis]   有2个或3个参数  */
+#define NGX_CONF_TAKE23      (NGX_CONF_TAKE2|NGX_CONF_TAKE3)		/* [analy]   有2个或3个参数  */
 
 #define NGX_CONF_TAKE123     (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3)
 #define NGX_CONF_TAKE1234    (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3   \
                               |NGX_CONF_TAKE4)
 
 #define NGX_CONF_ARGS_NUMBER 0x000000ff
-#define NGX_CONF_BLOCK       0x00000100								/* [analysis]   标识该配置项为块类型值   i.e. "events" or "http"  */
-#define NGX_CONF_FLAG        0x00000200								/* [analysis]   标识该配置项为布尔类型值 i.e. "on" or "off"		 */
+#define NGX_CONF_BLOCK       0x00000100								/* [analy]   标识该配置项为块类型值   i.e. "events" or "http"  */
+#define NGX_CONF_FLAG        0x00000200								/* [analy]   标识该配置项为布尔类型值 i.e. "on" or "off"		 */
 #define NGX_CONF_ANY         0x00000400
-#define NGX_CONF_1MORE       0x00000800								/* [analysis]   最多有一个参数		 */
-#define NGX_CONF_2MORE       0x00001000								/* [analysis]   最多有两个参数		 */
+#define NGX_CONF_1MORE       0x00000800								/* [analy]   最多有一个参数		 */
+#define NGX_CONF_2MORE       0x00001000								/* [analy]   最多有两个参数		 */
 #define NGX_CONF_MULTI       0x00002000
 
-#define NGX_DIRECT_CONF      0x00010000
+#define NGX_DIRECT_CONF      0x00010000								/* [analy]   配置命令包含项指不包含二级模块指令 */			
 
-#define NGX_MAIN_CONF        0x01000000
-#define NGX_ANY_CONF         0x0F000000								/* [analysis]   i.e. include指令	 */	
+#define NGX_MAIN_CONF        0x01000000								/* [analy]   指最顶层的指令		 */
+#define NGX_ANY_CONF         0x0F000000								/* [analy]   i.e. include指令	 */	
 
 
 
@@ -76,12 +76,12 @@
 
 
 struct ngx_command_s {
-    ngx_str_t             name;						/* [analysis]   指令名称	   */		
-    ngx_uint_t            type;						/* [analysis]   type是标识符集，标识指令在配置文件中的合法位置和指令的参数个数.
+    ngx_str_t             name;						/* [analy]   指令名称	   */		
+    ngx_uint_t            type;						/* [analy]   type是标识符集，标识指令在配置文件中的合法位置和指令的参数个数.
 													 				这是一个至少有32bit的无符号整形，前16bit用于标识位置，后16bit用于标识参数 */													 
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		/* [analysis]   函数执行解析并获取配置项值的操作 */
-    ngx_uint_t            conf;						/* [analysis]   字段conf被NGX_HTTP_MODULE类型模块所用，该字段指定当前配置项所在的大致位置 */
-    ngx_uint_t            offset;					/* [analysis]   解析出来的配置项值所存放的地址 */
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		/* [analy]   函数执行解析并获取配置项值的操作 */
+    ngx_uint_t            conf;						/* [analy]   字段conf被NGX_HTTP_MODULE类型模块所用，该字段指定当前配置项所在的大致位置 */
+    ngx_uint_t            offset;					/* [analy]   解析出来的配置项值所存放的地址 */
     void                 *post;
 };
 
@@ -110,8 +110,8 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
 struct ngx_module_s {
-    ngx_uint_t            ctx_index;							/* [analysis]	分类的模块计数器   */
-    ngx_uint_t            index;								/* [analysis]	模块计数器   */
+    ngx_uint_t            ctx_index;							/* [analy]	分类的模块计数器   */
+    ngx_uint_t            index;								/* [analy]	模块计数器   */
 	
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
@@ -120,8 +120,8 @@ struct ngx_module_s {
 
     ngx_uint_t            version;
 
-    void                 *ctx;									/* [analysis]	ctx是模块的上下文，不同种类的模块有不同的上下文   */
-    ngx_command_t        *commands;								/* [analysis]	commands 是模块的指令集，nginx的每个模块都可以实现一些自定义的指令，
+    void                 *ctx;									/* [analy]	ctx是模块的上下文，不同种类的模块有不同的上下文   */
+    ngx_command_t        *commands;								/* [analy]	commands 是模块的指令集，nginx的每个模块都可以实现一些自定义的指令，
 																				这些指令写在配置文件的适当配置项中，每一个指令在源码中对应着一个 ngx_command_t结构的变量 */
    
 	ngx_uint_t            type;
@@ -130,7 +130,7 @@ struct ngx_module_s {
 
     ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
 
-    ngx_int_t           (*init_process)(ngx_cycle_t *cycle);	/* [analysis]	worker进程初始化时调用 */
+    ngx_int_t           (*init_process)(ngx_cycle_t *cycle);	/* [analy]	worker进程初始化时调用 */
     ngx_int_t           (*init_thread)(ngx_cycle_t *cycle);
     void                (*exit_thread)(ngx_cycle_t *cycle);
     void                (*exit_process)(ngx_cycle_t *cycle);
@@ -150,8 +150,8 @@ struct ngx_module_s {
 
 typedef struct {
     ngx_str_t             name;
-    void               *(*create_conf)(ngx_cycle_t *cycle);					/* [analysis]	创建并初始化模块配置结构变量   */
-    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);		/* [analysis]	设置配置结构变量   */
+    void               *(*create_conf)(ngx_cycle_t *cycle);					/* [analy]	创建并初始化模块配置结构变量   */
+    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);		/* [analy]	设置配置结构变量   */
 } ngx_core_module_t;
 
 
@@ -166,22 +166,25 @@ typedef char *(*ngx_conf_handler_pt)(ngx_conf_t *cf,
     ngx_command_t *dummy, void *conf);
 
 
+/*
+ *	[analy] 该结构保存了解析配置文件所需要的一些域
+ */
 struct ngx_conf_s {
-    char                 *name;
-    ngx_array_t          *args;
+    char                 *name;				/* [analy] 当前解析到的命令名 */
+    ngx_array_t          *args;				/* [analy] 当前命令的所有参数 */
 
-    ngx_cycle_t          *cycle;
-    ngx_pool_t           *pool;
-    ngx_pool_t           *temp_pool;
-    ngx_conf_file_t      *conf_file;
-    ngx_log_t            *log;
+    ngx_cycle_t          *cycle;			/* [analy] 当前使用的cycle */
+    ngx_pool_t           *pool;				/* [analy] 当前使用的pool */
+    ngx_pool_t           *temp_pool;		/* [analy] 这个pool将会在配置解析完毕后释放 */
+    ngx_conf_file_t      *conf_file;		/* [analy] 要解析的配置文件 */
+    ngx_log_t            *log;				/* [analy] 配置Log */
 
-    void                 *ctx;
-    ngx_uint_t            module_type;
-    ngx_uint_t            cmd_type;
+    void                 *ctx;				/* [analy] 主要为了提供模块的层次化(后续会详细介绍) */
+    ngx_uint_t            module_type;		/* [analy] 模块类型 */
+    ngx_uint_t            cmd_type;			/* [analy] 命令类型 */
 
-    ngx_conf_handler_pt   handler;
-    char                 *handler_conf;
+    ngx_conf_handler_pt   handler;			/* [analy] 模块定义的handler */
+    char                 *handler_conf;		/* [analy] 自定义的handler */
 };
 
 

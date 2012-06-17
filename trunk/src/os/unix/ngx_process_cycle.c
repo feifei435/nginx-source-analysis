@@ -32,22 +32,22 @@ static void ngx_cache_manager_process_handler(ngx_event_t *ev);
 static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
-ngx_uint_t    ngx_process;							/* [analysis]	进程类型(默认是NGX_PROCESS_SINGLE)，
+ngx_uint_t    ngx_process;							/* [analy]	进程类型(默认是NGX_PROCESS_SINGLE)，
 																	master中NGX_PROCESS_MASTER， worker中NGX_PROCESS_WORKER */
-ngx_pid_t     ngx_pid;								/* [analysis]	备份当前进程PID(在父进程中时，是父进程的；在子进程中就是子进程的) */
+ngx_pid_t     ngx_pid;								/* [analy]	备份当前进程PID(在父进程中时，是父进程的；在子进程中就是子进程的) */
 ngx_uint_t    ngx_threaded;
 
 sig_atomic_t  ngx_reap;
 sig_atomic_t  ngx_sigio;
 sig_atomic_t  ngx_sigalrm;
-sig_atomic_t  ngx_terminate;						/* [analysis]	接收到命令行stop,或信号SIGTERM和SIGINT */			
+sig_atomic_t  ngx_terminate;						/* [analy]	接收到命令行stop,或信号SIGTERM和SIGINT */			
 sig_atomic_t  ngx_quit;
 sig_atomic_t  ngx_debug_quit;
 ngx_uint_t    ngx_exiting;
 sig_atomic_t  ngx_reconfigure;
 sig_atomic_t  ngx_reopen;
 
-sig_atomic_t  ngx_change_binary;
+sig_atomic_t  ngx_change_binary;					/* [analy]	接收到SIGUSR2信号时，进行平滑升级 */		
 ngx_pid_t     ngx_new_binary;
 ngx_uint_t    ngx_inherited;
 ngx_uint_t    ngx_daemonized;
@@ -115,7 +115,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
     sigemptyset(&set);
 
-	/* [analysis]	设置进程标题 */
+	/* [analy]	设置进程标题 */
     size = sizeof(master_process);
 
     for (i = 0; i < ngx_argc; i++) {
@@ -155,7 +155,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                            "termination cycle: %d", delay);
 
-			/* [analysis]	设置定时器，只执行一次 */
+			/* [analy]	设置定时器，只执行一次 */
             itv.it_interval.tv_sec = 0;
             itv.it_interval.tv_usec = 0;
             itv.it_value.tv_sec = delay / 1000;
@@ -169,7 +169,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
-		/* [analysis]	临时设置信号屏蔽集，此时等待任何信号，信号到来后恢复函数开始时注册的信号屏蔽集。
+		/* [analy]	临时设置信号屏蔽集，此时等待任何信号，信号到来后恢复函数开始时注册的信号屏蔽集。
 						并执行以下处理流程，这时将对函数开始时注册的信号屏蔽集中的信号阻塞，屏蔽集中的
 						信号不能打断以下处理流程
 					*/
@@ -281,7 +281,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
                                         ngx_signal_value(NGX_REOPEN_SIGNAL));
         }
 
-		/* [analysis]	接到SIGUSR2信号时，平滑重启 */
+		/* [analy]	热代码替换；接到SIGUSR2信号时，平滑重启 */
         if (ngx_change_binary) {
             ngx_change_binary = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "changing binary");
@@ -365,7 +365,7 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
 
     ch.command = NGX_CMD_OPEN_CHANNEL;
 
-	/* [analysis]	循环启动worker进程 */
+	/* [analy]	循环启动worker进程 */
     for (i = 0; i < n; i++) {
 
         cpu_affinity = ngx_get_cpu_affinity(i);
@@ -728,7 +728,7 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
 
 
 /* 
- *	[analysis]	子进程入口函数
+ *	[analy]	子进程入口函数
  */
 static void
 ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
@@ -736,7 +736,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     ngx_uint_t         i;
     ngx_connection_t  *c;
 
-    ngx_process = NGX_PROCESS_WORKER;		/* [analysis]	设置进程类型 */
+    ngx_process = NGX_PROCESS_WORKER;		/* [analy]	设置进程类型 */
 
     ngx_worker_process_init(cycle, 1);
 
@@ -815,7 +815,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
 
-		/* [analysis]	捕获事件，分发事件 */
+		/* [analy]	捕获事件，分发事件 */
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate) {
@@ -862,7 +862,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-	/* [analysis]	设置进程优先级 */
+	/* [analy]	设置进程优先级 */
     if (priority && ccf->priority != 0) {
         if (setpriority(PRIO_PROCESS, 0, ccf->priority) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
@@ -871,7 +871,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
     }
 
 
-	/* [analysis]	设置进程打开的文件个数，通过[worker_rlimit_nofile] 指令指定 */
+	/* [analy]	设置进程打开的文件个数，通过[worker_rlimit_nofile] 指令指定 */
     if (ccf->rlimit_nofile != NGX_CONF_UNSET) {
         rlmt.rlim_cur = (rlim_t) ccf->rlimit_nofile;
         rlmt.rlim_max = (rlim_t) ccf->rlimit_nofile;
@@ -884,7 +884,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
     }
 
 
-	/* [analysis]	设置core文件的大小，通过[worker_rlimit_core 500M;]指令指定大小; */
+	/* [analy]	设置core文件的大小，通过[worker_rlimit_core 500M;]指令指定大小; */
     if (ccf->rlimit_core != NGX_CONF_UNSET) {
         rlmt.rlim_cur = (rlim_t) ccf->rlimit_core;
         rlmt.rlim_max = (rlim_t) ccf->rlimit_core;
@@ -897,7 +897,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
     }
 
 
-	/* [analysis]	设置未决信号数量的最大值，通过[worker_rlimit_sigpending ]指定 */
+	/* [analy]	设置未决信号数量的最大值，通过[worker_rlimit_sigpending ]指定 */
 #ifdef RLIMIT_SIGPENDING
     if (ccf->rlimit_sigpending != NGX_CONF_UNSET) {
         rlmt.rlim_cur = (rlim_t) ccf->rlimit_sigpending;
@@ -911,7 +911,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
     }
 #endif
 
-	/* [analysis]	检查有效用户ID是否等于特权用户 */
+	/* [analy]	检查有效用户ID是否等于特权用户 */
     if (geteuid() == 0) {
         if (setgid(ccf->group) == -1) {
             ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
@@ -971,7 +971,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
         }
     }
 
-	/* [analysis]	设置信号屏蔽集，此时将不阻塞任何信号 */
+	/* [analy]	设置信号屏蔽集，此时将不阻塞任何信号 */
     sigemptyset(&set);
 
     if (sigprocmask(SIG_SETMASK, &set, NULL) == -1) {
@@ -998,7 +998,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
     }
 	
 	/* 
-		[analysis]		
+		[analy]		
 		关闭从之前进程创建后继承而来的其他worker的channel[1]句柄， 当后续worker被创建，master会广播正在被创建worker的channel[0]到
 		其他worker， 当前worker使用channel[0]与其他进程进行通信
 	*/
@@ -1022,7 +1022,7 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
         }
     }
 
-	/* [analysis]	子进程将当前channel[0]关闭，使用当前channel[1]句柄监听可读事件 */
+	/* [analy]	子进程将当前channel[0]关闭，使用当前channel[1]句柄监听可读事件 */
     if (close(ngx_processes[ngx_process_slot].channel[0]) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "close() channel failed");

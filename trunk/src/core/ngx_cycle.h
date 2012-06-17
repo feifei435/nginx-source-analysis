@@ -35,38 +35,38 @@ struct ngx_shm_zone_s {
 
 
 struct ngx_cycle_s {
-    void                  ****conf_ctx;								/* [analysis]	模块配置结构指针数组(含所有模块)   */
-    ngx_pool_t               *pool;									/* [analysis]	内存池   */
+    void                  ****conf_ctx;								/* [analy]	模块配置结构指针数组(含所有模块)   */
+    ngx_pool_t               *pool;									/* [analy]	内存池   */
 
-    ngx_log_t                *log;									/* [analysis]   日志指针   */
+    ngx_log_t                *log;									/* [analy]   日志指针   */
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
-    ngx_connection_t         *free_connections;						/* [analysis]   指向空闲连接的结构  */
-    ngx_uint_t                free_connection_n;					/* [analysis]   空闲连接的个数 */
+    ngx_connection_t         *free_connections;						/* [analy]   指向空闲连接的结构  */
+    ngx_uint_t                free_connection_n;					/* [analy]   空闲连接的个数 */
 
     ngx_queue_t               reusable_connections_queue;
 
     ngx_array_t               listening;
-    ngx_array_t               pathes;								/* [analysis]   路径数组	   */					
-    ngx_list_t                open_files;							/* [analysis]   打开文件列表   */	
-    ngx_list_t                shared_memory;						/* [analysis]   共享内存列表   */		
+    ngx_array_t               pathes;								/* [analy]   路径数组	   */					
+    ngx_list_t                open_files;							/* [analy]   打开文件列表   */	
+    ngx_list_t                shared_memory;						/* [analy]   共享内存列表   */		
 
-    ngx_uint_t                connection_n;							/* [analysis]   每个进程预先创建的connection数目(worker_connections指令指定) */
+    ngx_uint_t                connection_n;							/* [analy]   每个进程预先创建的connection数目(worker_connections指令指定) */
     ngx_uint_t                files_n;
 
-    ngx_connection_t         *connections;							/* [analysis]   连接池   */	
-    ngx_event_t              *read_events;							/* [analysis]   读事件   */	
-    ngx_event_t              *write_events;							/* [analysis]   写事件   */	
+    ngx_connection_t         *connections;							/* [analy]   连接池   */	
+    ngx_event_t              *read_events;							/* [analy]   读事件   */	
+    ngx_event_t              *write_events;							/* [analy]   写事件   */	
 
-    ngx_cycle_t              *old_cycle;							/* [analysis]	旧的cycle(old_cycle) */
+    ngx_cycle_t              *old_cycle;							/* [analy]	旧的cycle(old_cycle) */
 
-    ngx_str_t                 conf_file;							/* [analysis]	配置文件 */
-    ngx_str_t                 conf_param;							/* [analysis]	配置指令 */
-    ngx_str_t                 conf_prefix;							/* [analysis]	配置前缀(工作目录) */
-    ngx_str_t                 prefix;								/* [analysis]	命令行前缀"-p"设置 */
-    ngx_str_t                 lock_file;
-    ngx_str_t                 hostname;								/* [analysis]	主机名 */
+    ngx_str_t                 conf_file;							/* [analy]	配置文件 */
+    ngx_str_t                 conf_param;							/* [analy]	配置指令 */
+    ngx_str_t                 conf_prefix;							/* [analy]	配置文件前缀(工作目录) */
+    ngx_str_t                 prefix;								/* [analy]	工作目录前缀，或命令行前缀"-p"设置 */
+    ngx_str_t                 lock_file;							/* [analy]	在init_conf时设置。使用连接互斥锁进行顺序的accept()系统调用默认是“logs/nginx.lock.accept” */
+    ngx_str_t                 hostname;								/* [analy]	主机名 */
 };
 
 
@@ -93,9 +93,9 @@ typedef struct {
      ngx_gid_t                group;
 
      ngx_str_t                working_directory;
-     ngx_str_t                lock_file;
+     ngx_str_t                lock_file;							/* [analy]	指令lock_file指定锁文件名，未指定时使用默认“logs/nginx.lock” */
 
-     ngx_str_t                pid;
+     ngx_str_t                pid;									/* [analy]	指令pid如果没有指定存放pid的文件路径则使用默认“logs/nginx.pid”路径 */
      ngx_str_t                oldpid;
 
      ngx_array_t              env;
