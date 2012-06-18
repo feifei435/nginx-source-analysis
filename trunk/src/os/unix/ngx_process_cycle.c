@@ -988,7 +988,13 @@ ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
         ls[i].previous = NULL;
     }
 
-    for (i = 0; ngx_modules[i]; i++) {
+	/* [analy]	调用所有模块的init_process， 此处将调用
+				ngx_event_process_init 
+				ngx_http_perl_init_worker
+				ngx_http_userid_init_worker
+				ngx_google_perftools_worker
+	*/
+    for (i = 0; ngx_modules[i]; i++) {										
         if (ngx_modules[i]->init_process) {
             if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) {
                 /* fatal */

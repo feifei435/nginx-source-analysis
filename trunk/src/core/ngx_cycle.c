@@ -356,22 +356,20 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-	/* [analy]	ccf->user=502(www用户的组ID)   */
-    if (ngx_create_pathes(cycle, ccf->user) != NGX_OK) {
+    if (ngx_create_pathes(cycle, ccf->user) != NGX_OK) {							/* [analy]	根据cycle->pathes中存放的路径创建目录， ccf->user=502(www用户的组ID)   */
         goto failed;
     }
 
-
-    if (cycle->new_log.file == NULL) {
-        cycle->new_log.file = ngx_conf_open_file(cycle, &error_log);
+	/* [analy]	此文件会根据error_log指令进行设置   */
+    if (cycle->new_log.file == NULL) {												
+        cycle->new_log.file = ngx_conf_open_file(cycle, &error_log);				/* [analy]	将error_log：文件存放到cycle->open_files列表里稍后将会打开   */
         if (cycle->new_log.file == NULL) {
             goto failed;
         }
     }
 
     /* open the new files */
-
-    part = &cycle->open_files.part;
+    part = &cycle->open_files.part;													/* [analy]	打开cycle->open_files里存的文件，不存在就创建  */
     file = part->elts;
 
     for (i = 0; /* void */ ; i++) {
@@ -388,7 +386,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         if (file[i].name.len == 0) {
             continue;
         }
-
+		
+		/* [analy]	打开文件；文件不存在时，则创建文件  */
         file[i].fd = ngx_open_file(file[i].name.data,
                                    NGX_FILE_APPEND,
                                    NGX_FILE_CREATE_OR_OPEN,
@@ -406,7 +405,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
 
 #if !(NGX_WIN32)
-        if (fcntl(file[i].fd, F_SETFD, FD_CLOEXEC) == -1) {
+		/* [analy]	设置 FD_CLOEXEC 标志，设置后调用exec函数族后，文件将被关闭  */
+        if (fcntl(file[i].fd, F_SETFD, FD_CLOEXEC) == -1) {					
             ngx_log_error(NGX_LOG_EMERG, log, ngx_errno,
                           "fcntl(FD_CLOEXEC) \"%s\" failed",
                           file[i].name.data);
@@ -592,12 +592,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
     }
 
-    if (ngx_open_listening_sockets(cycle) != NGX_OK) {
+    if (ngx_open_listening_sockets(cycle) != NGX_OK) {					/* [analy]	创建cycle->listening里的所有socket，并调用bind()、listen  */			
         goto failed;
     }
 
     if (!ngx_test_config) {
-        ngx_configure_listening_sockets(cycle);
+        ngx_configure_listening_sockets(cycle);							/* [analy]	非测试情况下，配置cycle->listening里的所有socket  */
     }
 
 
@@ -613,8 +613,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     pool->log = cycle->log;
 
-	/* [analy]	初始化所有模块 */
-    for (i = 0; ngx_modules[i]; i++) {
+	
+	for (i = 0; ngx_modules[i]; i++) {									/* [analy]	调用所有模块的init_module初始化，将调用ngx_regex_module_init、ngx_event_module_init目前仅两个 */																		 
         if (ngx_modules[i]->init_module) {
             if (ngx_modules[i]->init_module(cycle) != NGX_OK) {
                 /* fatal */

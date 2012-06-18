@@ -801,7 +801,9 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return rv;
 }
 
-
+/* 
+ *	[analy]	参数-name是完整路径直接返回，不是完整路径时根据参数conf_prefix对参数name添加完整路径前缀	
+ */
 ngx_int_t
 ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
 {
@@ -809,13 +811,13 @@ ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
     u_char     *p, *n, *prefix;
     ngx_int_t   rc;
 
-    rc = ngx_conf_test_full_name(name);
+    rc = ngx_conf_test_full_name(name);						/* [analy]	是完整路径直接返回  */
 
     if (rc == NGX_OK) {
         return rc;
     }
 
-    if (conf_prefix) {
+    if (conf_prefix) {										/* [analy]	不是完整路径时，如果conf_prefix=1，要求是配置文件前缀，否则系统运行前缀  */
         len = cycle->conf_prefix.len;
         prefix = cycle->conf_prefix.data;
 
@@ -914,14 +916,14 @@ ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
     if (name->len) {
         full = *name;
 
-        if (ngx_conf_full_name(cycle, &full, 0) != NGX_OK) {
+        if (ngx_conf_full_name(cycle, &full, 0) != NGX_OK) {			/* [analy]	获取参数name完整路径   */	
             return NULL;
         }
 
         part = &cycle->open_files.part;
         file = part->elts;
 
-        for (i = 0; /* void */ ; i++) {
+        for (i = 0; /* void */ ; i++) {									/* [analy]	在已打开的cycle->open_files链表中进行查找是否有此文件   */
 
             if (i >= part->nelts) {
                 if (part->next == NULL) {
@@ -932,7 +934,7 @@ ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
                 i = 0;
             }
 
-            if (full.len != file[i].name.len) {
+            if (full.len != file[i].name.len) {							
                 continue;
             }
 
@@ -942,7 +944,7 @@ ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
         }
     }
 
-    file = ngx_list_push(&cycle->open_files);
+    file = ngx_list_push(&cycle->open_files);							/* [analy]	将文件先加入cycle->open_files列表里，稍后会再后边打开   */	
     if (file == NULL) {
         return NULL;
     }
