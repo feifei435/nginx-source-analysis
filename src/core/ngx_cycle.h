@@ -72,14 +72,14 @@ struct ngx_cycle_s {
 
 typedef struct {
      ngx_flag_t               daemon;
-     ngx_flag_t               master;
+     ngx_flag_t               master;								/* [analy]	指令master_process指定此字段，on = 1、off = 0  */
 
      ngx_msec_t               timer_resolution;
 
      ngx_int_t                worker_processes;
      ngx_int_t                debug_points;
 
-     ngx_int_t                rlimit_nofile;
+     ngx_int_t                rlimit_nofile;						/* [analy]	此字段在worker进程初始化时设置到内核。指令worker_rlimit_nofile 进程能够打开的最多文件描述符数 */
      ngx_int_t                rlimit_sigpending;
      off_t                    rlimit_core;
 

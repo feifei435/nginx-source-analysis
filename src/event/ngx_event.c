@@ -35,7 +35,7 @@ static void *ngx_event_create_conf(ngx_cycle_t *cycle);
 static char *ngx_event_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
-static ngx_uint_t     ngx_timer_resolution;
+static ngx_uint_t     ngx_timer_resolution;					/* [analy]	timer_resolution指令指定的时间	*/
 sig_atomic_t          ngx_event_timer_alarm;
 
 static ngx_uint_t     ngx_event_max_module;
@@ -458,11 +458,15 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_int_t      limit;
     struct rlimit  rlmt;
 
-    if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
+    if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {				/* [analy]	获取进程能打开的最大文件数，内核默认是1024 */
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "getrlimit(RLIMIT_NOFILE) failed, ignored");
 
-    } else {
+    } else {													
+			
+		/* [analy]	1. 当worker_connections指定的连接数量 > 进程可以打开的文件个数 并且 指令worker_rlimit_nofile没有显示指定
+					2. 当worker_connections指定的连接数量 > 指令worker_rlimit_nofile指定的打开文件数 
+		*/
         if (ecf->connections > (ngx_uint_t) rlmt.rlim_cur
             && (ccf->rlimit_nofile == NGX_CONF_UNSET
                 || ecf->connections > (ngx_uint_t) ccf->rlimit_nofile))
@@ -480,7 +484,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 #endif /* !(NGX_WIN32) */
 
 
-    if (ccf->master == 0) {
+    if (ccf->master == 0) {				/* [analy]	单进程工作模式，开发和调试时使用；master_process = off */
         return NGX_OK;
     }
 

@@ -468,6 +468,10 @@ ngx_add_path(ngx_conf_t *cf, ngx_path_t **slot)
 }
 
 
+/* 
+ *	[analy]	创建cycle->pathes中存放的目录，更改
+ *			文件所有者和文件所有者权限
+ */
 ngx_int_t
 ngx_create_pathes(ngx_cycle_t *cycle, ngx_uid_t user)
 {
@@ -496,7 +500,7 @@ ngx_create_pathes(ngx_cycle_t *cycle, ngx_uid_t user)
         {
         ngx_file_info_t   fi;
 
-        if (ngx_file_info((const char *) path[i]->name.data, &fi)
+        if (ngx_file_info((const char *) path[i]->name.data, &fi)					/* [analy]	获取文件信息   */
             == NGX_FILE_ERROR)
         {
             ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
@@ -504,7 +508,7 @@ ngx_create_pathes(ngx_cycle_t *cycle, ngx_uid_t user)
             return NGX_ERROR;
         }
 
-        if (fi.st_uid != user) {
+        if (fi.st_uid != user) {													/* [analy]	如果不等于参数中传递的uid则修改文件own; group不变   */
             if (chown((const char *) path[i]->name.data, user, -1) == -1) {
                 ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                               "chown(\"%s\", %d) failed",
@@ -513,7 +517,7 @@ ngx_create_pathes(ngx_cycle_t *cycle, ngx_uid_t user)
             }
         }
 
-        if ((fi.st_mode & (S_IRUSR|S_IWUSR|S_IXUSR))
+        if ((fi.st_mode & (S_IRUSR|S_IWUSR|S_IXUSR))								/* [analy]	创建的目录owner组不足rwx权限时，将添加rwx权限 */
                                                   != (S_IRUSR|S_IWUSR|S_IXUSR))
         {
             fi.st_mode |= (S_IRUSR|S_IWUSR|S_IXUSR);
