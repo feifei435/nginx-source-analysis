@@ -230,7 +230,9 @@ ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	关闭文件（如果文件的硬件连接数=0，此时如果调用close函数系统将彻底将文件从磁盘上删掉）
+ */
 void
 ngx_shmtx_destory(ngx_shmtx_t *mtx)
 {
@@ -269,7 +271,9 @@ ngx_shmtx_trylock(ngx_shmtx_t *mtx)
     return 0;
 }
 
-
+/* 
+ *	[analy]	共享内存上锁，使用文件记录锁（阻塞版）
+ */
 void
 ngx_shmtx_lock(ngx_shmtx_t *mtx)
 {
@@ -284,7 +288,9 @@ ngx_shmtx_lock(ngx_shmtx_t *mtx)
     ngx_log_abort(err, ngx_lock_fd_n " %s failed", mtx->name);
 }
 
-
+/* 
+ *	[analy]	共享内存解锁
+ */
 void
 ngx_shmtx_unlock(ngx_shmtx_t *mtx)
 {

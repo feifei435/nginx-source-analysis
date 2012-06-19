@@ -130,7 +130,7 @@ struct ngx_connection_s {
 
     ngx_pool_t         *pool;				/* [analy]	内存池指针 */
 
-    struct sockaddr    *sockaddr;			/* [analy]	 */
+    struct sockaddr    *sockaddr;			/* [analy]	保存客户端的地址信息 */
     socklen_t           socklen;
     ngx_str_t           addr_text;
 

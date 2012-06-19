@@ -50,7 +50,7 @@ ngx_event_accept(ngx_event_t *ev)
     do {
         socklen = NGX_SOCKADDRLEN;
 
-#if (NGX_HAVE_ACCEPT4)
+#if (NGX_HAVE_ACCEPT4)															/* [analy]	调用accept接收请求 */	
         if (use_accept4) {
             s = accept4(lc->fd, (struct sockaddr *) sa, &socklen,
                         SOCK_NONBLOCK);
@@ -107,7 +107,7 @@ ngx_event_accept(ngx_event_t *ev)
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
-        c = ngx_get_connection(s, ev->log);
+        c = ngx_get_connection(s, ev->log);								/* [analy]	为客户端描述符获取一个新的连接 */	
 
         if (c == NULL) {
             if (ngx_close_socket(s) == -1) {
@@ -128,13 +128,13 @@ ngx_event_accept(ngx_event_t *ev)
             return;
         }
 
-        c->sockaddr = ngx_palloc(c->pool, socklen);
+        c->sockaddr = ngx_palloc(c->pool, socklen);			/* [analy]	备份客户端地址信息 */
         if (c->sockaddr == NULL) {
             ngx_close_accepted_connection(c);
             return;
         }
 
-        ngx_memcpy(c->sockaddr, sa, socklen);
+        ngx_memcpy(c->sockaddr, sa, socklen);				
 
         log = ngx_palloc(c->pool, sizeof(ngx_log_t));
         if (log == NULL) {
