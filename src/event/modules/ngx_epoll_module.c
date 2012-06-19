@@ -111,8 +111,8 @@ static void *ngx_epoll_create_conf(ngx_cycle_t *cycle);
 static char *ngx_epoll_init_conf(ngx_cycle_t *cycle, void *conf);
 
 static int                  ep = -1;							/* [analy] epoll描述符 */
-static struct epoll_event  *event_list;
-static ngx_uint_t           nevents;
+static struct epoll_event  *event_list;							/* [analy] epoll从内核获取到的事件集合 */
+static ngx_uint_t           nevents;							/* [analy] event_list事件集合列表的大小 */
 
 #if (NGX_HAVE_FILE_AIO)
 
@@ -375,62 +375,67 @@ ngx_epoll_done(ngx_cycle_t *cycle)
     nevents = 0;
 }
 
-
+/*
+ * [analy] 通过调用epoll_ctl将事件添加到epoll时间队列里进行监听处理
+ *		
+ *	参数2： 读写事件
+ *	参数3：	添加的事件类型（目前理解是仅包含ET和LT模式）
+ */
 static ngx_int_t
 ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 {
-    int                  op;
-    uint32_t             events, prev;
-    ngx_event_t         *e;
-    ngx_connection_t    *c;
-    struct epoll_event   ee;
+	int                  op;
+	uint32_t             events, prev;
+	ngx_event_t         *e;
+	ngx_connection_t    *c;
+	struct epoll_event   ee;
 
-    c = ev->data;
+	c = ev->data;
 
-    events = (uint32_t) event;
+	events = (uint32_t) event;
 
-    if (event == NGX_READ_EVENT) {
-        e = c->write;
-        prev = EPOLLOUT;
+	if (event == NGX_READ_EVENT) {
+		e = c->write;
+		prev = EPOLLOUT;
 #if (NGX_READ_EVENT != EPOLLIN)
-        events = EPOLLIN;
+		events = EPOLLIN;
 #endif
 
-    } else {
-        e = c->read;
-        prev = EPOLLIN;
+	} else {
+		e = c->read;
+		prev = EPOLLIN;
 #if (NGX_WRITE_EVENT != EPOLLOUT)
-        events = EPOLLOUT;
+		events = EPOLLOUT;
 #endif
-    }
+	}
 
-    if (e->active) {
-        op = EPOLL_CTL_MOD;
-        events |= prev;
+	if (e->active) {
+		op = EPOLL_CTL_MOD;
+		events |= prev;
 
-    } else {
-        op = EPOLL_CTL_ADD;
-    }
+	} else {
+		op = EPOLL_CTL_ADD;
+	}
 
-    ee.events = events | (uint32_t) flags;
-    ee.data.ptr = (void *) ((uintptr_t) c | ev->instance);
+	ee.events = events | (uint32_t) flags;
+	ee.data.ptr = (void *) ((uintptr_t) c | ev->instance);
 
-    ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
-                   "epoll add event: fd:%d op:%d ev:%08XD",
-                   c->fd, op, ee.events);
+	ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
+		"epoll add event: fd:%d op:%d ev:%08XD",
+		c->fd, op, ee.events);
 
-    if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
-        ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
-                      "epoll_ctl(%d, %d) failed", op, c->fd);
-        return NGX_ERROR;
-    }
+	if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
+		ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
+			"epoll_ctl(%d, %d) failed", op, c->fd);
+		return NGX_ERROR;
+	}
 
-    ev->active = 1;
+	ev->active = 1;
 #if 0
-    ev->oneshot = (flags & NGX_ONESHOT_EVENT) ? 1 : 0;
+	ev->oneshot = (flags & NGX_ONESHOT_EVENT) ? 1 : 0;
 #endif
 
-    return NGX_OK;
+	return NGX_OK;
 }
 
 
@@ -570,16 +575,16 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
 
-    events = epoll_wait(ep, event_list, (int) nevents, timer);
+    events = epoll_wait(ep, event_list, (int) nevents, timer);			/* [analy]	等待事件发生 */
 
     err = (events == -1) ? ngx_errno : 0;
 
-    if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {
+    if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {				/* [analy]	？？？？ */
         ngx_time_update();
     }
 
     if (err) {
-        if (err == NGX_EINTR) {
+        if (err == NGX_EINTR) {						/* [analy]	epoll_wait被信号中断时，检查是否被定时器中断，如果是返回OK */
 
             if (ngx_event_timer_alarm) {
                 ngx_event_timer_alarm = 0;
@@ -596,7 +601,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    if (events == 0) {
+    if (events == 0) {							/* [analy]	超时， 返回 */	
         if (timer != NGX_TIMER_INFINITE) {
             return NGX_OK;
         }
@@ -608,7 +613,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     ngx_mutex_lock(ngx_posted_events_mutex);
 
-    for (i = 0; i < events; i++) {
+    for (i = 0; i < events; i++) {				/* [analy]	对所有发生的事件进行处理 */
         c = event_list[i].data.ptr;
 
         instance = (uintptr_t) c & 1;
@@ -676,7 +681,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 ngx_locked_post_event(rev, queue);
 
             } else {
-                rev->handler(rev);
+                rev->handler(rev);							/* [analy]	此时调用事件注册函数。 i.e. ngx_event_accept */
             }
         }
 

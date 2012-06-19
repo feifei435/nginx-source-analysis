@@ -243,7 +243,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
     delta = ngx_current_msec;
 
-    (void) ngx_process_events(cycle, timer, flags);
+    (void) ngx_process_events(cycle, timer, flags);						/* [analy]	此时调用ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags) */	
 
     delta = ngx_current_msec - delta;
 
@@ -610,6 +610,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 #endif
 
+	/* [analy]	??????????? */
     if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
         return NGX_ERROR;
     }
@@ -645,6 +646,10 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #if !(NGX_WIN32)
 
+	/* 
+	 *	[analy]	timer_resolution指令指定了时间，并且未指定NGX_USE_TIMER_EVENT标记时， 
+	 *			根据 timer_resolution 指令指定的时间设置一个定时器
+	 */
     if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
         struct sigaction  sa;
         struct itimerval  itv;
@@ -670,8 +675,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
     }
 
-    if (ngx_event_flags & NGX_USE_FD_EVENT) {
-        struct rlimit  rlmt;
+    if (ngx_event_flags & NGX_USE_FD_EVENT) {					/* [analy]	epoll模块不使用 */
+        struct rlimit  rlmt;	
 
         if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,

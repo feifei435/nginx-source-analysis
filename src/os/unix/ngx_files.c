@@ -407,7 +407,9 @@ ngx_close_glob(ngx_glob_t *gl)
     globfree(&gl->pglob);
 }
 
-
+/* 
+*	[analy]	尝试锁，如果不能锁定则立即返回
+*/
 ngx_err_t
 ngx_trylock_fd(ngx_fd_t fd)
 {
@@ -427,6 +429,9 @@ ngx_trylock_fd(ngx_fd_t fd)
 }
 
 
+/* 
+ *	[analy]	给文件上记录锁，阻塞版
+ */
 ngx_err_t
 ngx_lock_fd(ngx_fd_t fd)
 {
@@ -445,7 +450,9 @@ ngx_lock_fd(ngx_fd_t fd)
     return 0;
 }
 
-
+/* 
+ *	[analy]	给文件解锁
+ */
 ngx_err_t
 ngx_unlock_fd(ngx_fd_t fd)
 {
