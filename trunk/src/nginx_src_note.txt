@@ -135,8 +135,8 @@ os/unix/ngx_socket.c
 os/unix/ngx_process.h
 os/unix/ngx_process.c
 
-os/unix/ngx_send.c
-os/unix/ngx_recv.c
+os/unix/ngx_send.c									//	发送数据send函数封装
+os/unix/ngx_recv.c									//	接收数据recv函数封装
 
 os/unix/ngx_readv_chain.c
 os/unix/ngx_writev_chain.c
