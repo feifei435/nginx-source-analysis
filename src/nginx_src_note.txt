@@ -95,7 +95,7 @@ os/unix/ngx_alloc.h
 os/unix/ngx_errno.h									//	内部错误代码操作
 os/unix/ngx_errno.c
 
-os/unix/ngx_shmem.h									//	共享内存操作
+os/unix/ngx_shmem.h									//	共享内存操作(匿名存储映射、/dev/null文件映射、SysV共享内存)
 os/unix/ngx_shmem.c
 
 os/unix/ngx_time.h									//	系统时间操作
