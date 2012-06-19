@@ -380,6 +380,8 @@ ngx_epoll_done(ngx_cycle_t *cycle)
  *		
  *	参数2： 读写事件
  *	参数3：	添加的事件类型（目前理解是仅包含ET和LT模式）
+ *	说明：当添加的事件类型为读事件，将检查该描述符的写事件是否在活跃状态，如果是将使用EPOLL_CTL_MOD添加读事件
+ *		  如果对应的事件不存在则使用EPOLL_CTL_ADD重新添加进epoll事件集合中，当添加的事件类型为写事件也同样如此。
  */
 static ngx_int_t
 ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
@@ -418,7 +420,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 	}
 
 	ee.events = events | (uint32_t) flags;
-	ee.data.ptr = (void *) ((uintptr_t) c | ev->instance);
+	ee.data.ptr = (void *) ((uintptr_t) c | ev->instance);		/* [analy] ????????? */
 
 	ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
 		"epoll add event: fd:%d op:%d ev:%08XD",
@@ -430,7 +432,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 		return NGX_ERROR;
 	}
 
-	ev->active = 1;
+	ev->active = 1;			/* [analy] 将此事件active标志激活 */
 #if 0
 	ev->oneshot = (flags & NGX_ONESHOT_EVENT) ? 1 : 0;
 #endif
@@ -503,7 +505,7 @@ ngx_epoll_add_connection(ngx_connection_t *c)
     struct epoll_event  ee;
 
     ee.events = EPOLLIN|EPOLLOUT|EPOLLET;
-    ee.data.ptr = (void *) ((uintptr_t) c | c->read->instance);
+    ee.data.ptr = (void *) ((uintptr_t) c | c->read->instance);				/* [analy] ????????? */
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, c->log, 0,
                    "epoll add connection: fd:%d ev:%08XD", c->fd, ee.events);
@@ -552,7 +554,7 @@ ngx_epoll_del_connection(ngx_connection_t *c, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    c->read->active = 0;
+    c->read->active = 0;				/* [analy] 将读写事件active标志都置为非活跃状态 */
     c->write->active = 0;
 
     return NGX_OK;
@@ -613,7 +615,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     ngx_mutex_lock(ngx_posted_events_mutex);
 
-    for (i = 0; i < events; i++) {				/* [analy]	对所有发生的事件进行处理 */
+    for (i = 0; i < events; i++) {				/* [analy]	循环处理所有发生的事件 */
         c = event_list[i].data.ptr;
 
         instance = (uintptr_t) c & 1;
@@ -633,7 +635,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
             continue;
         }
 
-        revents = event_list[i].events;
+        revents = event_list[i].events;			/* [analy]	获取发生的事件 */
 
         ngx_log_debug3(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                        "epoll: fd:%d ev:%04XD d:%p",

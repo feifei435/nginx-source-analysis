@@ -461,6 +461,9 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define ngx_del_timer        ngx_event_del_timer
 
 
+/* 
+ *	[analy]	定义IO操作模块的宏定义，由于ngx_io -> ngx_os_io -> ngx_linux_io
+ */
 extern ngx_os_io_t  ngx_io;
 
 #define ngx_recv             ngx_io.recv
