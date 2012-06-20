@@ -104,6 +104,12 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_accepted, 1);
 #endif
 
+
+		/*	
+		 *	????????????????
+		 *	表明，当已使用的连接数占到在nginx.conf里配置的worker_connections总数的7/8以上时，
+		 *	ngx_accept_disabled为正，这时本worker将ngx_accept_disabled减1，而且本次不再处理新连接
+		 */
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
@@ -291,28 +297,33 @@ ngx_event_accept(ngx_event_t *ev)
 }
 
 
+/* 
+ *	[analy]	尝试对listen->fd进行上锁，如果获取锁成功，检查是否。。。。。。；将所有listen->fd的读事件加入到事件队列中，此时当前进程将持有此锁的特权，仅有此进程能处理连接请求
+ *			如果获取锁失败，检查之前是否已经持有此锁。当持有锁时，删除掉所有listen->fd在事件队列中的读事件
+ */
 ngx_int_t
 ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 {
-    if (ngx_shmtx_trylock(&ngx_accept_mutex)) {
+
+    if (ngx_shmtx_trylock(&ngx_accept_mutex)) {							/* [analy]	尝试对accpet文件进行上锁，上锁成功后进行 */
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                        "accept mutex locked");
 
-        if (ngx_accept_mutex_held
+        if (ngx_accept_mutex_held										/* [analy]	????????????不知道什么情况下会发生 */
             && ngx_accept_events == 0
             && !(ngx_event_flags & NGX_USE_RTSIG_EVENT))
         {
             return NGX_OK;
         }
 
-        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {
+        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {				/* [analy]	加入所有的listen->fd的读事件加入到事件队列中；此时如果有读事件产生， 将调用accept处理；这样只有该进程能监听到accept操作 */
             ngx_shmtx_unlock(&ngx_accept_mutex);
             return NGX_ERROR;
         }
 
-        ngx_accept_events = 0;
-        ngx_accept_mutex_held = 1;
+        ngx_accept_events = 0;											
+        ngx_accept_mutex_held = 1;										
 
         return NGX_OK;
     }
@@ -320,7 +331,10 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "accept mutex lock failed: %ui", ngx_accept_mutex_held);
 
-    if (ngx_accept_mutex_held) {
+	/* [analy]	如果获得锁失败，而且有锁标志， 则将listen->fd从事件队列中删除。 
+				此处为什么将listen->fd事件删除掉，猜测：删除掉的目的是为了让别的进程有机会获取此listen->fd
+	*/
+    if (ngx_accept_mutex_held) {										
         if (ngx_disable_accept_events(cycle) == NGX_ERROR) {
             return NGX_ERROR;
         }
@@ -331,7 +345,9 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	将所有listen的fd加入到事件处理队列中
+ */
 static ngx_int_t
 ngx_enable_accept_events(ngx_cycle_t *cycle)
 {
@@ -360,7 +376,9 @@ ngx_enable_accept_events(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	将所有listen的fd的读事件从事件队列中删掉
+ */
 static ngx_int_t
 ngx_disable_accept_events(ngx_cycle_t *cycle)
 {
@@ -373,7 +391,7 @@ ngx_disable_accept_events(ngx_cycle_t *cycle)
 
         c = ls[i].connection;
 
-        if (!c->read->active) {
+        if (!c->read->active) {			/* [analy]	此连接的读事件如果非活跃状态，继续下一个 */
             continue;
         }
 
@@ -383,7 +401,7 @@ ngx_disable_accept_events(ngx_cycle_t *cycle)
             }
 
         } else {
-            if (ngx_del_event(c->read, NGX_READ_EVENT, NGX_DISABLE_EVENT)
+            if (ngx_del_event(c->read, NGX_READ_EVENT, NGX_DISABLE_EVENT)		/* [analy]	删掉listen->fd的读事件 */
                 == NGX_ERROR)
             {
                 return NGX_ERROR;
