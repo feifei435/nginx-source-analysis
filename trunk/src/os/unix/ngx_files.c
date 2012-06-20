@@ -408,8 +408,8 @@ ngx_close_glob(ngx_glob_t *gl)
 }
 
 /* 
-*	[analy]	尝试锁，如果不能锁定则立即返回
-*/
+ *	[analy]	尝试上独享锁，如果不能锁定则立即返回
+ */
 ngx_err_t
 ngx_trylock_fd(ngx_fd_t fd)
 {

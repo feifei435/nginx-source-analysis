@@ -10,14 +10,17 @@
 #include <ngx_event.h>
 
 
-ngx_thread_volatile ngx_event_t  *ngx_posted_accept_events;
-ngx_thread_volatile ngx_event_t  *ngx_posted_events;
+ngx_thread_volatile ngx_event_t  *ngx_posted_accept_events;				/* [analy]   accept事件队列，当有此标记时（NGX_POST_EVENTS）需要将accept延迟处理，而放到此队列中 */
+ngx_thread_volatile ngx_event_t  *ngx_posted_events;					/* [analy]   正常的读写事件队列（同ngx_posted_accept_events）   */
 
 #if (NGX_THREADS)
 ngx_mutex_t                      *ngx_posted_events_mutex;
 #endif
 
 
+/* 
+ *	[analy]   循环处理延迟队列中的事件， 并将事件从延迟队列中删除
+ */
 void
 ngx_event_process_posted(ngx_cycle_t *cycle,
     ngx_thread_volatile ngx_event_t **posted)

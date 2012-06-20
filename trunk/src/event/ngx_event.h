@@ -40,7 +40,7 @@ struct ngx_event_s {
 
     unsigned         write:1;
 
-    unsigned         accept:1;
+    unsigned         accept:1;							/* [analy]   标识当前事件类型是否为监听套接字， 如果是=1(在ngx_event_process_init设置) */
 
     /* used to detect the stale events in kqueue, rtsig, and epoll */
     unsigned         instance:1;
@@ -49,7 +49,7 @@ struct ngx_event_s {
      * the event was passed or would be passed to a kernel;
      * in aio mode - operation was posted.
      */
-    unsigned         active:1;
+    unsigned         active:1;							/* [analy]   标识此事件是否已经送进epoll事件处理数组中，=1（已经加入） */
 
     unsigned         disabled:1;
 
@@ -164,7 +164,7 @@ struct ngx_event_s {
 #endif
 
     /* the links of the posted queue */
-    ngx_event_t     *next;
+    ngx_event_t     *next;								/* [analy] 延迟处理队列 ngx_posted_accept_events 和 ngx_posted_events 使用的链接指针 */
     ngx_event_t    **prev;
 
 

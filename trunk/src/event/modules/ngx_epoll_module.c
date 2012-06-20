@@ -561,6 +561,12 @@ ngx_epoll_del_connection(ngx_connection_t *c, ngx_uint_t flags)
 }
 
 
+/*
+	简单了说，就是同一时刻只允许一个nginx worker在自己的epoll中处理监听句柄。它的负载均衡也很简单，当达到最大connection的7/8时，
+	本worker不会去试图拿accept锁，也不会去处理新连接，这样其他nginx worker进程就更有机会去处理监听句柄，建立新连接了。而且，由于timeout的设定，
+	使得没有拿到锁的worker进程，去拿锁的频繁更高。 
+*/
+
 static ngx_int_t
 ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 {
@@ -615,7 +621,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     ngx_mutex_lock(ngx_posted_events_mutex);
 
-    for (i = 0; i < events; i++) {				/* [analy]	循环处理所有发生的事件 */
+    for (i = 0; i < events; i++) {							/* [analy]	循环处理所有发生的事件 */
         c = event_list[i].data.ptr;
 
         instance = (uintptr_t) c & 1;

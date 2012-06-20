@@ -198,6 +198,11 @@ ngx_shmtx_wakeup(ngx_shmtx_t *mtx)
 #else
 
 
+/* 
+ *	[analy]	重新创建ngx_shmtx_t对象
+ *			将ngx_shmtx_t mtx -> name	赋值参数3
+ *						  mtx -> fd		参数3所指定的文件
+ */
 ngx_int_t
 ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
 {
@@ -211,6 +216,7 @@ ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
         ngx_shmtx_destory(mtx);
     }
 
+	/*	[analy]	打开文件，赋值给mtx */
     mtx->fd = ngx_open_file(name, NGX_FILE_RDWR, NGX_FILE_CREATE_OR_OPEN,
                             NGX_FILE_DEFAULT_ACCESS);
 
@@ -220,6 +226,7 @@ ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
         return NGX_ERROR;
     }
 
+	/*	[analy]	unlink文件，当文件被close()时从磁盘上删掉 */
     if (ngx_delete_file(name) == NGX_FILE_ERROR) {
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, ngx_errno,
                       ngx_delete_file_n " \"%s\" failed", name);
@@ -242,7 +249,9 @@ ngx_shmtx_destory(ngx_shmtx_t *mtx)
     }
 }
 
-
+/* 
+ *	[analy]	共享内存尝试上锁，使用文件记录锁（非阻塞版）
+ */
 ngx_uint_t
 ngx_shmtx_trylock(ngx_shmtx_t *mtx)
 {
@@ -289,7 +298,7 @@ ngx_shmtx_lock(ngx_shmtx_t *mtx)
 }
 
 /* 
- *	[analy]	共享内存解锁
+ *	[analy]	共享内存解锁， 使用文件记录锁
  */
 void
 ngx_shmtx_unlock(ngx_shmtx_t *mtx)

@@ -50,9 +50,9 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
 ngx_shmtx_t           ngx_accept_mutex;
-ngx_uint_t            ngx_use_accept_mutex;				/* [analy]	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开。 */
+ngx_uint_t            ngx_use_accept_mutex;				/* [analy]	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开 */
 ngx_uint_t            ngx_accept_events;
-ngx_uint_t            ngx_accept_mutex_held;
+ngx_uint_t            ngx_accept_mutex_held;			/* [analy]	是否获得了锁, 持有锁时=1，否则相反 */
 ngx_msec_t            ngx_accept_mutex_delay;
 ngx_int_t             ngx_accept_disabled;
 ngx_file_t            ngx_accept_mutex_lock_file;
@@ -195,7 +195,10 @@ ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+/*
+	获得锁以后，ngx_accept_mutex_held变量被设为true, 会在调用ngx_process_epoll_event的时候把标志位设置成 NGX_POST_EVENTS，这个使epoll在接受到事件的时候，
+	暂时不处理，而是放到一个队列中暂时保存起来，等到释放了accept锁之后才处理这些事件，提高效率。 
+*/
 void
 ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {
@@ -219,19 +222,38 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 #endif
     }
 
-    if (ngx_use_accept_mutex) {
+	/* 
+	 *	[analy] 系统使用accpte_mutex锁来解决惊群问题，对listen->fd进行交替accept操作时 
+	 */
+    if (ngx_use_accept_mutex) {			
+		
+		/* 
+		 *	[analy] 	ngx_accept_disabled表示此时满负荷，没必要再处理新连接了，我们在nginx.conf曾经配置了每一个nginx worker进程能够处理的最大连接数，
+		 *				当达到最大数的7/8时，ngx_accept_disabled为正，说明本nginx worker进程非常繁忙，将不再去处理新连接，这也是个简单的负载均衡 
+		 */
         if (ngx_accept_disabled > 0) {
             ngx_accept_disabled--;
 
         } else {
-            if (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) {
+
+			/* 
+			 *	[analy] 拿到accept锁后将flags=NGX_POST_EVENTS， 这个使标记epoll在接收到事件的时候， accept事件暂时不处理，
+			 *			而是放到一个队列中暂时保存起来(ngx_posted_accept_events链表中)，等到释放了accept锁之后才处理这些事件，提高效率	
+			 *			epollin|epollout事件都放到ngx_posted_events链表中  
+			 */
+            if (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) {		
                 return;
             }
 
-            if (ngx_accept_mutex_held) {
+            if (ngx_accept_mutex_held) {					/*	[analy] 持有锁，设置标记NGX_POST_EVENTS */
                 flags |= NGX_POST_EVENTS;
 
-            } else {
+            } else {										
+				
+				/* 
+				 *	[analy] 拿不到锁，也就不会处理监听的句柄，这个timer实际是传给epoll_wait的超时时间，
+				 *			修改为最大ngx_accept_mutex_delay意味着epoll_wait更短的超时返回，以免新连接长时间没有得到处理   
+				 */
                 if (timer == NGX_TIMER_INFINITE
                     || timer > ngx_accept_mutex_delay)
                 {
@@ -250,14 +272,18 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "timer delta: %M", delta);
 
+
+	/* [analy] 如果ngx_posted_accept_events链表有数据，就开始accept建立新连接 */
     if (ngx_posted_accept_events) {
         ngx_event_process_posted(cycle, &ngx_posted_accept_events);
     }
 
+	/* [analy] 如果持有accept锁，将此锁释放（问题：为什么此时释放锁，而不再处理accept之前释放呢？） */
     if (ngx_accept_mutex_held) {
         ngx_shmtx_unlock(&ngx_accept_mutex);
     }
 
+	/* [analy] ???????????? */
     if (delta) {
         ngx_event_expire_timers();
     }
@@ -265,6 +291,8 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "posted events %p", ngx_posted_events);
 
+
+	/* [analy] 如果ngx_posted_events链表有数据，开始处理所有正常读写事件 */
     if (ngx_posted_events) {
         if (ngx_threaded) {
             ngx_wakeup_worker_thread(cycle);
@@ -526,6 +554,9 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_accept_mutex_ptr = (ngx_atomic_t *) shared;
     ngx_accept_mutex.spin = (ngx_uint_t) -1;
 
+	/* [analy]	设置ngx_accept_mutex="nginx.lock.accept", cycle->lock_file被unlink后在目录下已经被移除，
+				但还存在磁盘中当调用close()时才会被真正删掉 
+	*/
     if (ngx_shmtx_create(&ngx_accept_mutex, (ngx_shmtx_sh_t *) shared,
                          cycle->lock_file.data)
         != NGX_OK)
