@@ -104,23 +104,23 @@ typedef struct {
 
 
 typedef enum {
-    NGX_HTTP_POST_READ_PHASE = 0,
+    NGX_HTTP_POST_READ_PHASE = 0,						/* [analy]	读取请求阶段 */
 
-    NGX_HTTP_SERVER_REWRITE_PHASE,
+    NGX_HTTP_SERVER_REWRITE_PHASE,						/* [analy]	URI转换阶段 */
 
-    NGX_HTTP_FIND_CONFIG_PHASE,
-    NGX_HTTP_REWRITE_PHASE,
-    NGX_HTTP_POST_REWRITE_PHASE,
+    NGX_HTTP_FIND_CONFIG_PHASE,							/* [analy]	查找相应的配置来执行阶段 */
+    NGX_HTTP_REWRITE_PHASE,								/* [analy]	URI转换阶段（不太清楚此处） */
+    NGX_HTTP_POST_REWRITE_PHASE,						/* [analy]	对转换后的URL结果进行处理的阶段 */
 
-    NGX_HTTP_PREACCESS_PHASE,
+    NGX_HTTP_PREACCESS_PHASE,							/* [analy]	权限检查准备阶段 */
 
-    NGX_HTTP_ACCESS_PHASE,
-    NGX_HTTP_POST_ACCESS_PHASE,
+    NGX_HTTP_ACCESS_PHASE,								/* [analy]	权限检查阶段 */
+    NGX_HTTP_POST_ACCESS_PHASE,							/* [analy]	对权限检查结果进行处理阶段 */
 
-    NGX_HTTP_TRY_FILES_PHASE,
-    NGX_HTTP_CONTENT_PHASE,
+    NGX_HTTP_TRY_FILES_PHASE,							/* [analy]	处理配置中的try_files阶段 */
+    NGX_HTTP_CONTENT_PHASE,								/* [analy]	处理生成返回数据阶段(此处认为不太细，当然有filter也可以忽略) */
 
-    NGX_HTTP_LOG_PHASE
+    NGX_HTTP_LOG_PHASE									/* [analy]	记录日志处理阶段，具体说明应当是请求完成后，关闭请求时处理 */
 } ngx_http_phases;
 
 typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
