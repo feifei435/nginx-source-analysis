@@ -38,9 +38,9 @@ typedef struct {
 
 #define NGX_HTTP_MODULE           0x50545448   /* "HTTP" */
 
-#define NGX_HTTP_MAIN_CONF        0x02000000
-#define NGX_HTTP_SRV_CONF         0x04000000
-#define NGX_HTTP_LOC_CONF         0x08000000
+#define NGX_HTTP_MAIN_CONF        0x02000000		/* [analy]	指令使用区域为http-block内 */			
+#define NGX_HTTP_SRV_CONF         0x04000000		/* [analy]	指令使用区域为http->server-block内 */
+#define NGX_HTTP_LOC_CONF         0x08000000		/* [analy]	指令使用区域为http->server->location-block内 */
 #define NGX_HTTP_UPS_CONF         0x10000000
 #define NGX_HTTP_SIF_CONF         0x20000000
 #define NGX_HTTP_LIF_CONF         0x40000000
