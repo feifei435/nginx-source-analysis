@@ -405,7 +405,7 @@ extern ngx_event_actions_t   ngx_event_actions;
 #define NGX_READ_EVENT     EPOLLIN
 #define NGX_WRITE_EVENT    EPOLLOUT
 
-#define NGX_LEVEL_EVENT    0
+#define NGX_LEVEL_EVENT    0							/* [analy]	level Triggered, 系统默认使用水平触发所以此处为0   */
 #define NGX_CLEAR_EVENT    EPOLLET						/* [analy]	Edge Triggered   */
 #define NGX_ONESHOT_EVENT  0x70000000
 #if 0

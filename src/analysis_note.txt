@@ -187,6 +187,10 @@ worker进程初始化时，调用所有模块的init_process(ngx_event_process_init), 根据init
     /dev/poll - 高效的方法，使用于 Solaris 7 11/99+, HP/UX 11.22+ (eventport), IRIX 6.5.15+ 和 Tru64 UNIX 5.1A+.
     eventport - 高效的方法，使用于 Solaris 10. 为了防止出现内核崩溃的问题， 有必要安装 这个 安全补丁。 
 
+	
+ngx_event_accept(有请求来到)
+	|__ngx_http_init_connection(初始化连接，加入读事件到epoll中)
+		|__ngx_http_init_request(此连接有读事件到来时调用)	
    
    
    

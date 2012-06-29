@@ -107,8 +107,8 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
     enum {
         sw_start = 0,
         sw_method,
-        sw_spaces_before_uri,
-        sw_schema,
+        sw_spaces_before_uri,			//	准备解析URI，通常有两种情况
+        sw_schema,						//	URI是这种模式时(http://www.baidu.com，其中http是scheme)执行此流程
         sw_schema_slash,
         sw_schema_slash_slash,
         sw_host_start,
@@ -153,15 +153,15 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 return NGX_HTTP_PARSE_INVALID_METHOD;
             }
 
-            state = sw_method;
+            state = sw_method;					/* [analy]	说明下一步的解析状态 */
             break;
 
         case sw_method:
-            if (ch == ' ') {
+            if (ch == ' ') {					/* [analy]	循环几次后遇到空格说明下一步该解析URL，此时先将method解析 */		
                 r->method_end = p - 1;
                 m = r->request_start;
 
-                switch (p - m) {
+                switch (p - m) {				/* [analy]	得到方法的长度，通过长度来得到具体不同的方法，然后给request的method赋值 */
 
                 case 3:
                     if (ngx_str3_cmp(m, 'G', 'E', 'T', ' ')) {
@@ -263,7 +263,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                     break;
                 }
 
-                state = sw_spaces_before_uri;
+                state = sw_spaces_before_uri;								/* [analy]	下一步准备解析URI */
                 break;
             }
 
@@ -274,7 +274,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             break;
 
         /* space* before URI */
-        case sw_spaces_before_uri:
+        case sw_spaces_before_uri:								/* [analy]	这里由于uri会有两种情况，一种是带schema的，一种是直接相对路径的(可以看前面的uri格式). */
 
             if (ch == '/') {
                 r->uri_start = p;
@@ -282,14 +282,14 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 break;
             }
 
-            c = (u_char) (ch | 0x20);
+            c = (u_char) (ch | 0x20);	/* [analy]	大写转换为小写 */
             if (c >= 'a' && c <= 'z') {
                 r->schema_start = p;
                 state = sw_schema;
                 break;
             }
 
-            switch (ch) {
+            switch (ch) {				/* [analy]	空格的话继续这个状态 */ 
             case ' ':
                 break;
             default:
@@ -297,13 +297,14 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             }
             break;
 
-        case sw_schema:
+        case sw_schema:					/* [analy]	是字母时直接跳过（http://www.baidu.com），当遇到":"时下步执行 sw_schema_slash 状态 */
 
-            c = (u_char) (ch | 0x20);
+            c = (u_char) (ch | 0x20);	
             if (c >= 'a' && c <= 'z') {
                 break;
             }
 
+			/* [analy]	到这里说明schema已经结束, 这里必须是":"，如果不是冒号则直接返回错误 */
             switch (ch) {
             case ':':
                 r->schema_end = p;
@@ -314,7 +315,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             }
             break;
 
-        case sw_schema_slash:
+        case sw_schema_slash:							/* [analy]  （http://www.baidu.com）遇到第一个"/",进入sw_schema_slash_slash状态 */
             switch (ch) {
             case '/':
                 state = sw_schema_slash_slash;
@@ -324,7 +325,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             }
             break;
 
-        case sw_schema_slash_slash:
+        case sw_schema_slash_slash:						/* [analy]  （http://www.baidu.com）遇到第二个"/",进入sw_host_start状态 */
             switch (ch) {
             case '/':
                 state = sw_host_start;
@@ -337,8 +338,8 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         case sw_host_start:
 
             r->host_start = p;
-
-            if (ch == '[') {
+	
+            if (ch == '[') {					/* [analy]  ？？？？？？？？？？ */
                 state = sw_host_ip_literal;
                 break;
             }
@@ -366,9 +367,9 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 
             switch (ch) {
             case ':':
-                state = sw_port;
+                state = sw_port;				/* [analy]  例如：http://www.baidu.com:8080，host后边有":"则进入sw_port状态 */
                 break;
-            case '/':
+            case '/':							/* [analy]  例如：http://www.baidu.com/abc/def，host后边有"/"则进入sw_after_slash_in_uri状态,并重新设置uri_start地址 */
                 r->uri_start = p;
                 state = sw_after_slash_in_uri;
                 break;
@@ -432,13 +433,14 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 break;
             }
 
+			
             switch (ch) {
-            case '/':
+            case '/':				/* [analy]  如果紧跟着"/"，则说明后面是uri，因此进入uri解析，并设置port_end  */
                 r->port_end = p;
                 r->uri_start = p;
                 state = sw_after_slash_in_uri;
                 break;
-            case ' ':
+            case ' ':				/* [analy]  如果是空格则设置port end，并进入http_09状态 */
                 r->port_end = p;
                 /*
                  * use single "/" from request line to preserve pointers,
@@ -740,12 +742,12 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 
         /* minor HTTP version or end of request line */
         case sw_minor_digit:
-            if (ch == CR) {
+            if (ch == CR) {				//	如果是回车，则进入almost_done,然后等待最后一个换行
                 state = sw_almost_done;
                 break;
             }
 
-            if (ch == LF) {
+            if (ch == LF) {				//	如果是换行则说明request-line解析完毕
                 goto done;
             }
 

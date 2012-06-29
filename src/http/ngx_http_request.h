@@ -231,7 +231,9 @@ typedef struct {
     unsigned                          konqueror:1;
 } ngx_http_headers_in_t;
 
-
+/* 
+ *	[analy]	定义了所有可以设置的HTTP Response Header信息, 这里并不包含所有HTTP头信息 
+ */	
 typedef struct {
     ngx_list_t                        headers;
 
@@ -264,7 +266,7 @@ typedef struct {
     off_t                             content_length_n;
     time_t                            date_time;
     time_t                            last_modified_time;
-} ngx_http_headers_out_t;
+} ngx_http_headers_out_t;				
 
 
 typedef void (*ngx_http_client_body_handler_pt)(ngx_http_request_t *r);
@@ -377,16 +379,16 @@ struct ngx_http_request_s {
     time_t                            start_sec;
     ngx_msec_t                        start_msec;
 
-    ngx_uint_t                        method;
-    ngx_uint_t                        http_version;
+    ngx_uint_t                        method;						/* [analy]	请求行中的method值（NGX_HTTP_GET、NGX_HTTP_PUT、NGX_HTTP_POST） */
+    ngx_uint_t                        http_version;					/* [analy]	请求行中的httpVsersion */
 
-    ngx_str_t                         request_line;
+    ngx_str_t                         request_line;					/* [analy]	请求行中的所有字符串（request_line.data->request_start） */
     ngx_str_t                         uri;
     ngx_str_t                         args;
     ngx_str_t                         exten;
     ngx_str_t                         unparsed_uri;
 
-    ngx_str_t                         method_name;
+    ngx_str_t                         method_name;					/* [analy]	请求行中的method字符串值（GET、PUT、POST） */
     ngx_str_t                         http_protocol;
 
     ngx_chain_t                      *out;
@@ -539,19 +541,19 @@ struct ngx_http_request_s {
      * via ngx_http_ephemeral_t
      */
 
-    u_char                           *uri_start;
+    u_char                           *uri_start;					/* [analy]	uri开始地址 */
     u_char                           *uri_end;
     u_char                           *uri_ext;
     u_char                           *args_start;
-    u_char                           *request_start;
+    u_char                           *request_start;				/* [analy]	请求的开始地址-> "GET .. ... .. " */
     u_char                           *request_end;
-    u_char                           *method_end;
-    u_char                           *schema_start;
-    u_char                           *schema_end;
-    u_char                           *host_start;
-    u_char                           *host_end;
-    u_char                           *port_start;
-    u_char                           *port_end;
+    u_char                           *method_end;					/* [analy]	method的结束地址-> "GET URL VER", 字符串"GET"尾部 */
+    u_char                           *schema_start;					/* [analy]	schema开始地址（例如：http://www.baidu.com中的http开始处） */
+    u_char                           *schema_end;					/* [analy]	schema结束地址（例如：http://www.baidu.com中的http尾处） */
+    u_char                           *host_start;					/* [analy]	设置host开始地址(www.baidu.com开始位置) */
+    u_char                           *host_end;						/* [analy]	设置host结束地址(www.baidu.com结束位置) */
+    u_char                           *port_start;					/* [analy]	设置port开始地址(http://www.baidu.com:80/在80开始位置) */
+    u_char                           *port_end;						/* [analy]	设置port结束地址(http://www.baidu.com:80/在80结束位置) */
 
     unsigned                          http_minor:16;
     unsigned                          http_major:16;

@@ -113,7 +113,7 @@ ngx_event_accept(ngx_event_t *ev)
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
-        c = ngx_get_connection(s, ev->log);								/* [analy]	为客户端描述符获取一个新的连接 */	
+        c = ngx_get_connection(s, ev->log);								/* [analy]	在连接池中为客户端描述符获取一个新的连接 */	
 
         if (c == NULL) {
             if (ngx_close_socket(s) == -1) {
@@ -128,13 +128,13 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_active, 1);
 #endif
 
-        c->pool = ngx_create_pool(ls->pool_size, ev->log);
+        c->pool = ngx_create_pool(ls->pool_size, ev->log);		/* [analy]	创建内存池 */
         if (c->pool == NULL) {
             ngx_close_accepted_connection(c);
             return;
         }
 
-        c->sockaddr = ngx_palloc(c->pool, socklen);			/* [analy]	备份客户端地址信息 */
+        c->sockaddr = ngx_palloc(c->pool, socklen);				/* [analy]	备份客户端地址信息 */
         if (c->sockaddr == NULL) {
             ngx_close_accepted_connection(c);
             return;
@@ -142,7 +142,7 @@ ngx_event_accept(ngx_event_t *ev)
 
         ngx_memcpy(c->sockaddr, sa, socklen);				
 
-        log = ngx_palloc(c->pool, sizeof(ngx_log_t));
+        log = ngx_palloc(c->pool, sizeof(ngx_log_t));			/* [analy]	为日志分配空间 */
         if (log == NULL) {
             ngx_close_accepted_connection(c);
             return;
@@ -171,7 +171,7 @@ ngx_event_accept(ngx_event_t *ev)
             }
         }
 
-        *log = ls->log;
+        *log = ls->log;											/* [analy]	初始化从连接池取出来的连接 */
 
         c->recv = ngx_recv;
         c->send = ngx_send;
@@ -277,7 +277,8 @@ ngx_event_accept(ngx_event_t *ev)
         ngx_log_debug3(NGX_LOG_DEBUG_EVENT, log, 0,
                        "*%d accept: %V fd:%d", c->number, &c->addr_text, s);
 
-        if (ngx_add_conn && (ngx_event_flags & NGX_USE_EPOLL_EVENT) == 0) {
+		/* [analy]	如果不是epoll的话，就调用ngx_add_conn */
+        if (ngx_add_conn && (ngx_event_flags & NGX_USE_EPOLL_EVENT) == 0) {			
             if (ngx_add_conn(c) == NGX_ERROR) {
                 ngx_close_accepted_connection(c);
                 return;

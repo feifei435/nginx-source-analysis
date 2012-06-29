@@ -138,7 +138,7 @@ ngx_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
         ngx_log_debug3(NGX_LOG_DEBUG_EVENT, c->log, 0,
                        "recv: fd:%d %d of %d", c->fd, n, size);
 
-        if (n == 0) {
+        if (n == 0) {												/* [analy]	返回0，对方已经关闭 */
             rev->ready = 0;
             rev->eof = 1;
             return n;

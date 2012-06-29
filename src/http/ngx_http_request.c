@@ -203,17 +203,19 @@ ngx_http_init_connection(ngx_connection_t *c)
     c->log_error = NGX_ERROR_INFO;
 
     rev = c->read;
-    rev->handler = ngx_http_init_request;
+    rev->handler = ngx_http_init_request;			/* [analy] 设置数据可读时，调用的handler (ngx_process_events_and_timers --> ngx_process_events(ngx_epoll_process_events)) */	
+
     c->write->handler = ngx_http_empty_handler;
 
 #if (NGX_STAT_STUB)
     (void) ngx_atomic_fetch_add(ngx_stat_reading, 1);
 #endif
 
+	/* [analy] 如果接收准备好了，则直接调用ngx_http_init_request */
     if (rev->ready) {
         /* the deferred accept(), rtsig, aio, iocp */
 
-        if (ngx_use_accept_mutex) {
+        if (ngx_use_accept_mutex) {			/* [analy] 如果使用了mutex锁，则post 这个event，然后返回 */
             ngx_post_event(rev, &ngx_posted_events);
             return;
         }
@@ -222,8 +224,11 @@ ngx_http_init_connection(ngx_connection_t *c)
         return;
     }
 
+	/* [analy]	添加定时器	*/
     ngx_add_timer(rev, c->listening->post_accept_timeout);
 
+
+	/* [analy]	加入读事件到epoll事件监控队列中	*/
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
 #if (NGX_STAT_STUB)
         (void) ngx_atomic_fetch_add(ngx_stat_reading, -1);
