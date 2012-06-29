@@ -303,16 +303,18 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     }
 }
 
-
+/* 
+ *	[analy]	加入读事件到epoll事件处理队列中（根据触发模式有不通的处理方式）
+ */
 ngx_int_t
 ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
 {
-    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {
+    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {						/* [analy]	使用edge triggered */
 
         /* kqueue, epoll */
 
-        if (!rev->active && !rev->ready) {
-            if (ngx_add_event(rev, NGX_READ_EVENT, NGX_CLEAR_EVENT)
+        if (!rev->active && !rev->ready) {								/* [analy]	当此事件处于非活跃状态时， ready状态暂不清楚？？？？？ */
+            if (ngx_add_event(rev, NGX_READ_EVENT, NGX_CLEAR_EVENT)		/* [analy]	调用ngx_epoll_add_event()， 当使用epoll时，宏NGX_CLEAR_EVENT被定义成 EPOLLET */
                 == NGX_ERROR)
             {
                 return NGX_ERROR;
@@ -321,7 +323,7 @@ ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
 
         return NGX_OK;
 
-    } else if (ngx_event_flags & NGX_USE_LEVEL_EVENT) {
+    } else if (ngx_event_flags & NGX_USE_LEVEL_EVENT) {					/* [analy]	使用level triggered */
 
         /* select, poll, /dev/poll */
 

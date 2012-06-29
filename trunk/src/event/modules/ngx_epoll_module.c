@@ -689,7 +689,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 ngx_locked_post_event(rev, queue);
 
             } else {
-                rev->handler(rev);							/* [analy]	此时调用事件注册函数。 i.e. ngx_event_accept */
+                rev->handler(rev);							/* [analy]	此时调用事件注册函数。 i.e. ngx_event_accept， ngx_http_init_request */
             }
         }
 
