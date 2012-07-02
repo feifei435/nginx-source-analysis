@@ -110,7 +110,7 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
 struct ngx_module_s {
-    ngx_uint_t            ctx_index;							/* [analy]	分类的模块计数器   */
+    ngx_uint_t            ctx_index;							/* [analy]	分类的模块计数器(本类型中的计数)   */
     ngx_uint_t            index;								/* [analy]	模块计数器   */
 	
     ngx_uint_t            spare0;

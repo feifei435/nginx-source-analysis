@@ -46,7 +46,7 @@ struct ngx_buf_s {
     unsigned         in_file:1;
     unsigned         flush:1;
     unsigned         sync:1;
-    unsigned         last_buf:1;
+    unsigned         last_buf:1;					//	此字段是一个位域，设为1表示此缓冲区是链表中最后一个元素，设置为0说明后边还有元素
     unsigned         last_in_chain:1;
 
     unsigned         last_shadow:1;
