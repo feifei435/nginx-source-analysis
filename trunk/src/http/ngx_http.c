@@ -185,6 +185,63 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * of the all http modules
      */
 
+	/*
+		"create_main_conf" handler将被调用：
+				ngx_http_perl_create_main_conf,        
+				ngx_http_charset_create_main_conf,     
+				ngx_http_degradation_create_main_conf, 
+				ngx_http_geoip_create_conf,            
+				ngx_http_log_create_main_conf,         
+				ngx_http_map_create_conf,              
+				ngx_http_ssi_create_main_conf,         
+				ngx_http_xslt_filter_create_main_conf, 
+				ngx_http_core_create_main_conf,        
+				ngx_http_upstream_create_main_conf,    
+				ngx_mail_core_create_main_conf,  
+
+		"create_srv_conf" handler将被调用：
+				ngx_http_ssl_create_srv_conf,          
+				ngx_http_upstream_keepalive_create_conf
+				ngx_http_core_create_srv_conf,    
+
+		"create_loc_conf" handler将被调用：
+				ngx_http_perl_create_loc_conf,         
+				ngx_http_access_create_loc_conf,       
+				ngx_http_addition_create_conf,         
+				ngx_http_auth_basic_create_loc_conf,   
+				ngx_http_autoindex_create_loc_conf,    
+				ngx_http_browser_create_conf,          
+				ngx_http_charset_create_loc_conf,      
+				ngx_http_dav_create_loc_conf,          
+				ngx_http_degradation_create_loc_conf,  
+				ngx_http_fastcgi_create_loc_conf,      
+				ngx_http_gzip_create_conf,             
+				ngx_http_gzip_static_create_conf,      
+				ngx_http_headers_create_conf,          
+				ngx_http_image_filter_create_conf,     
+				ngx_http_index_create_loc_conf,        
+				ngx_http_limit_conn_create_conf,       
+				ngx_http_limit_req_create_conf,        
+				ngx_http_log_create_loc_conf,          
+				ngx_http_memcached_create_loc_conf,    
+				ngx_http_mp4_create_conf,     
+				ngx_http_proxy_create_loc_conf,        
+				ngx_http_random_index_create_loc_conf, 
+				ngx_http_realip_create_loc_conf,       
+				ngx_http_referer_create_conf,          
+				ngx_http_rewrite_create_loc_conf,      
+				ngx_http_scgi_create_loc_conf,         
+				ngx_http_secure_link_create_conf,      
+				ngx_http_ssi_create_loc_conf,          
+				ngx_http_sub_create_conf,              
+				ngx_http_userid_create_conf,           
+				ngx_http_uwsgi_create_loc_conf,        
+				ngx_http_xslt_filter_create_conf,      
+				ngx_http_copy_filter_create_conf,      
+				ngx_http_core_create_loc_conf,         
+				ngx_http_mysql_test_create_loc_conf,  
+	*/
+
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -218,6 +275,22 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     pcf = *cf;
     cf->ctx = ctx;
 
+	/*
+		"preconfiguration" handler将被调用：
+				ngx_http_perl_preconfiguration,        
+				ngx_http_browser_add_variable,         
+				ngx_http_fastcgi_add_variables,        
+				ngx_http_geoip_add_variables,          
+				ngx_http_gzip_add_variables,           
+				ngx_http_proxy_add_variables,          
+				ngx_http_secure_link_add_variables,    
+				ngx_http_ssi_preconfiguration,         
+				ngx_http_ssl_add_variables,            
+				ngx_http_userid_add_variables,         
+				ngx_http_core_preconfiguration,        
+				ngx_http_upstream_add_variables, 
+	*/
+
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -250,6 +323,55 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
     cscfp = cmcf->servers.elts;
 
+	/*
+		"init_main_conf" handler将被调用：
+				ngx_http_perl_init_main_conf,        
+				ngx_http_ssi_init_main_conf,         
+				ngx_http_core_init_main_conf,        
+				ngx_http_upstream_init_main_conf, 
+
+		"merge_srv_conf" handler将被调用：		
+				ngx_http_ssl_merge_srv_conf,           
+				ngx_http_core_merge_srv_conf,
+
+		"merge_loc_conf" handler将被调用：
+				ngx_http_perl_merge_loc_conf          
+				ngx_http_access_merge_loc_conf        
+				ngx_http_addition_merge_conf          
+				ngx_http_auth_basic_merge_loc_conf    
+				ngx_http_autoindex_merge_loc_conf     
+				ngx_http_browser_merge_conf           
+				ngx_http_charset_merge_loc_conf       
+				ngx_http_dav_merge_loc_conf           
+				ngx_http_degradation_merge_loc_conf   
+				ngx_http_fastcgi_merge_loc_conf       
+				ngx_http_gzip_merge_conf              
+				ngx_http_gzip_static_merge_conf       
+				ngx_http_headers_merge_conf           
+				ngx_http_image_filter_merge_conf      
+				ngx_http_index_merge_loc_conf         
+				ngx_http_limit_conn_merge_conf        
+				ngx_http_limit_req_merge_conf         
+				ngx_http_log_merge_loc_conf           
+				ngx_http_memcached_merge_loc_conf     
+				ngx_http_mp4_merge_conf       		
+				ngx_http_proxy_merge_loc_conf       
+				ngx_http_random_index_merge_loc_conf
+				ngx_http_realip_merge_loc_conf      
+				ngx_http_referer_merge_conf         
+				ngx_http_rewrite_merge_loc_conf     
+				ngx_http_scgi_merge_loc_conf        
+				ngx_http_secure_link_merge_conf     
+				ngx_http_ssi_merge_loc_conf         
+				ngx_http_sub_merge_conf             
+				ngx_http_userid_merge_conf          
+				ngx_http_uwsgi_merge_loc_conf       
+				ngx_http_xslt_filter_merge_conf     
+				ngx_http_copy_filter_merge_conf     
+				ngx_http_core_merge_loc_conf 
+	*/
+
+
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -267,7 +389,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
-        rv = ngx_http_merge_servers(cf, cmcf, module, mi);
+        rv = ngx_http_merge_servers(cf, cmcf, module, mi);					//	此函数里将调用各模块的 merge_srv_conf 和 merge_loc_conf 两个handler处理函数
         if (rv != NGX_CONF_OK) {
             goto failed;
         }
@@ -298,6 +420,42 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	
+
+	/*
+		"postconfiguration" handler将被调用：
+				ngx_http_access_init,                  
+				ngx_http_addition_filter_init,         
+				ngx_http_auth_basic_init,              
+				ngx_http_autoindex_init,               
+				ngx_http_charset_postconfiguration,    
+				ngx_http_chunked_filter_init,          
+				ngx_http_dav_init,                     
+				ngx_http_degradation_init,             
+				ngx_http_gzip_filter_init,             
+				ngx_http_gzip_static_init,             
+				ngx_http_headers_filter_init,          
+				ngx_http_image_filter_init,            
+				ngx_http_index_init,                   
+				ngx_http_limit_conn_init,              
+				ngx_http_limit_req_init,               
+				ngx_http_log_init,                     
+				ngx_http_not_modified_filter_init,     
+				ngx_http_random_index_init,            
+				ngx_http_range_header_filter_init,     
+				ngx_http_range_body_filter_init,       
+				ngx_http_realip_init,                  
+				ngx_http_rewrite_init,                 
+				ngx_http_ssi_filter_init,              
+				ngx_http_static_init,                  
+				ngx_http_sub_filter_init,              
+				ngx_http_userid_init,                  
+				ngx_http_xslt_filter_init,             
+				ngx_http_copy_filter_init,             
+				ngx_http_header_filter_init,           
+				ngx_http_postpone_filter_init,         
+				ngx_http_write_filter_init,
+	*/
 
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {

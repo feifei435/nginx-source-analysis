@@ -239,6 +239,9 @@ ngx_http_init_connection(ngx_connection_t *c)
 }
 
 
+/* 
+ *	[analy]	当此描述符可读时，调用此函数
+ */
 static void
 ngx_http_init_request(ngx_event_t *rev)
 {
