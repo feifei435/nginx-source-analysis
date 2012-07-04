@@ -43,8 +43,8 @@ typedef struct {
  */
 typedef struct {
     ngx_str_t         key;				//	key，为nginx的字符串结构  
-    ngx_uint_t        key_hash;			//	由该key计算出的hash值(通过hash函数如ngx_hash_key_lc())  
-    void             *value;			//	该key对应的值，组成一个键-值对<key,value> 
+    ngx_uint_t        key_hash;			//	由该key计算出的hash值( 通过hash函数如ngx_hash_key_lc()、ngx_hash_key() )  
+    void             *value;			//	该key对应的值，组成一个键-值对<key,value> （使用(void *)为了适应各类型数据）
 } ngx_hash_key_t;
 
 

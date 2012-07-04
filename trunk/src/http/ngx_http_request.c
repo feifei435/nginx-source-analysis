@@ -738,6 +738,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
     for ( ;; ) {
 
         if (rc == NGX_AGAIN) {
+			//	读取request头部
             n = ngx_http_read_request_header(r);
 
             if (n == NGX_AGAIN || n == NGX_ERROR) {
@@ -745,6 +746,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
         }
 
+		//	开始解析request头部
         rc = ngx_http_parse_request_line(r, r->header_in);
 
         if (rc == NGX_OK) {
@@ -918,7 +920,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             c->log->action = "reading client request headers";
 
-            rev->handler = ngx_http_process_request_headers;
+            rev->handler = ngx_http_process_request_headers;				//	执行request header并且解析headers。
             ngx_http_process_request_headers(rev);
 
             return;
