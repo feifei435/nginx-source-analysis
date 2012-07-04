@@ -143,7 +143,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_array_t                handlers;
+    ngx_array_t                handlers;			//	每个数组元素都是一个 ngx_int_t (*ngx_http_handler_pt)(ngx_http_request_t *r);函数
 } ngx_http_phase_t;
 
 

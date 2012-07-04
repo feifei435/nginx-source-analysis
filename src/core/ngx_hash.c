@@ -253,7 +253,9 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
 
 
 /* 
- *	[analy]	hash结构初始化，参数nelts是names数组的个数
+ *	[analy]	hash结构初始化，
+ *			names参数是ngx_hash_key_t结构的数组，即键-值对<key,value>数组
+ *			nelts参数是names数组的个数
  */
 ngx_int_t
 ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
@@ -275,6 +277,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
         }
     }
 
+	//	分配 2*max_size 个字节的空间保存hash数据(该内存分配操作不在nginx的内存池中进行，因为test只是临时的)
     test = ngx_alloc(hinit->max_size * sizeof(u_short), hinit->pool->log);
     if (test == NULL) {
         return NGX_ERROR;
@@ -615,7 +618,7 @@ ngx_hash_key(u_char *data, size_t len)
     key = 0;
 
     for (i = 0; i < len; i++) {
-        key = ngx_hash(key, data[i]);
+        key = ngx_hash(key, data[i]);				//	key*31 + data[i]
     }
 
     return key;
