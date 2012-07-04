@@ -1516,8 +1516,10 @@ ngx_http_add_address(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 }
 
 
+/* 
+ *	[analy]   将ngx_http_core_srv_conf_t结构的地址加入到ngx_http_conf_addr_t.servers数组中
+ */
 /* add the server core module configuration to the address:port */
-
 static ngx_int_t
 ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_conf_addr_t *addr)
@@ -1525,7 +1527,7 @@ ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_uint_t                  i;
     ngx_http_core_srv_conf_t  **server;
 
-    if (addr->servers.elts == NULL) {
+    if (addr->servers.elts == NULL) {							//	????什么情况下为空?????
         if (ngx_array_init(&addr->servers, cf->temp_pool, 4,
                            sizeof(ngx_http_core_srv_conf_t *))
             != NGX_OK)

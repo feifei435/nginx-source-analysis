@@ -13,16 +13,22 @@
 #include <ngx_core.h>
 
 
+/* 
+ *	[analy]	hash元素结构
+ */
 typedef struct {
-    void             *value;
-    u_short           len;
-    u_char            name[1];
+    void             *value;		//	value，即某个key对应的值，即<key,value>中的value  
+    u_short           len;			//	name长度  
+    u_char            name[1];		//	某个要hash的数据(在nginx中表现为字符串)，即<key,value>中的key  
 } ngx_hash_elt_t;
 
 
+/* 
+ *	[analy]	hash结构
+ */
 typedef struct {
-    ngx_hash_elt_t  **buckets;
-    ngx_uint_t        size;
+    ngx_hash_elt_t  **buckets;			//	hash桶（有size个桶）
+    ngx_uint_t        size;				//	hash桶个数 
 } ngx_hash_t;
 
 
@@ -32,10 +38,13 @@ typedef struct {
 } ngx_hash_wildcard_t;
 
 
+/* 
+ *	[analy]	结构也主要用来保存要hash的数据，即键-值对<key,value>
+ */
 typedef struct {
-    ngx_str_t         key;
-    ngx_uint_t        key_hash;
-    void             *value;
+    ngx_str_t         key;				//	key，为nginx的字符串结构  
+    ngx_uint_t        key_hash;			//	由该key计算出的hash值(通过hash函数如ngx_hash_key_lc())  
+    void             *value;			//	该key对应的值，组成一个键-值对<key,value> 
 } ngx_hash_key_t;
 
 
@@ -49,16 +58,19 @@ typedef struct {
 } ngx_hash_combined_t;
 
 
+/* 
+ *	[analy]	hash初始化结构
+ */
 typedef struct {
-    ngx_hash_t       *hash;
-    ngx_hash_key_pt   key;
+    ngx_hash_t       *hash;				//	指向待初始化的hash结构
+    ngx_hash_key_pt   key;				//	hash函数指针
 
-    ngx_uint_t        max_size;
-    ngx_uint_t        bucket_size;
+    ngx_uint_t        max_size;			//	bucket的最大个数
+    ngx_uint_t        bucket_size;		//	每个bucket的空间
 
-    char             *name;
-    ngx_pool_t       *pool;
-    ngx_pool_t       *temp_pool;
+    char             *name;				//	该hash结构的名字(仅在错误日志中使用)
+    ngx_pool_t       *pool;				//	该hash结构从pool指向的内存池中分配 
+    ngx_pool_t       *temp_pool;		//	分配临时数据空间的内存池	
 } ngx_hash_init_t;
 
 
@@ -108,7 +120,7 @@ ngx_int_t ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 ngx_int_t ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     ngx_uint_t nelts);
 
-#define ngx_hash(key, c)   ((ngx_uint_t) key * 31 + c)
+#define ngx_hash(key, c)   ((ngx_uint_t) key * 31 + c)						//	
 ngx_uint_t ngx_hash_key(u_char *data, size_t len);
 ngx_uint_t ngx_hash_key_lc(u_char *data, size_t len);
 ngx_uint_t ngx_hash_strlow(u_char *dst, u_char *src, size_t n);

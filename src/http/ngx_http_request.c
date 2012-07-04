@@ -267,7 +267,7 @@ ngx_http_init_request(ngx_event_t *rev)
     (void) ngx_atomic_fetch_add(ngx_stat_reading, -1);
 #endif
 
-    c = rev->data;
+    c = rev->data;			//	从event中获取connection
 
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
@@ -276,7 +276,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-    c->requests++;
+    c->requests++;					//	此连接的所有请求数之和
 
     hc = c->data;
 
@@ -309,8 +309,8 @@ ngx_http_init_request(ngx_event_t *rev)
         hc->request = r;
     }
 
-    c->data = r;
-    r->http_connection = hc;
+    c->data = r;					//	connection.data -> http_request_t
+    r->http_connection = hc;		//	request.http_connection -> http_connection
 
     c->sent = 0;
     r->signature = NGX_HTTP_MODULE;
