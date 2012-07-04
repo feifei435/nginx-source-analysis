@@ -244,10 +244,17 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
     return NULL;
 }
 
-
+/* 
+ *	[analy]	宏用来计算上述ngx_hash_elt_t结构大小; 该参数name即为ngx_hash_elt_t结构指针
+ */
 #define NGX_HASH_ELT_SIZE(name)                                               \
     (sizeof(void *) + ngx_align((name)->key.len + 2, sizeof(void *)))
 
+
+
+/* 
+ *	[analy]	hash结构初始化，参数nelts是names数组的个数
+ */
 ngx_int_t
 ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 {
@@ -615,6 +622,9 @@ ngx_hash_key(u_char *data, size_t len)
 }
 
 
+/* 
+ *	[analy]	lc表示lower case，即字符串转换为小写后再计算hash值
+ */
 ngx_uint_t
 ngx_hash_key_lc(u_char *data, size_t len)
 {
