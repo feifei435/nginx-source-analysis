@@ -171,7 +171,7 @@ typedef char *(*ngx_conf_handler_pt)(ngx_conf_t *cf,
  */
 struct ngx_conf_s {
     char                 *name;				/* [analy] 当前解析到的命令名 */
-    ngx_array_t          *args;				/* [analy] 当前命令的所有参数 */
+    ngx_array_t          *args;				// 当前命令的所有参数(array of ngx_str_t)
 
     ngx_cycle_t          *cycle;			/* [analy] 当前使用的cycle */
     ngx_pool_t           *pool;				/* [analy] 当前使用的pool */

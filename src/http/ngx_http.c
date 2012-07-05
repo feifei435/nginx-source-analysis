@@ -620,7 +620,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     n = use_rewrite + use_access + cmcf->try_files + 1 /* find config phase */;
 
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
-        n += cmcf->phases[i].handlers.nelts;
+        n += cmcf->phases[i].handlers.nelts;			//	计算所有phase中handler个数
     }
 
     ph = ngx_pcalloc(cf->pool,
@@ -637,15 +637,18 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         h = cmcf->phases[i].handlers.elts;
 
         switch (i) {
-
+		
+		// server重写phase（也就是内部重定向phase)  
         case NGX_HTTP_SERVER_REWRITE_PHASE:
+
+			//	如果有定义重写规则则设置重写handler的索引n.  
             if (cmcf->phase_engine.server_rewrite_index == (ngx_uint_t) -1) {
                 cmcf->phase_engine.server_rewrite_index = n;
             }
             checker = ngx_http_core_rewrite_phase;
 
             break;
-
+		//	config phase只有一个.这里设置 find_config_index，是因为当我们rewrite之后的url就必须重新挂载location的一些结构，因此就需要再次进入这个phase  
         case NGX_HTTP_FIND_CONFIG_PHASE:
             find_config_index = n;
 
@@ -1319,6 +1322,7 @@ ngx_http_add_listen(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         }
     }
 
+	//	获取sockaddr结构
     sa = &lsopt->u.sockaddr;
 
     switch (sa->sa_family) {
@@ -1361,9 +1365,9 @@ ngx_http_add_listen(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         return NGX_ERROR;
     }
 
-    port->family = sa->sa_family;
-    port->port = p;
-    port->addrs.elts = NULL;
+    port->family = sa->sa_family;			//	设置ngx_http_conf_port_t的faimly
+    port->port = p;							//	设置ngx_http_conf_port_t的port
+    port->addrs.elts = NULL;				//	array of ngx_http_conf_addr_t
 
     return ngx_http_add_address(cf, cscf, port, lsopt);
 }
@@ -1501,7 +1505,7 @@ ngx_http_add_address(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         return NGX_ERROR;
     }
 
-    addr->opt = *lsopt;
+    addr->opt = *lsopt;				//	设置从配置文件解析到的ngx_http_listen_opt_t结构
     addr->hash.buckets = NULL;
     addr->hash.size = 0;
     addr->wc_head = NULL;
@@ -1528,7 +1532,7 @@ ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_uint_t                  i;
     ngx_http_core_srv_conf_t  **server;
 
-    if (addr->servers.elts == NULL) {							//	????什么情况下为空?????
+    if (addr->servers.elts == NULL) {							//	为数组结构指向的数据分配空间
         if (ngx_array_init(&addr->servers, cf->temp_pool, 4,
                            sizeof(ngx_http_core_srv_conf_t *))
             != NGX_OK)
@@ -1537,7 +1541,7 @@ ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         }
 
     } else {
-        server = addr->servers.elts;
+        server = addr->servers.elts;							//	这里的检查目的不晓得？？？？？？
         for (i = 0; i < addr->servers.nelts; i++) {
             if (server[i] == cscf) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -1547,12 +1551,12 @@ ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         }
     }
 
-    server = ngx_array_push(&addr->servers);
+    server = ngx_array_push(&addr->servers);		//	ngx_http_core_srv_conf_t
     if (server == NULL) {
         return NGX_ERROR;
     }
 
-    *server = cscf;
+    *server = cscf;			//	增加ngx_http_core_srv_conf_t类型数组元素
 
     return NGX_OK;
 }

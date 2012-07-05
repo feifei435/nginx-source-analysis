@@ -156,7 +156,7 @@ struct ngx_connection_s {
     unsigned            unexpected_eof:1;
     unsigned            timedout:1;
     unsigned            error:1;
-    unsigned            destroyed:1;
+    unsigned            destroyed:1;		//	说明此连接是否已经销毁，如果已经销毁等于1
 
     unsigned            idle:1;
     unsigned            reusable:1;

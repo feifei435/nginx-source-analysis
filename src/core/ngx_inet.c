@@ -513,21 +513,27 @@ ngx_parse_url(ngx_pool_t *pool, ngx_url_t *u)
 {
     u_char  *p;
 
-    p = u->url.data;
+    p = u->url.data;			//	针对listen指令的例子（listen 192.168.124.129:8011;）
 
+	//	1. unix域套接口解析
     if (ngx_strncasecmp(p, (u_char *) "unix:", 5) == 0) {
+		
+		//	0.8.21版本以后nginx可以监听unix套接口 listen unix:/tmp/nginx1.sock;
         return ngx_parse_unix_domain_url(pool, u);
     }
+
 
     if ((p[0] == ':' || p[0] == '/') && !u->listen) {
         u->err = "invalid host";
         return NGX_ERROR;
     }
 
+	//	2. ipv6地址解析（listen [2a02:750:5::123]:80;）
     if (p[0] == '[') {
         return ngx_parse_inet6_url(pool, u);
     }
 
+	//	3. ipv4地址解析
     return ngx_parse_inet_url(pool, u);
 }
 
@@ -625,11 +631,11 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
     u->family = AF_INET;
 
-    host = u->url.data;
+    host = u->url.data;					//	url的首地址 e.g. 192.168.124.129:8011;
 
-    last = host + u->url.len;
+    last = host + u->url.len;			//	url的尾地址
 
-    port = ngx_strlchr(host, last, ':');
+    port = ngx_strlchr(host, last, ':');	//	在url字符串中查找":"端口
 
     uri = ngx_strlchr(host, last, '/');
 
@@ -644,6 +650,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         }
     }
 
+	//	uri???????/
     if (uri) {
         if (u->listen || !u->uri_part) {
             u->err = "invalid host";
@@ -660,30 +667,31 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         }
     }
 
-    if (port) {
+	//	端口设置
+    if (port) {	
         port++;
 
-        len = last - port;
+        len = last - port;				//	跳过":"指向8080. e.g. ":8080"
 
-        if (len == 0) {
+        if (len == 0) {					//	跳过":"后无端口信息，报错
             u->err = "invalid port";
             return NGX_ERROR;
         }
 
-        n = ngx_atoi(port, len);
+        n = ngx_atoi(port, len);		//	将端口转换成整数并检查端口范围 1< n < 65535
 
         if (n < 1 || n > 65535) {
             u->err = "invalid port";
             return NGX_ERROR;
         }
 
-        u->port = (in_port_t) n;
-        sin->sin_port = htons((in_port_t) n);
+        u->port = (in_port_t) n;		//	设置url->port端口
+        sin->sin_port = htons((in_port_t) n);	//	设置sockaddr
 
         u->port_text.len = len;
-        u->port_text.data = port;
+        u->port_text.data = port;		//	保存port字符串信息
 
-        last = port - 1;
+        last = port - 1;				//	将last指针指向url中的ip地址尾端
 
     } else {
         if (uri == NULL) {
@@ -717,25 +725,25 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         u->no_port = 1;
     }
 
-    len = last - host;
+    len = last - host;					//	计算字符串ip地址的长度
 
     if (len == 0) {
         u->err = "no host";
         return NGX_ERROR;
     }
 
-    if (len == 1 && *host == '*') {
+    if (len == 1 && *host == '*') {		//	e.g. listen *:8000;
         len = 0;
     }
 
-    u->host.len = len;
+    u->host.len = len;					//	设置ip地址
     u->host.data = host;
 
-    if (u->no_resolve) {
+    if (u->no_resolve) {				//	??????????????
         return NGX_OK;
     }
 
-    if (len) {
+    if (len) {			//	ip地址正常格式时
         sin->sin_addr.s_addr = ngx_inet_addr(host, len);
 
         if (sin->sin_addr.s_addr == INADDR_NONE) {
@@ -762,17 +770,17 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
             u->wildcard = 1;
         }
 
-    } else {
-        sin->sin_addr.s_addr = INADDR_ANY;
-        u->wildcard = 1;
+    } else {		//	ip地址使用了通配符时（e.g. "*:8000"）
+        sin->sin_addr.s_addr = INADDR_ANY;		//	INADDR_ANY针对多网卡和多IP情景，所有发送到此端口的数据都处理
+        u->wildcard = 1;						//	使用了通配符
     }
 
-    if (u->no_port) {
+    if (u->no_port) {		//	没有显示设定端口时，将采用默认端口
         u->port = u->default_port;
         sin->sin_port = htons(u->default_port);
     }
 
-    if (u->listen) {
+    if (u->listen) {		//	???????????猜测：是监听端口IP时，则直接返回
         return NGX_OK;
     }
 
