@@ -860,7 +860,9 @@ ngx_http_handler(ngx_http_request_t *r)
     ngx_http_core_run_phases(r);
 }
 
-
+/* 
+ *	[analy]	运行phase，遍历所有phase的checker
+ */
 void
 ngx_http_core_run_phases(ngx_http_request_t *r)
 {
@@ -875,7 +877,8 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
     while (ph[r->phase_handler].checker) {
 
         rc = ph[r->phase_handler].checker(r, &ph[r->phase_handler]);
-
+		
+		//	如果有一个checker返回OK，则后面的phase就不会处理的
         if (rc == NGX_OK) {
             return;
         }
@@ -896,14 +899,18 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "generic phase: %ui", r->phase_handler);
 
-    rc = ph->handler(r);
+    rc = ph->handler(r);		//	调用handler（ngx_int_t (*ngx_http_handler_pt)(ngx_http_request_t *r)）
 
     if (rc == NGX_OK) {
+		
+		//	下一个phase的索引  
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
 
     if (rc == NGX_DECLINED) {
+		
+		//	处理本phase的下一个handler
         r->phase_handler++;
         return NGX_AGAIN;
     }
@@ -3732,7 +3739,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u.listen = 1;
     u.default_port = 80;
 
-    if (ngx_parse_url(cf->pool, &u) != NGX_OK) {
+    if (ngx_parse_url(cf->pool, &u) != NGX_OK) {		//	解析URL
         if (u.err) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "%s in \"%V\" of the \"listen\" directive",
@@ -3755,9 +3762,11 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 #endif
     lsopt.wildcard = u.wildcard;
 
+	//	转换lsopt.addr的格式为"192.168.124.129:8011"
     (void) ngx_sock_ntop(&lsopt.u.sockaddr, lsopt.addr,
                          NGX_SOCKADDR_STRLEN, 1);
 
+	//	对指令listen多余两个参数的解析（e.g. backlog、rcvbuf、default_server等）
     for (n = 2; n < cf->args->nelts; n++) {
 
         if (ngx_strcmp(value[n].data, "default_server") == 0
@@ -4008,6 +4017,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	//	
     if (ngx_http_add_listen(cf, cscf, &lsopt) == NGX_OK) {
         return NGX_CONF_OK;
     }

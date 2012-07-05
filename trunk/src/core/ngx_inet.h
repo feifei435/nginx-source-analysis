@@ -75,25 +75,25 @@ typedef struct {
 
 
 typedef struct {
-    ngx_str_t                 url;
-    ngx_str_t                 host;
-    ngx_str_t                 port_text;
+    ngx_str_t                 url;						//	保存IP地址+端口信息（e.g. 192.168.124.129:8011）
+    ngx_str_t                 host;						//	保存IP地址信息
+    ngx_str_t                 port_text;				//	保存port字符串
     ngx_str_t                 uri;
 
-    in_port_t                 port;
-    in_port_t                 default_port;
-    int                       family;
+    in_port_t                 port;						//	端口，e.g. listen指令中指定的端口（listen 192.168.124.129:8011）
+    in_port_t                 default_port;				//	默认端口（当no_port字段为真时，将默认端口赋值给port字段， 默认端口通常是80）
+    int                       family;					//	address family, AF_xxx
 
-    unsigned                  listen:1;
+    unsigned                  listen:1;					//	???是否为指监听类的设置
     unsigned                  uri_part:1;
-    unsigned                  no_resolve:1;
+    unsigned                  no_resolve:1;				//	????????????
     unsigned                  one_addr:1;
 
-    unsigned                  no_port:1;
-    unsigned                  wildcard:1;
+    unsigned                  no_port:1;				//	标识url中没有显示指定端口(为1时没有指定)
+    unsigned                  wildcard:1;				//	标识是否使用通配符（e.g. listen *:8000;）
 
-    socklen_t                 socklen;
-    u_char                    sockaddr[NGX_SOCKADDRLEN];
+    socklen_t                 socklen;						//	sizeof(struct sockaddr_in)
+    u_char                    sockaddr[NGX_SOCKADDRLEN];	//	sockaddr_in结构指向它
 
     ngx_addr_t               *addrs;
     ngx_uint_t                naddrs;

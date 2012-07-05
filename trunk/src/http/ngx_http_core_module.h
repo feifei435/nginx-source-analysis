@@ -66,12 +66,12 @@ typedef struct {
         u_char                 sockaddr_data[NGX_SOCKADDRLEN];
     } u;
 
-    socklen_t                  socklen;
+    socklen_t                  socklen;					//	sockaddr结构的长度
 
     unsigned                   set:1;
     unsigned                   default_server:1;
     unsigned                   bind:1;
-    unsigned                   wildcard:1;
+    unsigned                   wildcard:1;				//	是否使用通配符（ngx_url_t中的wildcard）
 #if (NGX_HTTP_SSL)
     unsigned                   ssl:1;
 #endif
@@ -80,7 +80,7 @@ typedef struct {
 #endif
     unsigned                   so_keepalive:2;
 
-    int                        backlog;
+    int                        backlog;					//	backlog大小
     int                        rcvbuf;
     int                        sndbuf;
 #if (NGX_HAVE_SETFIB)
@@ -99,28 +99,28 @@ typedef struct {
     ngx_uint_t                 deferred_accept;
 #endif
 
-    u_char                     addr[NGX_SOCKADDR_STRLEN + 1];
+    u_char                     addr[NGX_SOCKADDR_STRLEN + 1];		//	根据sockaddr结构转换格式为"192.168.124.129:8011"
 } ngx_http_listen_opt_t;
 
 
 typedef enum {
-    NGX_HTTP_POST_READ_PHASE = 0,						/* [analy]	读取请求阶段 */
+    NGX_HTTP_POST_READ_PHASE = 0,						//	读取请求阶段
 
-    NGX_HTTP_SERVER_REWRITE_PHASE,						/* [analy]	URI转换阶段 */
+    NGX_HTTP_SERVER_REWRITE_PHASE,						//	URI转换阶段（这个阶段主要是处理全局的(server block)的rewrite）
 
-    NGX_HTTP_FIND_CONFIG_PHASE,							/* [analy]	查找相应的配置来执行阶段 */
-    NGX_HTTP_REWRITE_PHASE,								/* [analy]	URI转换阶段（不太清楚此处） */
-    NGX_HTTP_POST_REWRITE_PHASE,						/* [analy]	对转换后的URL结果进行处理的阶段 */
+    NGX_HTTP_FIND_CONFIG_PHASE,							//	查找相应的配置来执行(这个阶段主要是通过uri来查找对应的location, 然后将uri和location的数据关联起来)
+    NGX_HTTP_REWRITE_PHASE,								//	这个主要处理location的rewrite  
+    NGX_HTTP_POST_REWRITE_PHASE,						//	post rewrite，这个主要是进行一些校验以及收尾工作，以便于交给后面的模块 
 
-    NGX_HTTP_PREACCESS_PHASE,							/* [analy]	权限检查准备阶段 */
+    NGX_HTTP_PREACCESS_PHASE,							//	比如流控这种类型的access就放在这个phase，也就是说它主要是进行一些比较粗粒度的access  
 
-    NGX_HTTP_ACCESS_PHASE,								/* [analy]	权限检查阶段 */
-    NGX_HTTP_POST_ACCESS_PHASE,							/* [analy]	对权限检查结果进行处理阶段 */
+    NGX_HTTP_ACCESS_PHASE,								//	这个比如存取控制，权限验证就放在这个phase，一般来说处理动作是交给下面的模块做的.这个主要是做一些细粒度的access  
+    NGX_HTTP_POST_ACCESS_PHASE,							//	一般来说当上面的access模块得到access_code之后就会由这个模块根据access_code来进行操作  
 
-    NGX_HTTP_TRY_FILES_PHASE,							/* [analy]	处理配置中的try_files阶段 */
-    NGX_HTTP_CONTENT_PHASE,								/* [analy]	处理生成返回数据阶段(此处认为不太细，当然有filter也可以忽略) */
+    NGX_HTTP_TRY_FILES_PHASE,							//	try_file模块，也就是对应配置文件中的try_files指令
+    NGX_HTTP_CONTENT_PHASE,								//	内容处理模块，我们一般的handler都是处于这个模块  
 
-    NGX_HTTP_LOG_PHASE									/* [analy]	记录日志处理阶段，具体说明应当是请求完成后，关闭请求时处理 */
+    NGX_HTTP_LOG_PHASE									// [analy]	记录日志处理阶段，具体说明应当是请求完成后，关闭请求时处理
 } ngx_http_phases;
 
 typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
@@ -167,7 +167,7 @@ typedef struct {
 
     ngx_hash_keys_arrays_t    *variables_keys;
 
-    ngx_array_t               *ports;
+    ngx_array_t               *ports;			//	array of ngx_http_conf_port_t
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 

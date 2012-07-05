@@ -588,7 +588,10 @@ ngx_strcasecmp(u_char *s1, u_char *s2)
     }
 }
 
-
+/* 
+ *	[analy]	将比较字符转换成小写后进行比较
+ *			返回0：相等
+ */
 ngx_int_t
 ngx_strncasecmp(u_char *s1, u_char *s2, size_t n)
 {
@@ -598,6 +601,7 @@ ngx_strncasecmp(u_char *s1, u_char *s2, size_t n)
         c1 = (ngx_uint_t) *s1++;
         c2 = (ngx_uint_t) *s2++;
 
+		//	大小字符时，转换成小写字符
         c1 = (c1 >= 'A' && c1 <= 'Z') ? (c1 | 0x20) : c1;
         c2 = (c2 >= 'A' && c2 <= 'Z') ? (c2 | 0x20) : c2;
 

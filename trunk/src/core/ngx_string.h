@@ -62,6 +62,10 @@ void ngx_strlow(u_char *dst, u_char *src, size_t n);
 
 #define ngx_strchr(s1, c)   strchr((const char *) s1, (int) c)
 
+
+/* 
+ *	[analy]	在字符串中找到匹配的字符，返回匹配的指针 
+ */
 static ngx_inline u_char *
 ngx_strlchr(u_char *p, u_char *last, u_char c)
 {
