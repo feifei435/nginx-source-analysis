@@ -321,7 +321,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      */
 
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
-    cscfp = cmcf->servers.elts;
+    cscfp = cmcf->servers.elts;									//	ngx_http_core_srv_conf_t
 
 	/*
 		"init_main_conf" handler将被调用：
@@ -412,6 +412,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 
+	//	初始化phase数组（ngx_http_core_main_conf_t）
     if (ngx_http_init_phases(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -503,6 +504,19 @@ failed:
     return rv;
 }
 
+
+/*
+ *	[analy]	初始化phase数组（ngx_http_core_main_conf_t）
+ *
+ *		NGX_HTTP_POST_READ_PHASE
+ *		NGX_HTTP_SERVER_REWRITE_PHASE
+ *		NGX_HTTP_REWRITE_PHASE
+ *		NGX_HTTP_PREACCESS_PHASE
+ *		NGX_HTTP_ACCESS_PHASE
+ *		NGX_HTTP_CONTENT_PHASE
+ *		NGX_HTTP_LOG_PHASE
+ *		对以上几个phase进行初始化
+ */
 
 static ngx_int_t
 ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
