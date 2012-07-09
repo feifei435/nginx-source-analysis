@@ -203,7 +203,7 @@ ngx_http_init_connection(ngx_connection_t *c)
     c->log_error = NGX_ERROR_INFO;
 
     rev = c->read;
-    rev->handler = ngx_http_init_request;			/* [analy] 设置数据可读时，调用的handler (ngx_process_events_and_timers --> ngx_process_events(ngx_epoll_process_events)) */	
+    rev->handler = ngx_http_init_request;			/* [analy] 当有数据可读时，调用的handler (ngx_process_events_and_timers --> ngx_process_events(ngx_epoll_process_events)) */	
 
     c->write->handler = ngx_http_empty_handler;
 
