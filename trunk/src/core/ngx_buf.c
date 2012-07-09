@@ -8,17 +8,21 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* 
+ *	[analy]	在内存池上创建buf，并设置相关域
+ */
 ngx_buf_t *
 ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
 {
     ngx_buf_t *b;
 
+	/* [analy]	calloc一个buf，可以看到它调用的是calloc，也就是说都会清0. */
     b = ngx_calloc_buf(pool);
     if (b == NULL) {
         return NULL;
     }
 
+	//	然后从内存池中分配一块内存。并将这块内存链接到b->start.  
     b->start = ngx_palloc(pool, size);
     if (b->start == NULL) {
         return NULL;
@@ -51,11 +55,13 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
 
     cl = pool->chain;
 
+	//	如果chain已经存在，则直接返回这个chain，然后从pool的chain中删除这个chain。
     if (cl) {
-        pool->chain = cl->next;
+        pool->chain = cl->next;			//	?????????????不明白
         return cl;
     }
 
+	//	否则重新在pool上申请一个chain并返回
     cl = ngx_palloc(pool, sizeof(ngx_chain_t));
     if (cl == NULL) {
         return NULL;
