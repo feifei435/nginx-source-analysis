@@ -37,17 +37,17 @@ struct ngx_buf_s {
      * the buf's content is in a memory cache or in a read only memory
      * and must not be changed
      */
-    unsigned         memory:1;
+    unsigned         memory:1;			//	是否在内存中
 
     /* the buf's content is mmap()ed and must not be changed */
-    unsigned         mmap:1;
+    unsigned         mmap:1;			//	内存中的文件映射
 
-    unsigned         recycled:1;
-    unsigned         in_file:1;
-    unsigned         flush:1;
-    unsigned         sync:1;
+    unsigned         recycled:1;		//	被回收
+    unsigned         in_file:1;			//	文件缓冲
+    unsigned         flush:1;			//	被清除
+    unsigned         sync:1;			//	异步
     unsigned         last_buf:1;					//	此字段是一个位域，设为1表示此缓冲区是链表中最后一个元素，设置为0说明后边还有元素
-    unsigned         last_in_chain:1;
+    unsigned         last_in_chain:1;	//	链表的尾部
 
     unsigned         last_shadow:1;
     unsigned         temp_file:1;
@@ -55,7 +55,7 @@ struct ngx_buf_s {
     /* STUB */ int   num;
 };
 
-
+//	buffer链
 struct ngx_chain_s {
     ngx_buf_t    *buf;
     ngx_chain_t  *next;
@@ -77,12 +77,13 @@ typedef void (*ngx_output_chain_aio_pt)(ngx_output_chain_ctx_t *ctx,
     ngx_file_t *file);
 #endif
 
-struct ngx_output_chain_ctx_s {
-    ngx_buf_t                   *buf;
-    ngx_chain_t                 *in;
-    ngx_chain_t                 *free;
-    ngx_chain_t                 *busy;
+struct ngx_output_chain_ctx_s {			/* [analy] 主要是管理输出buf */
+    ngx_buf_t                   *buf;		//	这个域也就是我们拷贝数据的地方，我们一般输出的话都是从in直接copy相应的size到buf中
+    ngx_chain_t                 *in;		//	这个就是我们保存那些需要发送数据的地方
+    ngx_chain_t                 *free;		//	这个保存了一些空的buf，也就是说如果free存在，我们都会直接从free中取buf到前面的buf域
+    ngx_chain_t                 *busy;		//	这个保存了已经发送完毕的buf，也就是每次我们从in中将buf读取完毕后，确定数据已经取完，此时就会将这个chain拷贝到busy中。然后将比较老的busy buf拷贝到free中。 
 
+	//	相关的标记，是否使用sendfile，是否使用directio等等
     unsigned                     sendfile:1;
     unsigned                     directio:1;
 #if (NGX_HAVE_ALIGNED_DIRECTIO)
@@ -99,11 +100,11 @@ struct ngx_output_chain_ctx_s {
     off_t                        alignment;
 
     ngx_pool_t                  *pool;
-    ngx_int_t                    allocated;
+    ngx_int_t                    allocated;			//	每次从pool中重新alloc一个buf这个值都会相应加一  
     ngx_bufs_t                   bufs;
-    ngx_buf_tag_t                tag;
+    ngx_buf_tag_t                tag;				//	这个用来标记当前那个模块使用这个chain  
 
-    ngx_output_chain_filter_pt   output_filter;
+    ngx_output_chain_filter_pt   output_filter;		//	一个回调函数，用来过滤输出
     void                        *filter_ctx;
 };
 
@@ -114,7 +115,7 @@ typedef struct {
     ngx_connection_t            *connection;
     ngx_pool_t                  *pool;
     off_t                        limit;
-} ngx_chain_writer_ctx_t;
+} ngx_chain_writer_ctx_t;					/* [analy] 这个主要是用在upstream模块 */
 
 
 #define NGX_CHAIN_ERROR     (ngx_chain_t *) NGX_ERROR
