@@ -9,6 +9,10 @@
 #include <ngx_core.h>
 
 
+/* 
+ *	[analy]	在hash表中查找对应的key的value
+ *			参数key根据name计算得到
+ */
 void *
 ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
 {
@@ -19,7 +23,7 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
     ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0, "hf:\"%*s\"", len, name);
 #endif
 
-    elt = hash->buckets[key % hash->size];
+    elt = hash->buckets[key % hash->size];				//	根据key计算出元素的位置？？？
 
     if (elt == NULL) {
         return NULL;
@@ -36,11 +40,11 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
             }
         }
 
-        return elt->value;
+        return elt->value;					//	len和name都相等时，直接返回value
 
     next:
 
-        elt = (ngx_hash_elt_t *) ngx_align_ptr(&elt->name[0] + elt->len,
+        elt = (ngx_hash_elt_t *) ngx_align_ptr(&elt->name[0] + elt->len,			//	why????????
                                                sizeof(void *));
         continue;
     }
@@ -245,8 +249,11 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
 }
 
 /* 
- *	[analy]	宏用来计算上述ngx_hash_elt_t结构大小; 该参数name即为ngx_hash_elt_t结构指针
- */
+ *	[analy]	宏用来计算ngx_hash_elt_t结构大小; 该参数name即为ngx_hash_key_t结构指针
+ *			sizeof(void *)对应ngx_hash_elt_t.value的大小
+ *			(name)->key.len是指ngx_hash_elt_t.name字段对应的字符串长度
+ *			+2是指ngx_hash_elt_t.len字段大小
+ */		
 #define NGX_HASH_ELT_SIZE(name)                                               \
     (sizeof(void *) + ngx_align((name)->key.len + 2, sizeof(void *)))
 
@@ -267,8 +274,11 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
     ngx_hash_elt_t  *elt, **buckets;
 
     for (n = 0; n < nelts; n++) {
+		
+		//	检查names数组的每一个元素，判断桶的大小是否够分配(为什么需要加上void *的大小？？？)
         if (hinit->bucket_size < NGX_HASH_ELT_SIZE(&names[n]) + sizeof(void *))
         {
+			//	有任何一个元素，桶的大小不够为该元素分配空间，则退出  
             ngx_log_error(NGX_LOG_EMERG, hinit->pool->log, 0,
                           "could not build the %s, you should "
                           "increase %s_bucket_size: %i",
@@ -283,12 +293,12 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
         return NGX_ERROR;
     }
 
-    bucket_size = hinit->bucket_size - sizeof(void *);
+    bucket_size = hinit->bucket_size - sizeof(void *);					//	bucket大小，为什么需要减去（sizeof(void *)）？？？？
 
-    start = nelts / (bucket_size / (2 * sizeof(void *)));
+    start = nelts / (bucket_size / (2 * sizeof(void *)));				//	???????
     start = start ? start : 1;
 
-    if (hinit->max_size > 10000 && nelts && hinit->max_size / nelts < 100) {
+    if (hinit->max_size > 10000 && nelts && hinit->max_size / nelts < 100) {		//	??????
         start = hinit->max_size - 1000;
     }
 
@@ -301,8 +311,8 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
                 continue;
             }
 
-            key = names[n].key_hash % size;
-            test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));
+            key = names[n].key_hash % size;													//	why??
+            test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));				//	计算长度
 
 #if 0
             ngx_log_error(NGX_LOG_ALERT, hinit->pool->log, 0,
@@ -310,7 +320,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
                           size, key, test[key], &names[n].key);
 #endif
 
-            if (test[key] > (u_short) bucket_size) {
+            if (test[key] > (u_short) bucket_size) {										//	超过了桶大小
                 goto next;
             }
         }
@@ -359,6 +369,8 @@ found:
         len += test[i];
     }
 
+
+	//	如果hash未分配空间将会在此分配（在内部分配为什么需要添加一个ngx_hash_wildcard_t结构在此？？？）
     if (hinit->hash == NULL) {
         hinit->hash = ngx_pcalloc(hinit->pool, sizeof(ngx_hash_wildcard_t)
                                              + size * sizeof(ngx_hash_elt_t *));
@@ -367,11 +379,12 @@ found:
             return NGX_ERROR;
         }
 
+		//	计算buckets的起始位置(在ngx_hash_wildcard_t结构之后)  
         buckets = (ngx_hash_elt_t **)
                       ((u_char *) hinit->hash + sizeof(ngx_hash_wildcard_t));
 
     } else {
-        buckets = ngx_pcalloc(hinit->pool, size * sizeof(ngx_hash_elt_t *));
+        buckets = ngx_pcalloc(hinit->pool, size * sizeof(ngx_hash_elt_t *));			//	为buckets分配空间（bucket存放的是ngx_hash_elt_t元素的地址）
         if (buckets == NULL) {
             ngx_free(test);
             return NGX_ERROR;
@@ -401,17 +414,17 @@ found:
     }
 
     for (n = 0; n < nelts; n++) {
-        if (names[n].key.data == NULL) {
+        if (names[n].key.data == NULL) {			//	key的字符串为空
             continue;
         }
 
         key = names[n].key_hash % size;
-        elt = (ngx_hash_elt_t *) ((u_char *) buckets[key] + test[key]);
+        elt = (ngx_hash_elt_t *) ((u_char *) buckets[key] + test[key]);		//	获取ngx_hash_elt_t???????
 
-        elt->value = names[n].value;
-        elt->len = (u_short) names[n].key.len;
+        elt->value = names[n].value;										//	赋值ngx_hash_key_t.value    -> ngx_hash_elt_t.value
+        elt->len = (u_short) names[n].key.len;								//	赋值ngx_hash_key_t.key.len  -> ngx_hash_elt_t.len
 
-        ngx_strlow(elt->name, names[n].key.data, names[n].key.len);
+        ngx_strlow(elt->name, names[n].key.data, names[n].key.len);			//	赋值ngx_hash_key_t.key.data -> ngx_hash_elt_t.name	（转换成小写）
 
         test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));
     }
@@ -428,8 +441,8 @@ found:
 
     ngx_free(test);
 
-    hinit->hash->buckets = buckets;
-    hinit->hash->size = size;
+    hinit->hash->buckets = buckets;				//	设置buckets地址
+    hinit->hash->size = size;					//	设置buckets总数
 
 #if 0
 
@@ -609,7 +622,9 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	计算hash值
+ */
 ngx_uint_t
 ngx_hash_key(u_char *data, size_t len)
 {
@@ -627,6 +642,7 @@ ngx_hash_key(u_char *data, size_t len)
 
 /* 
  *	[analy]	lc表示lower case，即字符串转换为小写后再计算hash值
+ *			与ngx_hash_key（）对应的
  */
 ngx_uint_t
 ngx_hash_key_lc(u_char *data, size_t len)
@@ -642,7 +658,9 @@ ngx_hash_key_lc(u_char *data, size_t len)
     return key;
 }
 
-
+/* 
+ *	[analy]	计算hash值（将src转换成小写放到dst后，并计算hash值）
+ */
 ngx_uint_t
 ngx_hash_strlow(u_char *dst, u_char *src, size_t n)
 {
