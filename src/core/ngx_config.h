@@ -94,6 +94,11 @@ typedef intptr_t        ngx_flag_t;
 #define NGX_ALIGNMENT   sizeof(unsigned long)    /* platform word */
 #endif
 
+
+/* 
+ *	[analy]	内存对齐宏
+ *	计算宏ngx_align(1,64)=64，只要输入的d<64，则结果总为64，如果输入的d=65,则结果为128，以此类推。
+ */
 #define ngx_align(d, a)     (((d) + (a - 1)) & ~(a - 1))
 #define ngx_align_ptr(p, a)                                                   \
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
