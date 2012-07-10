@@ -267,7 +267,7 @@ ngx_http_init_request(ngx_event_t *rev)
     (void) ngx_atomic_fetch_add(ngx_stat_reading, -1);
 #endif
 
-    c = rev->data;			//	从event中获取connection
+    c = rev->data;					//	1. 在event中获取 ngx_connection_t
 
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
@@ -278,7 +278,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     c->requests++;					//	此连接的所有请求数之和
 
-    hc = c->data;
+    hc = c->data;					//	2. 在 ngx_connection_t 中获取 ngx_http_connection_t 	
 
     if (hc == NULL) {
         hc = ngx_pcalloc(c->pool, sizeof(ngx_http_connection_t));
@@ -288,9 +288,14 @@ ngx_http_init_request(ngx_event_t *rev)
         }
     }
 
-    r = hc->request;
+	/*	
+		3. 在 ngx_http_connection_t 中获取 ngx_http_request_t
+				ngx_http_request_t 已存在，则清空，做一些初始化处理。
+				ngx_http_request_t 不存在，重新申请后赋值给 hc->request
+	*/
+    r = hc->request;				 
 
-    if (r) {
+    if (r) {						
         ngx_memzero(r, sizeof(ngx_http_request_t));
 
         r->pipeline = hc->pipeline;
@@ -299,7 +304,7 @@ ngx_http_init_request(ngx_event_t *rev)
             r->header_in = hc->busy[0];
         }
 
-    } else {
+    } else {						
         r = ngx_pcalloc(c->pool, sizeof(ngx_http_request_t));
         if (r == NULL) {
             ngx_http_close_connection(c);
@@ -400,7 +405,7 @@ ngx_http_init_request(ngx_event_t *rev)
     r->srv_conf = cscf->ctx->srv_conf;
     r->loc_conf = cscf->ctx->loc_conf;
 
-    rev->handler = ngx_http_process_request_line;
+    rev->handler = ngx_http_process_request_line;						//	重新设置当前请求的处理句柄，修改为 ngx_http_process_request_line
     r->read_event_handler = ngx_http_block_reading;
 
 #if (NGX_HTTP_SSL)
@@ -445,7 +450,7 @@ ngx_http_init_request(ngx_event_t *rev)
         c->log->log_level = clcf->error_log->log_level;
     }
 
-    if (c->buffer == NULL) {
+    if (c->buffer == NULL) {							//	buffer缓冲区为空时，申请 ngx_buf_t 缓冲区
         c->buffer = ngx_create_temp_buf(c->pool,
                                         cscf->client_header_buffer_size);
         if (c->buffer == NULL) {
@@ -483,7 +488,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
-    r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
+    r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts							//	为
                                         * sizeof(ngx_http_variable_value_t));
     if (r->variables == NULL) {
         ngx_destroy_pool(r->pool);
@@ -753,11 +758,11 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             /* the request line has been parsed successfully */
 
-            r->request_line.len = r->request_end - r->request_start;
+            r->request_line.len = r->request_end - r->request_start;					//	------------------	设置request_line字段
             r->request_line.data = r->request_start;
 
 
-            if (r->args_start) {
+            if (r->args_start) {														//	------------------	设置uri字段
                 r->uri.len = r->args_start - 1 - r->uri_start;
             } else {
                 r->uri.len = r->uri_end - r->uri_start;
@@ -788,16 +793,16 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            r->unparsed_uri.len = r->uri_end - r->uri_start;
+            r->unparsed_uri.len = r->uri_end - r->uri_start;						//	------------------	设置unparsed_uri字段	
             r->unparsed_uri.data = r->uri_start;
 
-            r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;
+            r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;						//	------------------	设置valid_unparsed_uri字段
 
-            r->method_name.len = r->method_end - r->request_start + 1;
+            r->method_name.len = r->method_end - r->request_start + 1;				//	------------------	设置method_name字段
             r->method_name.data = r->request_line.data;
 
 
-            if (r->http_protocol.data) {
+            if (r->http_protocol.data) {											//	------------------	设置http_protocol字段
                 r->http_protocol.len = r->request_end - r->http_protocol.data;
             }
 
@@ -882,7 +887,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
                     return;
                 }
 
-                r->headers_in.server.len = n;
+                r->headers_in.server.len = n;												//	------------------	设置headers_in字段中的server子字段
                 r->headers_in.server.data = host;
             }
 
@@ -901,7 +906,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            if (ngx_list_init(&r->headers_in.headers, r->pool, 20,
+            if (ngx_list_init(&r->headers_in.headers, r->pool, 20,							//	------------------	设置headers_in字段中的headers子字段
                               sizeof(ngx_table_elt_t))
                 != NGX_OK)
             {
@@ -910,7 +915,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
+            if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,							//	------------------	设置headers_in字段中的cookies子字段
                                sizeof(ngx_table_elt_t *))
                 != NGX_OK)
             {
@@ -920,7 +925,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             c->log->action = "reading client request headers";
 
-            rev->handler = ngx_http_process_request_headers;				//	执行request header并且解析headers。
+            rev->handler = ngx_http_process_request_headers;								//	---------修改当前请求的事件处理句柄---------	执行request header并且解析headers。
             ngx_http_process_request_headers(rev);
 
             return;
@@ -1121,7 +1126,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 return;
             }
 
-            ngx_http_process_request(r);
+            ngx_http_process_request(r);											//	-----------------	请求头解析完毕，开始处理
 
             return;
         }

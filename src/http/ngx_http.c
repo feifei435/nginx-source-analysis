@@ -398,7 +398,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* create location trees */
 
-    for (s = 0; s < cmcf->servers.nelts; s++) {
+    for (s = 0; s < cmcf->servers.nelts; s++) {								//	创建location-tree
 
         clcf = cscfp[s]->ctx->loc_conf[ngx_http_core_module.ctx_index];
 
@@ -1023,7 +1023,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 {
     ngx_http_location_queue_t  *lq;
 
-    if (*locations == NULL) {
+    if (*locations == NULL) {											//	队列的头结点locations是否已经分配空间，未分配则申请空间并初始化
         *locations = ngx_palloc(cf->temp_pool,
                                 sizeof(ngx_http_location_queue_t));
         if (*locations == NULL) {
