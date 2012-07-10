@@ -857,7 +857,7 @@ ngx_http_handler(ngx_http_request_t *r)
 #endif
 
     r->write_event_handler = ngx_http_core_run_phases;
-    ngx_http_core_run_phases(r);
+    ngx_http_core_run_phases(r);							//	运行所有phase
 }
 
 /* 
@@ -2820,6 +2820,9 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 }
 
 
+/*
+	location的前缀共包含5个关键字：’='，’~'，’~*’，’^~’和‘@’
+*/
 static char *
 ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -2864,7 +2867,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
-    clcf->loc_conf = ctx->loc_conf;
+    clcf->loc_conf = ctx->loc_conf;											//	ngx_http_core_loc_conf_t 的 loc_conf字段指向所有模块的loc_conf
 
     value = cf->args->elts;
 
@@ -2874,29 +2877,29 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         mod = value[1].data;
         name = &value[2];
 
-        if (len == 1 && mod[0] == '=') {
+        if (len == 1 && mod[0] == '=') {								//	精确匹配
 
             clcf->name = *name;
-            clcf->exact_match = 1;
+            clcf->exact_match = 1;				
 
-        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {
+        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {		//	非正则匹配
 
             clcf->name = *name;
             clcf->noregex = 1;
 
-        } else if (len == 1 && mod[0] == '~') {
+        } else if (len == 1 && mod[0] == '~') {							//	正则表达式匹配（不区分大小写）
 
             if (ngx_http_core_regex_location(cf, clcf, name, 0) != NGX_OK) {
                 return NGX_CONF_ERROR;
             }
 
-        } else if (len == 2 && mod[0] == '~' && mod[1] == '*') {
+        } else if (len == 2 && mod[0] == '~' && mod[1] == '*') {		//	正则表达式匹配（区分大小写）	
 
             if (ngx_http_core_regex_location(cf, clcf, name, 1) != NGX_OK) {
                 return NGX_CONF_ERROR;
             }
 
-        } else {
+        } else {														//	报错
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "invalid location modifier \"%V\"", &value[1]);
             return NGX_CONF_ERROR;
@@ -4711,7 +4714,10 @@ ngx_http_core_keepalive(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* 
+ *	[analy]	设置ngx_http_core_loc_conf_t中的字段internal，
+ *			 internal指令指定某个location只能被“内部的”请求调用
+ */
 static char *
 ngx_http_core_internal(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

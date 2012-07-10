@@ -166,7 +166,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_list_t                        headers;
+    ngx_list_t                        headers;						//	array of ngx_table_elt_t
 
     ngx_table_elt_t                  *host;
     ngx_table_elt_t                  *connection;
@@ -217,7 +217,7 @@ typedef struct {
 
     ngx_array_t                       cookies;
 
-    ngx_str_t                         server;
+    ngx_str_t                         server;						//	==host
     off_t                             content_length_n;
     time_t                            keep_alive_n;
 
@@ -368,9 +368,9 @@ struct ngx_http_request_s {
                                          /* of ngx_http_upstream_state_t */
 
     ngx_pool_t                       *pool;
-    ngx_buf_t                        *header_in;
+    ngx_buf_t                        *header_in;					/* [analy]	调用recv等函数读取到的header信息的缓存，通过这个缓存对header进行分析 */
 
-    ngx_http_headers_in_t             headers_in;
+    ngx_http_headers_in_t             headers_in;					//	请求header的结构体
     ngx_http_headers_out_t            headers_out;
 
     ngx_http_request_body_t          *request_body;
@@ -404,7 +404,7 @@ struct ngx_http_request_s {
     ngx_http_handler_pt               content_handler;
     ngx_uint_t                        access_code;
 
-    ngx_http_variable_value_t        *variables;
+    ngx_http_variable_value_t        *variables;					//	array of 
 
 #if (NGX_PCRE)
     ngx_uint_t                        ncaptures;
@@ -546,7 +546,7 @@ struct ngx_http_request_s {
     u_char                           *uri_ext;
     u_char                           *args_start;
     u_char                           *request_start;				/* [analy]	请求的开始地址-> "GET .. ... .. " */
-    u_char                           *request_end;
+    u_char                           *request_end;					/* [analy]	请求行的结束地址		 */
     u_char                           *method_end;					/* [analy]	method的结束地址-> "GET URL VER", 字符串"GET"尾部 */
     u_char                           *schema_start;					/* [analy]	schema开始地址（例如：http://www.baidu.com中的http开始处） */
     u_char                           *schema_end;					/* [analy]	schema结束地址（例如：http://www.baidu.com中的http尾处） */

@@ -296,7 +296,7 @@ typedef struct {
 
 
 struct ngx_http_core_loc_conf_s {
-    ngx_str_t     name;          /* location name */
+    ngx_str_t     name;          /* location name */		//	location-url
 
 #if (NGX_PCRE)
     ngx_http_regex_t  *regex;
@@ -306,7 +306,7 @@ struct ngx_http_core_loc_conf_s {
     unsigned      lmt_excpt:1;
     unsigned      named:1;
 
-    unsigned      exact_match:1;
+    unsigned      exact_match:1;							//	精确匹配("=")
     unsigned      noregex:1;
 
     unsigned      auto_redirect:1;
@@ -323,7 +323,7 @@ struct ngx_http_core_loc_conf_s {
 #endif
 
     /* pointer to the modules' loc_conf */
-    void        **loc_conf;
+    void        **loc_conf;									//	指向所有模块的loc_conf
 
     uint32_t      limit_except;
     void        **limit_except_loc_conf;
