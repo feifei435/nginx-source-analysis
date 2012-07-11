@@ -2715,8 +2715,8 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;
+    http_ctx = cf->ctx;							//	此处将在ngx_http_block()中申请使用的ctx(函数中 赋值cf->ctx = ctx)
+    ctx->main_conf = http_ctx->main_conf;		//	继承上层的main_conf
 
     /* the server{}'s srv_conf */
 
@@ -2732,6 +2732,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
+	//	在次调用create_srv_conf和create_loc_conf
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;
@@ -2761,11 +2762,11 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     /* the server configuration context */
 
-    cscf = ctx->srv_conf[ngx_http_core_module.ctx_index];
-    cscf->ctx = ctx;
+    cscf = ctx->srv_conf[ngx_http_core_module.ctx_index];				//	设置ngx_http_core_srv_conf_t中的ctx字段
+    cscf->ctx = ctx;												
 
 
-    cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
+    cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];				//	向ngx_http_core_main_conf_t中的servers数组字段中添加 ngx_http_core_srv_conf_t 结构元素
 
     cscfp = ngx_array_push(&cmcf->servers);
     if (cscfp == NULL) {
@@ -2777,15 +2778,15 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     /* parse inside server{} */
 
-    pcf = *cf;
+    pcf = *cf;							//	备份当前 ngx_conf_t 结构
     cf->ctx = ctx;
     cf->cmd_type = NGX_HTTP_SRV_CONF;
 
     rv = ngx_conf_parse(cf, NULL);
 
-    *cf = pcf;
+    *cf = pcf;							//	恢复之前 ngx_conf_t 结构
 
-    if (rv == NGX_CONF_OK && !cscf->listen) {
+    if (rv == NGX_CONF_OK && !cscf->listen) {					//		解析成功，并且在server{...}中未碰到listen指令
         ngx_memzero(&lsopt, sizeof(ngx_http_listen_opt_t));
 
         sin = &lsopt.u.sockaddr_in;
@@ -3732,7 +3733,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_uint_t              n;
     ngx_http_listen_opt_t   lsopt;
 
-    cscf->listen = 1;
+    cscf->listen = 1;				//	设置 ngx_http_core_srv_conf_t 中 listen 字段
 
     value = cf->args->elts;
 

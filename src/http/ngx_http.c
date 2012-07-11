@@ -272,8 +272,8 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    pcf = *cf;
-    cf->ctx = ctx;
+    pcf = *cf;					//	备份当前 ngx_conf_t 结构
+    cf->ctx = ctx;				//	赋值 ngx_conf_t->ctx字段，供其他解析块使用e.g. ngx_http_core_server()
 
 	/*
 		"preconfiguration" handler将被调用：
@@ -481,7 +481,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * and in postconfiguration process
      */
 
-    *cf = pcf;
+    *cf = pcf;				//	恢复之前备份的 ngx_conf_t 结构
 
 
     if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {

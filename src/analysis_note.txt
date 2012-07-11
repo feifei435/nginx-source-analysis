@@ -191,6 +191,64 @@ worker进程初始化时，调用所有模块的init_process(ngx_event_process_init), 根据init
 ngx_event_accept(有请求来到)
 	|__ngx_http_init_connection(初始化连接，加入读事件到epoll中)
 		|__ngx_http_init_request(此连接有读事件到来时调用)	
+		
+		
+=================== http配置块解析流程 =====================   		
+ngx_http_block(配置文件中遇见http时将会调用)
+	|__为ngx_http_conf_ctx_t申请空间，并为所有字段申请空间，每个字段指向http模块的一个配置结构
+		|__调用所有模块的create_main_conf
+		|__调用所有模块的create_srv_conf
+		|__调用所有模块的create_loc_conf
+	|__调用所有模块的preconfiguration回调
+	|__调用ngx_conf_parse解析所有http配置项	
+	|__调用所有模块的init_main_conf回调																	
+	|__ngx_http_merge_servers调用模块的merge_srv_conf 和 merge_loc_conf 两个handler处理函数				
+	|__ngx_http_init_locations																			
+	|__ngx_http_init_static_location_trees
+	|__ngx_http_init_phases
+	|__ngx_http_init_headers_in_hash
+	|__调用所有模块的postconfiguration
+	|__ngx_http_variables_init_vars
+	|__ngx_http_init_phase_handlers
+	|__ngx_http_optimize_servers
+	
+
+ngx_http_core_server(配置文件中遇见server时将会调用)
+	|__ngx_http_conf_ctx_t申请空间(其中两个字段申请空间，ctx->srv_conf 和 ctx->loc_conf )
+	|__调用各个模块的 create_srv_conf 和 create_loc_conf 并赋值到ctx上
+	|__设置ngx_http_core_srv_conf_t中的ctx字段
+	|__向ngx_http_core_main_conf_t中的servers数组字段中添加 ngx_http_core_srv_conf_t 结构元素
+	|__ngx_conf_parse()
+	
+ngx_http_core_location(配置文件中遇见location时将会调用)
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
    
    
    
