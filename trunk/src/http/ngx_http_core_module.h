@@ -180,7 +180,7 @@ typedef struct {
     ngx_array_t                 server_names;
 
     /* server ctx */
-    ngx_http_conf_ctx_t        *ctx;
+    ngx_http_conf_ctx_t        *ctx;							//	指向在ngx_http_core_server（）中申请的ctx
 
     ngx_str_t                   server_name;
 
@@ -196,7 +196,7 @@ typedef struct {
     ngx_flag_t                  merge_slashes;
     ngx_flag_t                  underscores_in_headers;
 
-    unsigned                    listen:1;
+    unsigned                    listen:1;						//	此字段是否说明 server{...} 块中 有listen指令
 #if (NGX_PCRE)
     unsigned                    captures:1;
 #endif
