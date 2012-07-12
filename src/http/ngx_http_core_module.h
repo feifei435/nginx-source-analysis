@@ -201,7 +201,7 @@ typedef struct {
     unsigned                    captures:1;
 #endif
 
-    ngx_http_core_loc_conf_t  **named_locations;
+    ngx_http_core_loc_conf_t  **named_locations;				//	???
 } ngx_http_core_srv_conf_t;
 
 
@@ -302,12 +302,12 @@ struct ngx_http_core_loc_conf_s {
     ngx_http_regex_t  *regex;
 #endif
 
-    unsigned      noname:1;   /* "if () {}" block or limit_except */
-    unsigned      lmt_excpt:1;
-    unsigned      named:1;
+    unsigned      noname:1;									/* "if () {}" block or limit_except */ //	nginx会把if 指令配置也看做一个location，即noname类型。
+    unsigned      lmt_excpt:1;								//	location中有“limit_except”指令时为1
+    unsigned      named:1;									//	命名匹配("@")
 
     unsigned      exact_match:1;							//	精确匹配("=")
-    unsigned      noregex:1;
+    unsigned      noregex:1;								//	非正则匹配( " ^~ " )
 
     unsigned      auto_redirect:1;
 #if (NGX_HTTP_GZIP)
@@ -425,7 +425,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    types_hash_max_size;
     ngx_uint_t    types_hash_bucket_size;
 
-    ngx_queue_t  *locations;
+    ngx_queue_t  *locations;					//	ngx_http_location_queue_t 的队列头
 
 #if 0
     ngx_http_core_loc_conf_t  *prev_location;
@@ -434,13 +434,13 @@ struct ngx_http_core_loc_conf_s {
 
 
 typedef struct {
-    ngx_queue_t                      queue;
-    ngx_http_core_loc_conf_t        *exact;
-    ngx_http_core_loc_conf_t        *inclusive;
-    ngx_str_t                       *name;
-    u_char                          *file_name;
-    ngx_uint_t                       line;
-    ngx_queue_t                      list;
+    ngx_queue_t                      queue;					//	队列的节点
+    ngx_http_core_loc_conf_t        *exact;					//	??????不清楚作用
+    ngx_http_core_loc_conf_t        *inclusive;				//	??????不清楚作用
+    ngx_str_t                       *name;					//	指向ngx_http_core_loc_conf_t的name字段(location指令的url)
+    u_char                          *file_name;				//	解析的配置文件完整路径（/usr/local/nginx/conf/nginx.conf）
+    ngx_uint_t                       line;					//	配置文件中正在解析的行NUM
+    ngx_queue_t                      list;					//	??????不清楚作用
 } ngx_http_location_queue_t;
 
 

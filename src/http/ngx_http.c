@@ -307,7 +307,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* parse inside the http{} block */
 
-    cf->module_type = NGX_HTTP_MODULE;
+    cf->module_type = NGX_HTTP_MODULE;					//	这里解析http {...} block里的所有内容，解析完成后返回
     cf->cmd_type = NGX_HTTP_MAIN_CONF;
     rv = ngx_conf_parse(cf, NULL);
 
@@ -330,7 +330,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 				ngx_http_core_init_main_conf,        
 				ngx_http_upstream_init_main_conf, 
 
-		"merge_srv_conf" handler将被调用：		
+		"merge_srv_conf" handler将被调用（http模块就两个）：		
 				ngx_http_ssl_merge_srv_conf,           
 				ngx_http_core_merge_srv_conf,
 
@@ -745,20 +745,20 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_http_core_loc_conf_t    *clcf;
     ngx_http_core_srv_conf_t   **cscfp;
 
-    cscfp = cmcf->servers.elts;
-    ctx = (ngx_http_conf_ctx_t *) cf->ctx;
-    saved = *ctx;
+    cscfp = cmcf->servers.elts;						//	cscfp是ngx_http_core_server（）里创建的 ,cmcf是http {...} block里申请的
+    ctx = (ngx_http_conf_ctx_t *) cf->ctx;			//	在ngx_http_block()函数申请的
+    saved = *ctx;									//	备份上层ctx
     rv = NGX_CONF_OK;
 
     for (s = 0; s < cmcf->servers.nelts; s++) {
 
         /* merge the server{}s' srv_conf's */
 
-        ctx->srv_conf = cscfp[s]->ctx->srv_conf;
+        ctx->srv_conf = cscfp[s]->ctx->srv_conf;	//	获取到ngx_http_core_server（）里创建的ctx->srv_conf
 
         if (module->merge_srv_conf) {
-            rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],
-                                        cscfp[s]->ctx->srv_conf[ctx_index]);
+            rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],				//	上层的ctx->srv_conf
+                                        cscfp[s]->ctx->srv_conf[ctx_index]);		//	下层的ngx_http_core_server（）里创建的
             if (rv != NGX_CONF_OK) {
                 goto failed;
             }
@@ -791,7 +791,7 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
 failed:
 
-    *ctx = saved;
+    *ctx = saved;			//	恢复上层ctx
 
     return rv;
 }
@@ -862,7 +862,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         return NGX_OK;
     }
 
-    ngx_queue_sort(locations, ngx_http_cmp_locations);
+    ngx_queue_sort(locations, ngx_http_cmp_locations);				//	locations队列排序，怎样排序后续分析？？
 
     named = NULL;
     n = 0;
@@ -1030,19 +1030,19 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
             return NGX_ERROR;
         }
 
-        ngx_queue_init(*locations);
+        ngx_queue_init(*locations);		//	初始化节点
     }
 
-    lq = ngx_palloc(cf->temp_pool, sizeof(ngx_http_location_queue_t));
+    lq = ngx_palloc(cf->temp_pool, sizeof(ngx_http_location_queue_t));	//	申请节点
     if (lq == NULL) {
         return NGX_ERROR;
     }
 
-    if (clcf->exact_match
+    if (clcf->exact_match						//	是精确匹配
 #if (NGX_PCRE)
         || clcf->regex
 #endif
-        || clcf->named || clcf->noname)
+        || clcf->named || clcf->noname)			//	使用命名location("@")时和使用"limit_except"指令时
     {
         lq->exact = clcf;
         lq->inclusive = NULL;
@@ -1052,13 +1052,13 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
         lq->inclusive = clcf;
     }
 
-    lq->name = &clcf->name;
-    lq->file_name = cf->conf_file->file.name.data;
-    lq->line = cf->conf_file->line;
+    lq->name = &clcf->name;									//	修改name指向
+    lq->file_name = cf->conf_file->file.name.data;			//	设置解析的配置文件完整路径（/usr/local/nginx/conf/nginx.conf）
+    lq->line = cf->conf_file->line;							//	在配置文件中正在解析的行NUM
 
-    ngx_queue_init(&lq->list);
+    ngx_queue_init(&lq->list);								
 
-    ngx_queue_insert_tail(*locations, &lq->queue);
+    ngx_queue_insert_tail(*locations, &lq->queue);			//	将当前的节点插入的队列的尾部
 
     return NGX_OK;
 }

@@ -2732,7 +2732,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-	//	在次调用create_srv_conf和create_loc_conf
+	//	再次调用create_srv_conf和create_loc_conf
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;
@@ -2762,11 +2762,11 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     /* the server configuration context */
 
-    cscf = ctx->srv_conf[ngx_http_core_module.ctx_index];				//	设置ngx_http_core_srv_conf_t中的ctx字段
-    cscf->ctx = ctx;												
+    cscf = ctx->srv_conf[ngx_http_core_module.ctx_index];				//	cscf是当前层的ngx_http_core_srv_conf_t，设置ngx_http_core_srv_conf_t中的ctx字段
+    cscf->ctx = ctx;													//	ngx_http_core_srv_conf_t的ctx是指向当前层的ctx												
 
 
-    cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];				//	向ngx_http_core_main_conf_t中的servers数组字段中添加 ngx_http_core_srv_conf_t 结构元素
+    cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];				//	向父级的ngx_http_core_main_conf_t中的servers数组字段中添加 ngx_http_core_srv_conf_t 结构元素
 
     cscfp = ngx_array_push(&cmcf->servers);
     if (cscfp == NULL) {
@@ -2837,21 +2837,21 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     ngx_http_conf_ctx_t       *ctx, *pctx;
     ngx_http_core_loc_conf_t  *clcf, *pclcf;
 
-    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));			//	申请自己的ctx（ngx_http_conf_ctx_t）
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    pctx = cf->ctx;
-    ctx->main_conf = pctx->main_conf;
+    pctx = cf->ctx;														//	pctx 指向父级的ngx_http_conf_ctx_t, 使用ngx_http_core_server（）函数中创建的ctx
+    ctx->main_conf = pctx->main_conf;									//	父级的main_conf、srv_conf
     ctx->srv_conf = pctx->srv_conf;
 
-    ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
+    ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);	
     if (ctx->loc_conf == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    for (i = 0; ngx_modules[i]; i++) {
+    for (i = 0; ngx_modules[i]; i++) {									//	执行所有模块的create_loc_conf（）
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;
         }
@@ -2867,8 +2867,8 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
-    clcf->loc_conf = ctx->loc_conf;											//	ngx_http_core_loc_conf_t 的 loc_conf字段指向所有模块的loc_conf
+    clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];				//	clcf 指向本级的 ngx_http_core_loc_conf_t 
+    clcf->loc_conf = ctx->loc_conf;										//	ngx_http_core_loc_conf_t 
 
     value = cf->args->elts;
 
@@ -2952,7 +2952,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
+    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];			//	pclcf指向父级的ngx_http_core_loc_conf_t
 
     if (pclcf->name.len) {
 
@@ -3002,11 +3002,12 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
+	// 将当前的 location 配置加入的父 locations 的队列里面
     if (ngx_http_add_location(cf, &pclcf->locations, clcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
-    save = *cf;
+    save = *cf;										//	继续解析location {...}	块中的内容
     cf->ctx = ctx;
     cf->cmd_type = NGX_HTTP_LOC_CONF;
 
@@ -4033,7 +4034,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static char *
 ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_http_core_srv_conf_t *cscf = conf;
+    ngx_http_core_srv_conf_t *cscf = conf;									//	ngx_http_core_server（） 层创建的 ngx_http_core_srv_conf_t
 
     u_char                   ch;
     ngx_str_t               *value;
@@ -4047,38 +4048,38 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ch = value[i].data[0];
 
         if ((ch == '*' && (value[i].len < 3 || value[i].data[1] != '.'))
-            || (ch == '.' && value[i].len < 2))
+            || (ch == '.' && value[i].len < 2))								//	如果第一字符以 “.”开始，并且长度小于2，server name 无效
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "server name \"%V\" is invalid", &value[i]);
             return NGX_CONF_ERROR;
         }
 
-        if (ngx_strchr(value[i].data, '/')) {
+        if (ngx_strchr(value[i].data, '/')) {								//	在字符串中找查找“/”
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "server name \"%V\" has suspicious symbols",
                                &value[i]);
         }
 
-        sn = ngx_array_push(&cscf->server_names);
+        sn = ngx_array_push(&cscf->server_names);							//	ngx_http_server_name_t 
         if (sn == NULL) {
             return NGX_CONF_ERROR;
         }
 
 #if (NGX_PCRE)
-        sn->regex = NULL;
+        sn->regex = NULL;													//	ngx_http_server_name_t 的 regex 字段
 #endif
-        sn->server = cscf;
+        sn->server = cscf;													//	ngx_http_server_name_t 的 server 字段
 
-        if (ngx_strcasecmp(value[i].data, (u_char *) "$hostname") == 0) {
+        if (ngx_strcasecmp(value[i].data, (u_char *) "$hostname") == 0) {	//	ngx_http_server_name_t 的 name 字段（e.g. 指令server_name $hostname;）
             sn->name = cf->cycle->hostname;
 
         } else {
-            sn->name = value[i];
+            sn->name = value[i];										
         }
 
         if (value[i].data[0] != '~') {
-            ngx_strlow(sn->name.data, sn->name.data, sn->name.len);
+            ngx_strlow(sn->name.data, sn->name.data, sn->name.len);			//	转成小写
             continue;
         }
 
