@@ -200,7 +200,7 @@ ngx_http_block(配置文件中遇见http时将会调用)
 		|__调用所有模块的create_srv_conf
 		|__调用所有模块的create_loc_conf
 	|__调用所有模块的preconfiguration回调
-	|__调用ngx_conf_parse解析所有http配置项	
+	|__调用ngx_conf_parse解析所有http配置项	（解析http {...} block里的所有内容，解析完成后返回）
 	|__调用所有模块的init_main_conf回调																	
 	|__ngx_http_merge_servers调用模块的merge_srv_conf 和 merge_loc_conf 两个handler处理函数				
 	|__ngx_http_init_locations																			
@@ -221,6 +221,8 @@ ngx_http_core_server(配置文件中遇见server时将会调用)
 	|__ngx_conf_parse()
 	
 ngx_http_core_location(配置文件中遇见location时将会调用)
+	|__创建本级的location, main和srv的conf均使用ngx_http_core_server()函数中创建的
+	|__
 
 		
 		

@@ -283,6 +283,11 @@ char *ngx_conf_check_num_bounds(ngx_conf_t *cf, void *post, void *data);
         conf = (prev == NGX_CONF_UNSET) ? default : prev;                    \
     }
 
+/*  
+ * 意思很明确，如果下层的某个变量没有配置，那么就用上层(若有设置的话)的，因为我们在使用srv_conf或者 
+ * loc_conf的时候一般都是要用到底层的，也就是具体请求对应的location的配置，很多srv_conf的配置是需要传递下来 
+ * 供下层使用的，(main_conf底层跟上层都是共享的) 
+ */ 
 #define ngx_conf_merge_size_value(conf, prev, default)                       \
     if (conf == NGX_CONF_UNSET_SIZE) {                                       \
         conf = (prev == NGX_CONF_UNSET_SIZE) ? default : prev;               \
