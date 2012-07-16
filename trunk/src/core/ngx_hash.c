@@ -693,12 +693,14 @@ ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
         ha->hsize = NGX_HASH_LARGE_HSIZE;
     }
 
+	//	初始化字段keys数组，大小为asize
     if (ngx_array_init(&ha->keys, ha->temp_pool, asize, sizeof(ngx_hash_key_t))
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
+	//	初始化字段 dns_wc_head 数组，大小为asize
     if (ngx_array_init(&ha->dns_wc_head, ha->temp_pool, asize,
                        sizeof(ngx_hash_key_t))
         != NGX_OK)
@@ -706,6 +708,7 @@ ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
         return NGX_ERROR;
     }
 
+	//	初始化字段 dns_wc_tail 数组，大小为asize
     if (ngx_array_init(&ha->dns_wc_tail, ha->temp_pool, asize,
                        sizeof(ngx_hash_key_t))
         != NGX_OK)
@@ -713,17 +716,20 @@ ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
         return NGX_ERROR;
     }
 
+	//	初始化字段 keys_hash ，大小为 ha->hsize 个ngx_array_t
     ha->keys_hash = ngx_pcalloc(ha->temp_pool, sizeof(ngx_array_t) * ha->hsize);
     if (ha->keys_hash == NULL) {
         return NGX_ERROR;
     }
 
+	//	初始化字段 dns_wc_head_hash ，大小为 ha->hsize 个ngx_array_t
     ha->dns_wc_head_hash = ngx_pcalloc(ha->temp_pool,
                                        sizeof(ngx_array_t) * ha->hsize);
     if (ha->dns_wc_head_hash == NULL) {
         return NGX_ERROR;
     }
 
+	//	初始化字段 dns_wc_tail_hash ，大小为 ha->hsize 个ngx_array_t
     ha->dns_wc_tail_hash = ngx_pcalloc(ha->temp_pool,
                                        sizeof(ngx_array_t) * ha->hsize);
     if (ha->dns_wc_tail_hash == NULL) {
@@ -745,9 +751,9 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
     ngx_array_t     *keys, *hwc;
     ngx_hash_key_t  *hk;
 
-    last = key->len;
+    last = key->len;			//	key的长度
 
-    if (flags & NGX_HASH_WILDCARD_KEY) {
+    if (flags & NGX_HASH_WILDCARD_KEY) {					//	使用通配符时
 
         /*
          * supported wildcards:
@@ -797,9 +803,10 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     k = 0;
 
+	//	计算key的hash值
     for (i = 0; i < last; i++) {
-        if (!(flags & NGX_HASH_READONLY_KEY)) {
-            key->data[i] = ngx_tolower(key->data[i]);
+        if (!(flags & NGX_HASH_READONLY_KEY)) {					//	未使用 NGX_HASH_READONLY_KEY 时，将key转换为小写
+            key->data[i] = ngx_tolower(key->data[i]);			
         }
         k = ngx_hash(k, key->data[i]);
     }
@@ -837,7 +844,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     *name = *key;
 
-    hk = ngx_array_push(&ha->keys);
+    hk = ngx_array_push(&ha->keys);				//	增加 ngx_hash_key_t 变量到 ngx_hash_keys_arrays_t的keys字段
     if (hk == NULL) {
         return NGX_ERROR;
     }

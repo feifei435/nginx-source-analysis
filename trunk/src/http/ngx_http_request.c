@@ -240,7 +240,7 @@ ngx_http_init_connection(ngx_connection_t *c)
 
 
 /* 
- *	[analy]	当此描述符可读时，调用此函数
+ *	[analy]	当描述符可读时，调用此函数
  */
 static void
 ngx_http_init_request(ngx_event_t *rev)
@@ -401,8 +401,8 @@ ngx_http_init_request(ngx_event_t *rev)
     /* the default server configuration for the address:port */
     cscf = addr_conf->default_server;
 
-    r->main_conf = cscf->ctx->main_conf;
-    r->srv_conf = cscf->ctx->srv_conf;
+    r->main_conf = cscf->ctx->main_conf;								//	设置main_conf、srv_conf、loc_conf
+    r->srv_conf = cscf->ctx->srv_conf;	
     r->loc_conf = cscf->ctx->loc_conf;
 
     rev->handler = ngx_http_process_request_line;						//	重新设置当前请求的处理句柄，修改为 ngx_http_process_request_line

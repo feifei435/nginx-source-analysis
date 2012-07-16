@@ -1920,7 +1920,9 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
 
 #endif
 
-
+/* 
+ *	[analy]	增加http-core模块的变量到 ngx_http_core_main_conf_t.variables_keys 字段中
+ */
 ngx_int_t
 ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 {
@@ -1928,6 +1930,7 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     ngx_http_variable_t        *v;
     ngx_http_core_main_conf_t  *cmcf;
 
+	//	ngx_http_core_main_conf_t字段 variables_keys 申请空间
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
     cmcf->variables_keys = ngx_pcalloc(cf->temp_pool,
@@ -1939,12 +1942,15 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     cmcf->variables_keys->pool = cf->pool;
     cmcf->variables_keys->temp_pool = cf->pool;
 
+	//	为ngx_hash_keys_arrays_t 中个字段申请空间
     if (ngx_hash_keys_array_init(cmcf->variables_keys, NGX_HASH_SMALL)
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
+
+	//	遍历 ngx_http_core_variables 变量静态数组， 增加key-value到variables_keys中
     for (v = ngx_http_core_variables; v->name.len; v++) {
         rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v,
                               NGX_HASH_READONLY_KEY);

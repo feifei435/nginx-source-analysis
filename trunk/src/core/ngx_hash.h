@@ -77,8 +77,8 @@ typedef struct {
 #define NGX_HASH_SMALL            1
 #define NGX_HASH_LARGE            2
 
-#define NGX_HASH_LARGE_ASIZE      16384
-#define NGX_HASH_LARGE_HSIZE      10007
+#define NGX_HASH_LARGE_ASIZE      16384		//	???
+#define NGX_HASH_LARGE_HSIZE      10007		//	???
 
 #define NGX_HASH_WILDCARD_KEY     1
 #define NGX_HASH_READONLY_KEY     2
@@ -93,10 +93,10 @@ typedef struct {
     ngx_array_t       keys;					//	array of ngx_hash_key_t
     ngx_array_t      *keys_hash;
 
-    ngx_array_t       dns_wc_head;
+    ngx_array_t       dns_wc_head;			//	array of ngx_hash_key_t
     ngx_array_t      *dns_wc_head_hash;
 
-    ngx_array_t       dns_wc_tail;
+    ngx_array_t       dns_wc_tail;			//	array of ngx_hash_key_t
     ngx_array_t      *dns_wc_tail_hash;
 } ngx_hash_keys_arrays_t;
 

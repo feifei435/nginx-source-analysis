@@ -13,7 +13,7 @@
 typedef struct {
     in_addr_t         mask;
     in_addr_t         addr;
-    ngx_uint_t        deny;      /* unsigned  deny:1; */
+    ngx_uint_t        deny;      /* unsigned  deny:1; */		//	当时指令deny时为1
 } ngx_http_access_rule_t;
 
 #if (NGX_HAVE_INET6)
@@ -159,7 +159,7 @@ ngx_http_access_inet(ngx_http_request_t *r, ngx_http_access_loc_conf_t *alcf,
     ngx_http_access_rule_t  *rule;
 
     rule = alcf->rules->elts;
-    for (i = 0; i < alcf->rules->nelts; i++) {
+    for (i = 0; i < alcf->rules->nelts; i++) {							//	遍历所有规则
 
         ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "access: %08XD %08XD %08XD",
@@ -221,15 +221,20 @@ ngx_http_access_inet6(ngx_http_request_t *r, ngx_http_access_loc_conf_t *alcf,
 #endif
 
 
+
+/* 
+ *	[analy]	当请求的ip信息和location中配置的deny与allow指令指定的value一致时，进入此函数进行检查
+ *			如果匹配到的是deny指令的value，检查satisfy指令的value是否指定all，
+ */
 static ngx_int_t
 ngx_http_access_found(ngx_http_request_t *r, ngx_uint_t deny)
 {
     ngx_http_core_loc_conf_t  *clcf;
 
-    if (deny) {
+    if (deny) {			//	deny指令检查
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-        if (clcf->satisfy == NGX_HTTP_SATISFY_ALL) {
+        if (clcf->satisfy == NGX_HTTP_SATISFY_ALL) {			//	satify指令指定value=all时
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                           "access forbidden by rule");
         }
@@ -259,11 +264,11 @@ ngx_http_access_rule(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    all = (value[1].len == 3 && ngx_strcmp(value[1].data, "all") == 0);
+    all = (value[1].len == 3 && ngx_strcmp(value[1].data, "all") == 0);			//	检查指令的value，是否等于字符串"all"
 
-    if (!all) {
+    if (!all) {			//	非 "all" 时
 
-        rc = ngx_ptocidr(&value[1], &cidr);
+        rc = ngx_ptocidr(&value[1], &cidr);				//	解析IP
 
         if (rc == NGX_ERROR) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -324,7 +329,7 @@ ngx_http_access_rule(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         rule->mask = cidr.u.in.mask;
         rule->addr = cidr.u.in.addr;
-        rule->deny = (value[0].data[0] == 'd') ? 1 : 0;
+        rule->deny = (value[0].data[0] == 'd') ? 1 : 0;				//	是指令deny时为1
     }
 
     return NGX_CONF_OK;
