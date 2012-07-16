@@ -417,11 +417,11 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+
+	//	创建 ngx_http_headers_in 静态数组的hash表，存放于 ngx_http_core_main_conf_t 的 headers_in_hash 字段
     if (ngx_http_init_headers_in_hash(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
-    }
-
-	
+    }	
 
 	/*
 		"postconfiguration" handler将被调用：
@@ -472,6 +472,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+	//	将设置cmcf->variables_hash
     if (ngx_http_variables_init_vars(cf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -484,6 +485,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     *cf = pcf;				//	恢复之前备份的 ngx_conf_t 结构
 
 
+	//	初始化phase的handler
     if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -573,7 +575,9 @@ ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     return NGX_OK;
 }
 
-
+/*
+ *	[analy]	创建 ngx_http_headers_in 静态数组的hash表，存放于 ngx_http_core_main_conf_t 的 headers_in_hash 字段
+ */
 static ngx_int_t
 ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -582,12 +586,14 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     ngx_hash_init_t     hash;
     ngx_http_header_t  *header;
 
+	//	初始化 32个 ngx_hash_key_t变量
     if (ngx_array_init(&headers_in, cf->temp_pool, 32, sizeof(ngx_hash_key_t))
         != NGX_OK)
     {
         return NGX_ERROR;
     }
-
+	
+	//	将 ngx_http_headers_in 静态数组中，所有headers 经过hash后, 加入到 数组中
     for (header = ngx_http_headers_in; header->name.len; header++) {
         hk = ngx_array_push(&headers_in);
         if (hk == NULL) {

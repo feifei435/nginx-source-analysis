@@ -211,7 +211,16 @@ ngx_http_block(配置文件中遇见http时将会调用)
 	|__ngx_http_variables_init_vars
 	|__ngx_http_init_phase_handlers
 	|__ngx_http_optimize_servers
-	
+
+---------------模块的配置handler执行流程-------------------------
+create_main_conf
+create_srv_conf
+create_loc_conf
+preconfiguration			//	大多数是设置variables变量
+init_main_conf				//	对create_main_conf中的字段初始化
+merge_srv_conf
+merge_loc_conf
+postconfiguration			//	设置相应阶段的handler
 
 ngx_http_core_server(配置文件中遇见server时将会调用)
 	|__ngx_http_conf_ctx_t申请空间(其中两个字段申请空间，ctx->srv_conf 和 ctx->loc_conf )
@@ -224,7 +233,37 @@ ngx_http_core_location(配置文件中遇见location时将会调用)
 	|__创建本级的location, main和srv的conf均使用ngx_http_core_server()函数中创建的
 	|__
 
-		
+在这几个phase的checker中，它将所要执行的handler的返回值分为4种类型。
+1 NGX_OK 此时返回NGX_AGAIN,这里我们知道如果checker返回ok的话，整个handler的处理就会直接返回，也就是这次处理结束。并且这里phase_handler被赋值为ph->next,也就是下一个phase的索引。也就是说下次将会调用它的下一个phase的checker。
+
+2 NGX_DECLINED 此时也返回NGX_AGAIN,而这个和上面有所不同，那就是phase_handler的赋值，这里这个值只是简单的++,也就是说会紧接着处理当前phase的下一个phase，只有当前的phase的handelr处理完毕了，才可能会处理下一个phase的handler
+
+3 NGX_AGAIN 或者NGX_DONE，这个的话直接返回OK,也就是会结束handler的处理。
+
+4 剩余的情况，主要是处理NGX_ERROR,以及NGX_HTTP_(也就是返回一些http的状态码)的处理。 	
+	
+--------------- phase的checker -------------------------	
+NGX_HTTP_POST_READ_PHASE					ngx_http_core_generic_phase
+NGX_HTTP_SERVER_REWRITE_PHASE				ngx_http_core_rewrite_phase
+NGX_HTTP_FIND_CONFIG_PHASE					ngx_http_core_find_config_phase
+NGX_HTTP_REWRITE_PHASE						ngx_http_core_rewrite_phase
+NGX_HTTP_POST_REWRITE_PHASE					ngx_http_core_post_rewrite_phase
+NGX_HTTP_PREACCESS_PHASE					ngx_http_core_generic_phase
+NGX_HTTP_ACCESS_PHASE						ngx_http_core_access_phase
+NGX_HTTP_POST_ACCESS_PHASE					ngx_http_core_post_access_phase
+NGX_HTTP_TRY_FILES_PHASE					ngx_http_core_try_files_phase
+NGX_HTTP_CONTENT_PHASE						ngx_http_core_content_phase
+NGX_HTTP_LOG_PHASE							ngx_http_core_generic_phase	
+
+
+这里需要注意就是只有下面这几个phase会有多个handler，剩余的都是只有一个handler的。
+		NGX_HTTP_POST_READ_PHASE   
+        NGX_HTTP_SERVER_REWRITE_PHASE,  
+        NGX_HTTP_REWRITE_PHASE,  
+        NGX_HTTP_PREACCESS_PHASE,  
+        NGX_HTTP_ACCESS_PHASE,  
+        NGX_HTTP_CONTENT_PHASE,  
+        NGX_HTTP_LOG_PHASE  
 		
 		
 		
