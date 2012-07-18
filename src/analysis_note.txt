@@ -256,7 +256,26 @@ NGX_HTTP_CONTENT_PHASE						ngx_http_core_content_phase
 NGX_HTTP_LOG_PHASE							ngx_http_core_generic_phase	
 
 
-这里需要注意就是只有下面这几个phase会有多个handler，剩余的都是只有一个handler的。
+NGX_HTTP_POST_READ_PHASE		------|	
+									  |
+NGX_HTTP_SERVER_REWRITE_PHASE	<-----|
+
+NGX_HTTP_FIND_CONFIG_PHASE		<-----|	<----|		
+											 |
+NGX_HTTP_REWRITE_PHASE				  |		 |
+									  |		 |
+NGX_HTTP_POST_REWRITE_PHASE		<-----|		 |
+									  |------| 	
+NGX_HTTP_PREACCESS_PHASE		
+NGX_HTTP_ACCESS_PHASE			
+NGX_HTTP_POST_ACCESS_PHASE		
+NGX_HTTP_TRY_FILES_PHASE		
+NGX_HTTP_CONTENT_PHASE			
+NGX_HTTP_LOG_PHASE				
+
+
+
+这里需要注意就是只有下面这几个phase会有多个handler:
 		NGX_HTTP_POST_READ_PHASE   
         NGX_HTTP_SERVER_REWRITE_PHASE,  
         NGX_HTTP_REWRITE_PHASE,  
@@ -264,11 +283,26 @@ NGX_HTTP_LOG_PHASE							ngx_http_core_generic_phase
         NGX_HTTP_ACCESS_PHASE,  
         NGX_HTTP_CONTENT_PHASE,  
         NGX_HTTP_LOG_PHASE  
+剩余的都是只有一个handler的:
+		NGX_HTTP_FIND_CONFIG_PHASE	
+		NGX_HTTP_POST_REWRITE_PHASE
+		NGX_HTTP_POST_ACCESS_PHASE
+		NGX_HTTP_TRY_FILES_PHASE
 		
-		
-		
-		
-		
+--------------- 请求处理流程 -------------------------			
+ngx_http_init_connection
+	|__ngx_http_init_request
+		|__ngx_http_process_request_line
+			|__ngx_http_read_request_header(读取request line)
+			|__ngx_http_parse_request_line(解析request line)
+			|__ngx_http_process_request_headers(解析request headers)
+				|__ngx_http_read_request_header(读取request header)
+				|__ngx_http_parse_header_line(解析request header)
+				|__ngx_http_process_request_header
+				|__ngx_http_process_request
+					|__ngx_http_handler
+						|__ngx_http_core_run_phases
+					|__ngx_http_run_posted_requests
 		
 		
 		

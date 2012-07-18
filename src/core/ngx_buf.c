@@ -16,7 +16,7 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
 {
     ngx_buf_t *b;
 
-	/* [analy]	calloc一个buf，可以看到它调用的是calloc，也就是说都会清0. */
+	//	calloc一个buf，可以看到它调用的是calloc，也就是说都会清0
     b = ngx_calloc_buf(pool);
     if (b == NULL) {
         return NULL;
@@ -55,7 +55,7 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
 
     cl = pool->chain;
 
-	//	如果chain已经存在，则直接返回这个chain，然后从pool的chain中删除这个chain。
+	//	如果chain已经存在，则直接返回这个chain，然后从pool的chain中删除这个chain
     if (cl) {
         pool->chain = cl->next;			//	?????????????不明白
         return cl;
@@ -70,7 +70,9 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
     return cl;
 }
 
-
+/* 
+ *	[analy]	暂时未使用此函数
+ */
 ngx_chain_t *
 ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
 {

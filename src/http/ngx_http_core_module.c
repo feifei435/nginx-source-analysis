@@ -861,7 +861,8 @@ ngx_http_handler(ngx_http_request_t *r)
 }
 
 /* 
- *	[analy]	运行phase，遍历所有phase的checker
+ *	[analy]	运行phase，遍历所有phase的checker, handler会在checker中进行调用
+ *			通过r->phase_handler的值来索引handlers数组中的handler.
  */
 void
 ngx_http_core_run_phases(ngx_http_request_t *r)

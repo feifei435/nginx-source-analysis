@@ -46,7 +46,7 @@ struct ngx_buf_s {
     unsigned         in_file:1;			//	文件缓冲
     unsigned         flush:1;			//	被清除
     unsigned         sync:1;			//	异步
-    unsigned         last_buf:1;					//	此字段是一个位域，设为1表示此缓冲区是链表中最后一个元素，设置为0说明后边还有元素
+    unsigned         last_buf:1;		//	此字段是一个位域，设为1表示此缓冲区是链表中最后一个元素，设置为0说明后边还有元素
     unsigned         last_in_chain:1;	//	链表的尾部
 
     unsigned         last_shadow:1;
@@ -77,11 +77,16 @@ typedef void (*ngx_output_chain_aio_pt)(ngx_output_chain_ctx_t *ctx,
     ngx_file_t *file);
 #endif
 
-struct ngx_output_chain_ctx_s {			/* [analy] 主要是管理输出buf */
+
+/* 
+ *	[analy] 主要是管理输出buf 
+ */
+struct ngx_output_chain_ctx_s {			
     ngx_buf_t                   *buf;		//	这个域也就是我们拷贝数据的地方，我们一般输出的话都是从in直接copy相应的size到buf中
     ngx_chain_t                 *in;		//	这个就是我们保存那些需要发送数据的地方
     ngx_chain_t                 *free;		//	这个保存了一些空的buf，也就是说如果free存在，我们都会直接从free中取buf到前面的buf域
-    ngx_chain_t                 *busy;		//	这个保存了已经发送完毕的buf，也就是每次我们从in中将buf读取完毕后，确定数据已经取完，此时就会将这个chain拷贝到busy中。然后将比较老的busy buf拷贝到free中。 
+    ngx_chain_t                 *busy;		//	这个保存了已经发送完毕的buf，也就是每次我们从in中将buf读取完毕后，确定数据已经取完，
+											//	此时就会将这个chain拷贝到busy中。然后将比较老的busy buf拷贝到free中
 
 	//	相关的标记，是否使用sendfile，是否使用directio等等
     unsigned                     sendfile:1;
