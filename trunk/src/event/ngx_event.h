@@ -38,7 +38,7 @@ typedef struct {
 struct ngx_event_s {
     void            *data;
 
-    unsigned         write:1;
+    unsigned         write:1;							//	为1时, 标识当前事件是写事件
 
     unsigned         accept:1;							/* [analy]   标识当前事件类型是否为监听套接字， 如果是=1(在ngx_event_process_init设置) */
 

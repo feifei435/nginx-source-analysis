@@ -96,7 +96,9 @@ ngx_array_push(ngx_array_t *a)
     return elt;
 }
 
-
+/*
+ *	[analy]	添加指定个数的元素到数组中
+ */
 void *
 ngx_array_push_n(ngx_array_t *a, ngx_uint_t n)
 {

@@ -276,6 +276,10 @@ ngx_http_rewrite_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 }
 
 
+
+/*
+ *	[analy]	rewriteÄ£¿é×¢²áhandlerÔÚ NGX_HTTP_SERVER_REWRITE_PHASE ºÍ NGX_HTTP_REWRITE_PHASE
+ */
 static ngx_int_t
 ngx_http_rewrite_init(ngx_conf_t *cf)
 {
@@ -284,6 +288,7 @@ ngx_http_rewrite_init(ngx_conf_t *cf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
+	//	×¢²áhandler£¬ NGX_HTTP_SERVER_REWRITE_PHASE
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_SERVER_REWRITE_PHASE].handlers);
     if (h == NULL) {
         return NGX_ERROR;
@@ -291,6 +296,7 @@ ngx_http_rewrite_init(ngx_conf_t *cf)
 
     *h = ngx_http_rewrite_handler;
 
+	//	×¢²áhandler£¬ NGX_HTTP_REWRITE_PHASE
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
     if (h == NULL) {
         return NGX_ERROR;

@@ -54,9 +54,9 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
     int32_t        offset;
 #endif
 
-    wev = c->write;
+    wev = c->write;				//	写事件
 
-    if (!wev->ready) {
+    if (!wev->ready) {			//	写事件未准备好，直接返回
         return in;
     }
 
