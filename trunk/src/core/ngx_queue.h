@@ -45,6 +45,9 @@ struct ngx_queue_s {
     (h)->next = x
 
 
+/* 
+ *	[analy]	在当前节点之前插入节点
+ */
 #define ngx_queue_insert_after   ngx_queue_insert_head
 
 /* 

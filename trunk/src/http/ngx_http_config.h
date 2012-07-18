@@ -44,9 +44,9 @@ typedef struct {
 #define NGX_HTTP_SRV_CONF         0x04000000		/* [analy]	指令使用区域为http->server-block内 */
 #define NGX_HTTP_LOC_CONF         0x08000000		/* [analy]	指令使用区域为http->server->location-block内 */
 #define NGX_HTTP_UPS_CONF         0x10000000		/* [analy]	指令使用区域为upstream-block内 */
-#define NGX_HTTP_SIF_CONF         0x20000000
-#define NGX_HTTP_LIF_CONF         0x40000000
-#define NGX_HTTP_LMT_CONF         0x80000000
+#define NGX_HTTP_SIF_CONF         0x20000000		/* [analy]	指令使用区域为server-if-block内 */
+#define NGX_HTTP_LIF_CONF         0x40000000		/* [analy]	指令使用区域为location-if-block内 */
+#define NGX_HTTP_LMT_CONF         0x80000000		/* [analy]	指令使用区域为limit_except-block内 */
 
 
 #define NGX_HTTP_MAIN_CONF_OFFSET  offsetof(ngx_http_conf_ctx_t, main_conf)

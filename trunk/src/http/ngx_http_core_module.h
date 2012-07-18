@@ -299,7 +299,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_str_t     name;          /* location name */		//	location-url
 
 #if (NGX_PCRE)
-    ngx_http_regex_t  *regex;
+    ngx_http_regex_t  *regex;								//	正则匹配（"~" 或 "~*"）
 #endif
 
     unsigned      noname:1;									/* "if () {}" block or limit_except */ //	nginx会把if 指令配置也看做一个location，即noname类型。
