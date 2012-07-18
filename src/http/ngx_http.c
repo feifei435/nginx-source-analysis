@@ -1068,7 +1068,10 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	进行location排序比较
+ *			exact_match --> regex(regex==1) --> named(regex==1) --> noname(regex==1)
+ */
 static ngx_int_t
 ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 {
@@ -1082,7 +1085,8 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
     first = lq1->exact ? lq1->exact : lq1->inclusive;
     second = lq2->exact ? lq2->exact : lq2->inclusive;
 
-    if (first->noname && !second->noname) {
+	//	noname=1 排列在 noname=0之后
+    if (first->noname && !second->noname) {					
         /* shift no named locations to the end */
         return 1;
     }
@@ -1092,11 +1096,12 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
         return -1;
     }
 
-    if (first->noname || second->noname) {
+    if (first->noname || second->noname) {				//	与上一个检查项的实际操作相同（由于使用指针）
         /* do not sort no named locations */
         return 0;
     }
 
+	//	named=1 排列在 named=0之后
     if (first->named && !second->named) {
         /* shift named locations to the end */
         return 1;
@@ -1108,11 +1113,11 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
     }
 
     if (first->named && second->named) {
-        return ngx_strcmp(first->name.data, second->name.data);
+        return ngx_strcmp(first->name.data, second->name.data);		//	根据location的大小写和字母顺序进行排序
     }
 
 #if (NGX_PCRE)
-
+	//	是正则匹配的 *regex != NULL的 排列在 *regex == NULL之后
     if (first->regex && !second->regex) {
         /* shift the regex matches to the end */
         return 1;
@@ -1130,7 +1135,7 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 
 #endif
 
-    rc = ngx_strcmp(first->name.data, second->name.data);
+    rc = ngx_strcmp(first->name.data, second->name.data);				//	location的name相等时， exact_match 要排列在 inclusive 之前
 
     if (rc == 0 && !first->exact_match && second->exact_match) {
         /* an exact match must be before the same inclusive one */
