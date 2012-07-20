@@ -154,9 +154,9 @@ typedef struct {
 
     ngx_hash_t                 headers_in_hash;						//	ngx_http_headers_in 静态数组的hash表
 
-    ngx_hash_t                 variables_hash;
+    ngx_hash_t                 variables_hash;						//	变量hash表
 
-    ngx_array_t                variables;							/* ngx_http_variable_t */
+    ngx_array_t                variables;							//	索引变量的数组		/* ngx_http_variable_t */
     ngx_uint_t                 ncaptures;
 
     ngx_uint_t                 server_names_hash_max_size;			//	参考配置指令
@@ -165,7 +165,7 @@ typedef struct {
     ngx_uint_t                 variables_hash_max_size;				//	参考配置指令
     ngx_uint_t                 variables_hash_bucket_size;			//	参考配置指令
 
-    ngx_hash_keys_arrays_t    *variables_keys;						//	在 ngx_http_variables_add_core_vars（）函数中申请空间并初始化
+    ngx_hash_keys_arrays_t    *variables_keys;						//	变量hash数组（在 ngx_http_variables_add_core_vars（）函数中申请空间并初始化）
 
     ngx_array_t               *ports;								//	array of ngx_http_conf_port_t
 
