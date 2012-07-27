@@ -927,7 +927,10 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	NGX_HTTP_SERVER_REWRITE_PHASE 和 NGX_HTTP_REWRITE_PHASE 均调用此函数
+ *			当前系统中定义的在 rewrite 模块中， 调用的handler是 ngx_http_rewrite_handler	
+ */
 ngx_int_t
 ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
