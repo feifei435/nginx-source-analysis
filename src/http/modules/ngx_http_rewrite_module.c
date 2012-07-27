@@ -616,11 +616,11 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     save = *cf;
     cf->ctx = ctx;
 
-    if (pclcf->name.len == 0) {						//	如果
+    if (pclcf->name.len == 0) {						//	如果 if block {...}在server层，则上层name=NULL
         if_code->loc_conf = NULL;
-        cf->cmd_type = NGX_HTTP_SIF_CONF;
+        cf->cmd_type = NGX_HTTP_SIF_CONF;			//	在 server {...} block 内解析
 
-    } else {
+    } else {										//	在 location {...} block 内解析
         if_code->loc_conf = ctx->loc_conf;
         cf->cmd_type = NGX_HTTP_LIF_CONF;
     }
