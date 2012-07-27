@@ -129,8 +129,8 @@ typedef struct {
     /* add the r->args to the new arguments */
     uintptr_t                   add_args:1;
 
-    uintptr_t                   redirect:1;
-    uintptr_t                   break_cycle:1;
+    uintptr_t                   redirect:1;				//	rewrite的flag指令后配置了redirect或permanent时，会将此字段设置为1，还有一种情况TODO在分析
+    uintptr_t                   break_cycle:1;			//	rewrite的flag指令配置了break时，会将此字段设置为1
 
     ngx_str_t                   name;
 } ngx_http_script_regex_code_t;

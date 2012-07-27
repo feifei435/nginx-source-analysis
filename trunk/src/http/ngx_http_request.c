@@ -1676,7 +1676,7 @@ ngx_http_process_request(ngx_http_request_t *r)
     r->stat_writing = 1;
 #endif
 
-    c->read->handler = ngx_http_request_handler;				//	在这注册的event-handler，在哪调用？？
+    c->read->handler = ngx_http_request_handler;				//	在这注册的event-handler，在 ngx_epoll_process_events（）函数中调用
     c->write->handler = ngx_http_request_handler;
     r->read_event_handler = ngx_http_block_reading;
 

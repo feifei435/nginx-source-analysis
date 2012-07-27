@@ -136,9 +136,9 @@ struct ngx_http_phase_handler_s {
 
 
 typedef struct {
-    ngx_http_phase_handler_t  *handlers;
-    ngx_uint_t                 server_rewrite_index;
-    ngx_uint_t                 location_rewrite_index;
+    ngx_http_phase_handler_t  *handlers;							//	所有 phase 的数组集合
+    ngx_uint_t                 server_rewrite_index;				//	指向　NGX_HTTP_SERVER_REWRITE_PHASE　 阶段的索引号
+    ngx_uint_t                 location_rewrite_index;				//	指向　NGX_HTTP_REWRITE_PHASE		　阶段的索引号
 } ngx_http_phase_engine_t;
 
 

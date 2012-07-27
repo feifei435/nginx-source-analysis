@@ -356,8 +356,8 @@ struct ngx_http_request_s {
     void                            **srv_conf;
     void                            **loc_conf;
 
-    ngx_http_event_handler_pt         read_event_handler;
-    ngx_http_event_handler_pt         write_event_handler;
+    ngx_http_event_handler_pt         read_event_handler;						//	在 ngx_http_request_handler 中调用
+    ngx_http_event_handler_pt         write_event_handler;						//	在 ngx_http_request_handler 中调用
 
 #if (NGX_HTTP_CACHE)
     ngx_http_cache_t                 *cache;

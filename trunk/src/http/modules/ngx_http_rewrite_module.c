@@ -133,6 +133,9 @@ ngx_module_t  ngx_http_rewrite_module = {
 };
 
 
+/*
+ *	[analy]	在这两个phase中调用 NGX_HTTP_SERVER_REWRITE_PHASE 和 NGX_HTTP_REWRITE_PHASE
+ */
 static ngx_int_t
 ngx_http_rewrite_handler(ngx_http_request_t *r)
 {
@@ -369,6 +372,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         last = 1;
     }
 
+	//	rewrite指令配置了flag标记时，进行如下解析
     if (cf->args->nelts == 4) {
         if (ngx_strcmp(value[3].data, "last") == 0) {
             last = 1;
