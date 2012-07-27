@@ -555,7 +555,7 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    pctx = cf->ctx;
+    pctx = cf->ctx;								//	根据指令"if"所在位置的不同传入的 cf->ctx 也不同，如果在server {...}中时ctx为server层的，如果在location {...} 内时为location层的
     ctx->main_conf = pctx->main_conf;
     ctx->srv_conf = pctx->srv_conf;
 
@@ -582,14 +582,14 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
+    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];				//	上层的loc_conf，可能是server层的也有可能是location层的
 
-    clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
-    clcf->loc_conf = ctx->loc_conf;
-    clcf->name = pclcf->name;
-    clcf->noname = 1;
+    clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];				//	本层的loc_conf
+    clcf->loc_conf = ctx->loc_conf;										//	修改本层的 ngx_http_core_loc_conf_t 的字段 loc_conf 指向本层loc_conf
+    clcf->name = pclcf->name;											//	将上层location的 name 字段赋值给本层的 name
+    clcf->noname = 1;													//	if block {...} 将noname字段设置为1
 
-    if (ngx_http_add_location(cf, &pclcf->locations, clcf) != NGX_OK) {
+    if (ngx_http_add_location(cf, &pclcf->locations, clcf) != NGX_OK) {	//	加入到父级的locations队列中
         return NGX_CONF_ERROR;
     }
 
@@ -616,7 +616,7 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     save = *cf;
     cf->ctx = ctx;
 
-    if (pclcf->name.len == 0) {
+    if (pclcf->name.len == 0) {						//	如果
         if_code->loc_conf = NULL;
         cf->cmd_type = NGX_HTTP_SIF_CONF;
 
@@ -664,41 +664,48 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
     u_char                         errstr[NGX_MAX_CONF_ERRSTR];
 
     value = cf->args->elts;
-    last = cf->args->nelts - 1;
+    last = cf->args->nelts - 1;			//	最后一个元素的下标
 
-    if (value[1].len < 1 || value[1].data[0] != '(') {
+    if (value[1].len < 1 || value[1].data[0] != '(') {							//	检查if配置准确性
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid condition \"%V\"", &value[1]);
         return NGX_CONF_ERROR;
     }
 
-    if (value[1].len == 1) {
+	/*	
+		e.g. "("后有空格时， "(" 单独占用一个元素
+		if ( $http_user_agent  ~* msie ) {
+
+		}	
+	*/
+    if (value[1].len == 1) {			
         cur = 2;
 
     } else {
         cur = 1;
-        value[1].len--;
+        value[1].len--;					//	"("后没有空格时，在字符串中去除"("
         value[1].data++;
     }
 
-    if (value[last].len < 1 || value[last].data[value[last].len - 1] != ')') {
+    if (value[last].len < 1 || value[last].data[value[last].len - 1] != ')') {	//	检查if配置准确性
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid condition \"%V\"", &value[last]);
         return NGX_CONF_ERROR;
     }
 
-    if (value[last].len == 1) {
+	//	同上是否")"前有空格，如果有空格单独占用一个元素
+    if (value[last].len == 1) {				
         last--;
 
-    } else {
+    } else {		//	")"前没有空格
         value[last].len--;
         value[last].data[value[last].len] = '\0';
     }
 
-    len = value[cur].len;
+    len = value[cur].len;			//	获得判断条件的的第一个变量的表达式
     p = value[cur].data;
 
-    if (len > 1 && p[0] == '$') {
+    if (len > 1 && p[0] == '$') {		//	表达式1是内部变量
 
         if (cur != last && cur + 2 != last) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -719,7 +726,7 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
         len = value[cur].len;
         p = value[cur].data;
 
-        if (len == 1 && p[0] == '=') {
+        if (len == 1 && p[0] == '=') {								//	运算符是"="时
 
             if (ngx_http_rewrite_value(cf, lcf, &value[last]) != NGX_CONF_OK) {
                 return NGX_CONF_ERROR;
@@ -736,7 +743,7 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
             return NGX_CONF_OK;
         }
 
-        if (len == 2 && p[0] == '!' && p[1] == '=') {
+        if (len == 2 && p[0] == '!' && p[1] == '=') {				//	运算符是"!="时
 
             if (ngx_http_rewrite_value(cf, lcf, &value[last]) != NGX_CONF_OK) {
                 return NGX_CONF_ERROR;
@@ -752,10 +759,10 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
             return NGX_CONF_OK;
         }
 
-        if ((len == 1 && p[0] == '~')
-            || (len == 2 && p[0] == '~' && p[1] == '*')
-            || (len == 2 && p[0] == '!' && p[1] == '~')
-            || (len == 3 && p[0] == '!' && p[1] == '~' && p[2] == '*'))
+        if ((len == 1 && p[0] == '~')										//	运算符是 "~" (区分大小写的匹配)
+            || (len == 2 && p[0] == '~' && p[1] == '*')						//	运算符是 "~*" (不区分大小写的匹配)
+            || (len == 2 && p[0] == '!' && p[1] == '~')						//	运算符是 "!~" (区分大小写的不匹配。e.g. abc !~ ABD 为真)
+            || (len == 3 && p[0] == '!' && p[1] == '~' && p[2] == '*'))		//	运算符是 "!~*" (不区分大小写的不匹配)
         {
             regex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_regex_code_t));
@@ -869,7 +876,9 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
     return NGX_CONF_ERROR;
 }
 
-
+/* 
+ *	[analy] 仅用于指令"if"配置，并且只解析表达式以"$"开头的内部变量
+ */
 static char *
 ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_str_t *value)
@@ -878,10 +887,10 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_http_script_var_code_t  *var_code;
 
     value->len--;
-    value->data++;
+    value->data++;				//	将指针指向去除"$"后的内部变量字符串开始（"$http_user_agent"）
 
-    index = ngx_http_get_variable_index(cf, value);
-
+    index = ngx_http_get_variable_index(cf, value);			//	获取变量 value 在 ngx_http_core_main_conf_t字段variables数组中的下标
+	
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }

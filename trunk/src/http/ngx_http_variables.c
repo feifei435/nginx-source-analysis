@@ -333,7 +333,9 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     return v;
 }
 
-
+/* 
+ *	[analy]	查找ngx_http_core_main_conf_t中variables数组是否存在此内部变量，如果存在则返回此变量在数组中的下标
+ */
 ngx_int_t
 ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 {
@@ -345,7 +347,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 
     v = cmcf->variables.elts;
 
-    if (v == NULL) {
+    if (v == NULL) {			
         if (ngx_array_init(&cmcf->variables, cf->pool, 4,
                            sizeof(ngx_http_variable_t))
             != NGX_OK)
@@ -353,7 +355,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
             return NGX_ERROR;
         }
 
-    } else {
+    } else {		
         for (i = 0; i < cmcf->variables.nelts; i++) {
             if (name->len != v[i].name.len
                 || ngx_strncasecmp(name->data, v[i].name.data, name->len) != 0)
@@ -365,7 +367,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
         }
     }
 
-    v = ngx_array_push(&cmcf->variables);
+    v = ngx_array_push(&cmcf->variables);						//	增加变量到 ngx_http_core_main_conf_t 结构中的字段 variables中
     if (v == NULL) {
         return NGX_ERROR;
     }

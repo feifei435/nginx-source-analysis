@@ -303,6 +303,14 @@ ngx_http_init_connection
 					|__ngx_http_handler
 						|__ngx_http_core_run_phases
 					|__ngx_http_run_posted_requests
+					
+					
+					
+---------------------http-variables变量---------------------
+ngx_http_core_variables静态数组中的所有变量加入到 ngx_http_core_main_conf_t的 ngx_hash_keys_arrays_t    *variables_keys;字段
+												  ngx_http_core_main_conf_t的 ngx_hash_t                 variables_hash;字段
+
+
 		
 		
 		
