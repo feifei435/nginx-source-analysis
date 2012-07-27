@@ -1045,9 +1045,9 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 
     if (clcf->exact_match						//	是精确匹配
 #if (NGX_PCRE)
-        || clcf->regex
+        || clcf->regex							//	正则匹配
 #endif
-        || clcf->named || clcf->noname)			//	使用命名location("@")时和使用"limit_except"指令时
+        || clcf->named || clcf->noname)			//	使用命名location("@")时和使用"limit_except"或 "if block {...}"指令时
     {
         lq->exact = clcf;
         lq->inclusive = NULL;

@@ -2958,7 +2958,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];			//	pclcf指向父级的ngx_http_core_loc_conf_t
 
-    if (pclcf->name.len) {
+    if (pclcf->name.len) {											//	如果父级的location.name不为空，则为嵌套location
 
         /* nested location */
 
@@ -2966,7 +2966,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         clcf->prev_location = pclcf;
 #endif
 
-        if (pclcf->exact_match) {
+        if (pclcf->exact_match) {									//	如果父级Location为精确匹配， 不允许有嵌套location
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "location \"%V\" cannot be inside "
                                "the exact location \"%V\"",
@@ -2974,7 +2974,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
             return NGX_CONF_ERROR;
         }
 
-        if (pclcf->named) {
+        if (pclcf->named) {											//	如果父级Location为命名匹配， 不允许有嵌套location
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "location \"%V\" cannot be inside "
                                "the named location \"%V\"",
@@ -2982,7 +2982,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
             return NGX_CONF_ERROR;
         }
 
-        if (clcf->named) {
+        if (clcf->named) {											//	如果子Location为命名匹配， 则报错
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "named location \"%V\" can be "
                                "on the server level only",
@@ -2991,6 +2991,15 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
 
         len = pclcf->name.len;
+
+		/*	
+			如:	以上检查都通过时，将检查内嵌location是否与上级location前缀一致，不一致则报错
+			location /usr/ {
+				location /usr/local/ {
+
+				}
+			}
+		*/
 
 #if (NGX_PCRE)
         if (clcf->regex == NULL
@@ -3012,7 +3021,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     save = *cf;										//	继续解析location {...}	块中的内容
-    cf->ctx = ctx;
+    cf->ctx = ctx;									//	此字段保存当前的ctx，如果在 block {...} 内遇到子location再次进入此函数时，它的父级location为上级location
     cf->cmd_type = NGX_HTTP_LOC_CONF;
 
     rv = ngx_conf_parse(cf, NULL);
