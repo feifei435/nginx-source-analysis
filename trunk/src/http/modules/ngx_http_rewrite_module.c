@@ -921,7 +921,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    if (value[1].data[0] != '$') {
+    if (value[1].data[0] != '$') {									//	检查指令set的第一个参数是否已变量标示符"$"开始，不以"$"开始则报错
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid variable name \"%V\"", &value[1]);
         return NGX_CONF_ERROR;
@@ -930,7 +930,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value[1].len--;
     value[1].data++;
 
-    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);
+    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);		//	增加变量到 cmcf->variables_keys 中
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }

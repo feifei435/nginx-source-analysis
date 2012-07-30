@@ -290,7 +290,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 
         v = key[i].value;
 
-        if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
+        if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {						//	变量为非可变变量，报错
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "the duplicate \"%V\" variable", name);
             return NULL;
@@ -298,6 +298,8 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 
         return v;
     }
+
+	//	如果变量没有在 cmcf->variables_keys 中,将此变量添加 cmcf->variables_keys中
 
     v = ngx_palloc(cf->pool, sizeof(ngx_http_variable_t));
     if (v == NULL) {
