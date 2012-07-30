@@ -169,7 +169,7 @@ typedef struct {
 
     ngx_array_t               *ports;								//	array of ngx_http_conf_port_t
 
-    ngx_uint_t                 try_files;							/* unsigned  try_files:1 */
+    ngx_uint_t                 try_files;							//	使用了try_files指令时设置为1			/* unsigned  try_files:1 */
 
     ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
 } ngx_http_core_main_conf_t;
