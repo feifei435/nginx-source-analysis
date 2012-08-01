@@ -459,7 +459,9 @@ ngx_http_geoip_get_city_record(ngx_http_request_t *r)
     return NULL;
 }
 
-
+/* 
+ *	[analy]	添加geoip模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+ */
 static ngx_int_t
 ngx_http_geoip_add_variables(ngx_conf_t *cf)
 {

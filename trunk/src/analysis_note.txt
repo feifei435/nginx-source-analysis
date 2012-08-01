@@ -326,7 +326,30 @@ ngx_http_core_variables静态数组中的所有变量加入到 ngx_http_core_main_conf_t的 ng
 	
 	
 ---------------------  ---------------------
-		
+hash过的变量数组添加到 cmcf->variables_keys.keys 数组中
+索引变量被添加到 cmcf->variables 数组中
+1)	索引变量，我们通过ngx_http_get_variable_index来获得一个索引变量的索引号。然后可以通过
+	ngx_http_get_indexed_variable与ngx_http_get_flushed_variable来获取索引过变量的值
+	
+2)	未索引过的变量，则只能通过ngx_http_get_variable来获取变量的值。
+
+注意因为只有索引过的变量的值才会缓存到ngx_http_request_t的variables中, 如果当前变量是可缓存的，要将该变
+量建立索引，即调用完ngx_http_add_variable后，再调用ngx_http_get_variable_index来将该变量建
+立索引。
+
+ngx_http_get_flushed_variable会考虑到变量的cache标志，如果变量是可缓存的，则只有在变
+量是合法的时才返回变量的值，否则重新获取变量的值。
+而ngx_http_get_indexed_variable则不管变量是否可缓存，只要获取过一次了，不管是否成功，则都不
+会再获取了。
+
+//	初始化hash过的变量数组（cmcf->variables_keys.keys）,将 ngx_http_core_variables 中的变量加入到hash过的变量数组中
+//	加入到 cmcf->variables_keys.keys 中的变量空间未重新分配，而是使用静态数组的内存空间
+ngx_http_core_preconfiguration
+
+//	添加upstream模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+//	加入到 cmcf->variables_keys.keys 中的变量空间重新申请的内存空间，未使用静态数组的空间
+ngx_http_upstream_add_variables
+	|--ngx_http_add_variable--调用此函数时新添加的变量重新申请内存空间		
 		
 		
 		

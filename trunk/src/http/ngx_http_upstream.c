@@ -3743,7 +3743,9 @@ ngx_http_upstream_copy_content_encoding(ngx_http_request_t *r,
 
 #endif
 
-
+/* 
+ *	[analy]	添加upstream模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+ */
 static ngx_int_t
 ngx_http_upstream_add_variables(ngx_conf_t *cf)
 {
@@ -3755,7 +3757,7 @@ ngx_http_upstream_add_variables(ngx_conf_t *cf)
             return NGX_ERROR;
         }
 
-        var->get_handler = v->get_handler;
+        var->get_handler = v->get_handler;				//	对添加到hash过的变量数组中（cmcf->variables_keys.keys）变量进行赋值
         var->data = v->data;
     }
 

@@ -15,9 +15,9 @@
 
 
 typedef struct {
-    u_char                     *ip;
+    u_char                     *ip;					//	指向 ngx_http_rewrite_loc_conf_t->codes
     u_char                     *pos;
-    ngx_http_variable_value_t  *sp;
+    ngx_http_variable_value_t  *sp;					//	指向 ngx_http_rewrite_loc_conf_t->stack_size 个数的 ngx_http_variable_value_t 数组中
 
     ngx_str_t                   buf;
     ngx_str_t                   line;
@@ -32,7 +32,7 @@ typedef struct {
     unsigned                    log:1;
 
     ngx_int_t                   status;
-    ngx_http_request_t         *request;
+    ngx_http_request_t         *request;			//	关联的request请求
 } ngx_http_script_engine_t;
 
 
@@ -213,8 +213,8 @@ typedef struct {
 typedef struct {
     ngx_http_script_code_pt     code;
     uintptr_t                   value;
-    uintptr_t                   text_len;
-    uintptr_t                   text_data;
+    uintptr_t                   text_len;				//	保存变量的value的长度
+    uintptr_t                   text_data;				//	保存变量的name的data地址
 } ngx_http_script_value_code_t;
 
 

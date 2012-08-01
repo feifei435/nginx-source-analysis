@@ -2544,7 +2544,9 @@ ngx_http_proxy_rewrite(ngx_http_request_t *r, ngx_table_elt_t *h, size_t prefix,
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	添加proxy模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+ */
 static ngx_int_t
 ngx_http_proxy_add_variables(ngx_conf_t *cf)
 {

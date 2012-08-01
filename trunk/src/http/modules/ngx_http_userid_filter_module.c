@@ -190,7 +190,7 @@ ngx_module_t  ngx_http_userid_filter_module = {
 static ngx_str_t   ngx_http_userid_got = ngx_string("uid_got");
 static ngx_str_t   ngx_http_userid_set = ngx_string("uid_set");
 static ngx_str_t   ngx_http_userid_reset = ngx_string("uid_reset");
-static ngx_uint_t  ngx_http_userid_reset_index;
+static ngx_uint_t  ngx_http_userid_reset_index;							//	变量 uid_reset 在索引变量数组中的索引
 
 
 static ngx_int_t
@@ -594,28 +594,33 @@ ngx_http_userid_reset_variable(ngx_http_request_t *r,
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	添加userid模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+ *		"uid_got"
+ *		"uid_set"
+ *		"uid_reset"
+ */
 static ngx_int_t
 ngx_http_userid_add_variables(ngx_conf_t *cf)
 {
     ngx_int_t             n;
     ngx_http_variable_t  *var;
 
-    var = ngx_http_add_variable(cf, &ngx_http_userid_got, 0);
+    var = ngx_http_add_variable(cf, &ngx_http_userid_got, 0);				//	添加变量"uid_got" ; get_handler = ngx_http_userid_got_variable
     if (var == NULL) {
         return NGX_ERROR;
     }
 
     var->get_handler = ngx_http_userid_got_variable;
 
-    var = ngx_http_add_variable(cf, &ngx_http_userid_set, 0);
+    var = ngx_http_add_variable(cf, &ngx_http_userid_set, 0);				//	添加变量"uid_set" ; get_handler = ngx_http_userid_set_variable
     if (var == NULL) {
         return NGX_ERROR;
     }
 
     var->get_handler = ngx_http_userid_set_variable;
 
-    var = ngx_http_add_variable(cf, &ngx_http_userid_reset,
+    var = ngx_http_add_variable(cf, &ngx_http_userid_reset,					//	添加变量"uid_reset" ; get_handler = ngx_http_userid_reset_variable
                                 NGX_HTTP_VAR_CHANGEABLE);
     if (var == NULL) {
         return NGX_ERROR;
@@ -623,12 +628,12 @@ ngx_http_userid_add_variables(ngx_conf_t *cf)
 
     var->get_handler = ngx_http_userid_reset_variable;
 
-    n = ngx_http_get_variable_index(cf, &ngx_http_userid_reset);
+    n = ngx_http_get_variable_index(cf, &ngx_http_userid_reset);			//	添加变量"uid_reset"到索引变量数组中
     if (n == NGX_ERROR) {
         return NGX_ERROR;
     }
 
-    ngx_http_userid_reset_index = n;
+    ngx_http_userid_reset_index = n;										//	备份"uid_reset"变量在索引变量数组中的index
 
     return NGX_OK;
 }

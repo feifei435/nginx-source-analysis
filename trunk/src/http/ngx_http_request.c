@@ -488,7 +488,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
-    r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts							//	为
+    r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts							//	用于存放索引变量数组中变量的value（索引变量数组中的变量个数 * ngx_http_variable_value_t）
                                         * sizeof(ngx_http_variable_value_t));
     if (r->variables == NULL) {
         ngx_destroy_pool(r->pool);

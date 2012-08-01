@@ -472,7 +472,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-	//	将设置cmcf->variables_hash
+	//	对索引变量和hash过的变量进行初始化，并创建hash表（cmcf->variables_hash）
     if (ngx_http_variables_init_vars(cf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }

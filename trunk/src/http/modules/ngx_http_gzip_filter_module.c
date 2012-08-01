@@ -1035,7 +1035,9 @@ ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
     ctx->copied = NULL;
 }
 
-
+/* 
+ *	[analy]	添加gzip模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+ */
 static ngx_int_t
 ngx_http_gzip_add_variables(ngx_conf_t *cf)
 {

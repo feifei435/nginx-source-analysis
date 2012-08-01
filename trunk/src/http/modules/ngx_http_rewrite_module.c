@@ -157,7 +157,7 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_rewrite_module);
 
-    if (rlcf->codes == NULL) {
+    if (rlcf->codes == NULL) {			//	codes为空在什么情况下发生？？？？
         return NGX_DECLINED;
     }
 
@@ -178,7 +178,10 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
     e->log = rlcf->log;
     e->status = NGX_DECLINED;
 
-    while (*(uintptr_t *) e->ip) {
+	//	依次运行 ngx_http_script_engine_t->ip 所指向的 ngx_http_rewrite_loc_conf_t->codes 函数指针
+	//	依次对e->ip 数组中的不同结构进行处理，在处理时通过将当前结构进行强转，就可以得到具体的处理handler，因为每个结构的第一个变量就是一个handler  
+	//	e->ip的移动偏移量在code()中进行设置
+    while (*(uintptr_t *) e->ip) {						
         code = *(ngx_http_script_code_pt *) e->ip;
         code(e);
     }
@@ -887,9 +890,9 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_http_script_var_code_t  *var_code;
 
     value->len--;
-    value->data++;				//	将指针指向去除"$"后的内部变量字符串开始（"$http_user_agent"）
+    value->data++;				//	将指针指向去除"$"后的内部变量字符串开始处（"$http_user_agent"）
 
-    index = ngx_http_get_variable_index(cf, value);			//	获取变量 value 在 ngx_http_core_main_conf_t字段variables数组中的下标
+    index = ngx_http_get_variable_index(cf, value);			//	获取变量在索引变量数组中的下标（cmcf->variables）
 	
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
@@ -907,7 +910,10 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     return NGX_CONF_OK;
 }
 
-
+/*
+ *	[analy]	set 指令添加的变量，先加入到hash变量数组中（cmcf->variables_keys.keys），并设置为 NGX_HTTP_VAR_CHANGEABLE
+ *			然后在加入到索引变量数组中（cmcf->variables）
+ */
 static char *
 ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -930,12 +936,12 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value[1].len--;
     value[1].data++;
 
-    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);		//	增加配置文件中新添加的变量到 cmcf->variables_keys->keys 中， 并设置变量的标记NGX_HTTP_VAR_CHANGEABLE
+    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);		//	增加变量到hash过的变量数组中（cmcf->variables_keys.keys）
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }
 
-	index = ngx_http_get_variable_index(cf, &value[1]);						//	返回变量在ngx_http_core_main_conf_t中variables数组中的下标（不存在将添加到数组中）
+	index = ngx_http_get_variable_index(cf, &value[1]);						//	增加变量到索引变量数组中（cmcf->variables）
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }
@@ -967,6 +973,9 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
+	//	增加变量的解析结构体到 lcf->codes 中，
+	//		ngx_http_script_var_code_t->code 赋值为 ngx_http_script_set_var_code
+	//		ngx_http_script_var_code_t->index 赋值为 变量在索引数组中的index
     vcode = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                        sizeof(ngx_http_script_var_code_t));
     if (vcode == NULL) {
@@ -991,14 +1000,15 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
 
     n = ngx_http_script_variables_count(value);				//	统计value中的"$"符号个数
 
-    if (n == 0) {											//	value中没有"$"出现
+	//	value中不是complex value，仅是普通的字符串将直接加入 lcf->codes 中
+    if (n == 0) {											
         val = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_value_code_t));
         if (val == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        n = ngx_atoi(value->data, value->len);
+        n = ngx_atoi(value->data, value->len);	//	尝试转换value到整数，不能转换成整数设置n = 0 
 
         if (n == NGX_ERROR) {
             n = 0;
@@ -1012,6 +1022,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
         return NGX_CONF_OK;
     }
 
+	//	value是complex value类型的，
     complex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                  sizeof(ngx_http_script_complex_value_code_t));
     if (complex == NULL) {
