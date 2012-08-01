@@ -154,7 +154,7 @@ typedef struct {
 
     ngx_hash_t                 headers_in_hash;						//	ngx_http_headers_in 静态数组的hash表
 
-    ngx_hash_t                 variables_hash;						//	变量hash表(对应 variables_keys)
+    ngx_hash_t                 variables_hash;						//	变量hash表(对variables_keys.keys中的变量进行hash计算得到)
 
     ngx_array_t                variables;							//	索引变量的数组		/* ngx_http_variable_t */
     ngx_uint_t                 ncaptures;

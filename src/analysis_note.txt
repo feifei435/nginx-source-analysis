@@ -311,8 +311,21 @@ ngx_http_core_variables静态数组中的所有变量加入到 ngx_http_core_main_conf_t的 ng
 												  ngx_http_core_main_conf_t的 ngx_hash_t                 variables_hash;字段
 
 
-		
-		
+
+---------------------hash表处理基本流程---------------------												  
+1. 申请存放N个 ngx_hash_key_t 的数组 array
+2. 对 上步所有的 ngx_hash_key_t 的3个字段进行赋值，
+	    hashkey->key = urls[loop];
+        hashkey->key_hash = ngx_hash_key_lc(urls[loop].data, urls[loop].len);
+        hashkey->value = (void*)values[loop];
+
+3. 调用 ngx_hash_init() 创建hash表，ngx_hash_init(&hinit, (ngx_hash_key_t*)array->elts, array->nelts);
+4. 调用 ngx_hash_find 在上步中创建出来的hash表中进行查找
+	key = ngx_hash_key_lc(addr[loop].data, addr[loop].len);
+	ngx_hash_find(hash, key, addr[loop].data, addr[loop].len);		
+	
+	
+---------------------  ---------------------
 		
 		
 		

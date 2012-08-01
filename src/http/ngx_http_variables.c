@@ -268,7 +268,9 @@ ngx_http_variable_value_t  ngx_http_variable_null_value =
 ngx_http_variable_value_t  ngx_http_variable_true_value =		
     ngx_http_variable("1");
 
-
+/* 
+ *	[analy]	增加变量到 cmcf->variables_keys->keys 中
+ */
 ngx_http_variable_t *
 ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 {
@@ -279,6 +281,9 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     ngx_http_core_main_conf_t  *cmcf;
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+	//	1. 变量cmcf->variables_keys->keys 中所有变量是否与添加的相符，当相符时检查变量标记是否为NGX_HTTP_VAR_CHANGEABLE
+	//	   以外的其他标记，如果是则将报错，否则直接返回变量地址
 
     key = cmcf->variables_keys->keys.elts;
     for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {
@@ -299,7 +304,8 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
         return v;
     }
 
-	//	如果变量没有在 cmcf->variables_keys 中,将此变量添加 cmcf->variables_keys中
+	//	2. 如果变量没有在 cmcf->variables_keys->keys 中,将此变量添加 cmcf->variables_keys中
+	//		并对 ngx_http_variable_t 结构赋初始值，get_handler = NULL
 
     v = ngx_palloc(cf->pool, sizeof(ngx_http_variable_t));
     if (v == NULL) {
@@ -336,7 +342,9 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 }
 
 /* 
- *	[analy]	查找ngx_http_core_main_conf_t中variables数组是否存在此内部变量，如果存在则返回此变量在数组中的下标
+ *	[analy]	当 cmcf->variables 数组未初始化， 变量 cmcf->variables （ngx_http_variable_t）申请大小为4的数组
+ *			当 cmcf->variables 数组已经初始化，在 cmcf->variables 数组中查找此变量， 找到时直接返回变量在 cmcf->variables中的下标	
+ *			没有找到变量时将增加变量到 cmcf->variables 数组中，并返回在数组中的下标
  */
 ngx_int_t
 ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
@@ -349,6 +357,8 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 
     v = cmcf->variables.elts;
 
+	//	1. 当 cmcf->variables 数组未初始化， 变量 cmcf->variables （ngx_http_variable_t）申请大小为4的数组
+	//	   当 cmcf->variables 数组已经初始化，在 cmcf->variables 数组中查找此变量， 找到时直接返回变量在 cmcf->variables中的下标		
     if (v == NULL) {			
         if (ngx_array_init(&cmcf->variables, cf->pool, 4,
                            sizeof(ngx_http_variable_t))
@@ -369,7 +379,8 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
         }
     }
 
-    v = ngx_array_push(&cmcf->variables);						//	增加变量到 ngx_http_core_main_conf_t 结构中的字段 variables中
+	//	2. 增加变量到 cmcf->variables 中
+    v = ngx_array_push(&cmcf->variables);						
     if (v == NULL) {
         return NGX_ERROR;
     }
@@ -1937,7 +1948,7 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 	//	ngx_http_core_main_conf_t字段 variables_keys 申请空间
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-    cmcf->variables_keys = ngx_pcalloc(cf->temp_pool,
+    cmcf->variables_keys = ngx_pcalloc(cf->temp_pool,								//	使ngx_http_core_main_conf_t.variables_keys指向，申请 ngx_hash_keys_arrays_t 结构空间
                                        sizeof(ngx_hash_keys_arrays_t));
     if (cmcf->variables_keys == NULL) {
         return NGX_ERROR;
@@ -1945,16 +1956,20 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 
     cmcf->variables_keys->pool = cf->pool;
     cmcf->variables_keys->temp_pool = cf->pool;
-
-	//	为ngx_hash_keys_arrays_t 中个字段申请空间
-    if (ngx_hash_keys_array_init(cmcf->variables_keys, NGX_HASH_SMALL)
+	
+    if (ngx_hash_keys_array_init(cmcf->variables_keys, NGX_HASH_SMALL)				//	为ngx_hash_keys_arrays_t 中个字段申请空间
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
-
-	//	遍历 ngx_http_core_variables 变量静态数组， 增加key-value到variables_keys中
+	/*
+	 *	遍历 ngx_http_core_variables 变量静态数组， 增加key-value到variables_keys中的keys字段
+	 *	variables_keys.keys （ngx_hash_key_t）数组被赋值
+	 *		key			= 	v->name 变量的名称	
+	 *		key_hash	=	调用ngx_hash_key_lc（）获得	
+	 *		*value		=	v 静态数组中变量地址
+	 */	
     for (v = ngx_http_core_variables; v->name.len; v++) {
         rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v,
                               NGX_HASH_READONLY_KEY);

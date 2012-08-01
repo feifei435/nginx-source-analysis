@@ -930,12 +930,12 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value[1].len--;
     value[1].data++;
 
-    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);		//	增加变量到 cmcf->variables_keys 中
+    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);		//	增加配置文件中新添加的变量到 cmcf->variables_keys->keys 中， 并设置变量的标记NGX_HTTP_VAR_CHANGEABLE
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    index = ngx_http_get_variable_index(cf, &value[1]);
+	index = ngx_http_get_variable_index(cf, &value[1]);						//	返回变量在ngx_http_core_main_conf_t中variables数组中的下标（不存在将添加到数组中）
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }
@@ -989,9 +989,9 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_http_script_value_code_t          *val;
     ngx_http_script_complex_value_code_t  *complex;
 
-    n = ngx_http_script_variables_count(value);
+    n = ngx_http_script_variables_count(value);				//	统计value中的"$"符号个数
 
-    if (n == 0) {
+    if (n == 0) {											//	value中没有"$"出现
         val = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_value_code_t));
         if (val == NULL) {
