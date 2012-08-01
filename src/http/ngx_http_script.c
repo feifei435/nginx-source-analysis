@@ -1692,15 +1692,15 @@ ngx_http_script_set_var_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_var_code_t *) e->ip;
 
-    e->ip += sizeof(ngx_http_script_var_code_t);
+    e->ip += sizeof(ngx_http_script_var_code_t);	//	按照固定偏移量移动ip指针
 
     r = e->request;
 
     e->sp--;
 
     r->variables[code->index].len = e->sp->len;
-    r->variables[code->index].valid = 1;
-    r->variables[code->index].no_cacheable = 0;
+    r->variables[code->index].valid = 1;			//	变量是有效的
+    r->variables[code->index].no_cacheable = 0;		//	设置 变量是可以缓存的
     r->variables[code->index].not_found = 0;
     r->variables[code->index].data = e->sp->data;
 
@@ -1749,21 +1749,23 @@ ngx_http_script_var_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_var_code_t *) e->ip;
 
-    e->ip += sizeof(ngx_http_script_var_code_t);
+    e->ip += sizeof(ngx_http_script_var_code_t);			//	移动指定偏移量
 
-    value = ngx_http_get_flushed_variable(e->request, code->index);
+	//	在索引变量数组中获取变量的value， 获取到后将变量的value设置到
+	//	ngx_http_script_engine_t->sp 中
+    value = ngx_http_get_flushed_variable(e->request, code->index);			
 
     if (value && !value->not_found) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                        "http script var: \"%v\"", value);
 
-        *e->sp = *value;
+        *e->sp = *value;		
         e->sp++;
 
         return;
     }
 
-    *e->sp = ngx_http_variable_null_value;
+    *e->sp = ngx_http_variable_null_value;			//	未找到将变量置空
     e->sp++;
 }
 

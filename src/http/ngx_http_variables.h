@@ -29,15 +29,15 @@ typedef ngx_int_t (*ngx_http_get_variable_pt) (ngx_http_request_t *r,
 
 #define NGX_HTTP_VAR_CHANGEABLE   1
 #define NGX_HTTP_VAR_NOCACHEABLE  2
-#define NGX_HTTP_VAR_INDEXED      4
-#define NGX_HTTP_VAR_NOHASH       8
+#define NGX_HTTP_VAR_INDEXED      4					//	索引过的变量
+#define NGX_HTTP_VAR_NOHASH       8					//	未HASH过的变量（不加入hash表； ngx_http_variables_init_vars（）函数中设置）
 
 
 struct ngx_http_variable_s {
     ngx_str_t                     name;						//	变量值			/* must be first to build the hash */
     ngx_http_set_variable_pt      set_handler;
     ngx_http_get_variable_pt      get_handler;				// 根据request中成员(如uri，args等)的值来设置，r->variables中对应变量的内容。 
-    uintptr_t                     data;						// 需要具体处理的具体内容，因为这个结构是通用的，那么具体处理的信息就放到	// data成员中  
+    uintptr_t                     data;						// 需要具体处理的具体内容，因为这个结构是通用的，那么具体处理的信息就放到data成员中  
     ngx_uint_t                    flags;
     ngx_uint_t                    index;					// 该变量在cmcf->variables数组中的下标
 };

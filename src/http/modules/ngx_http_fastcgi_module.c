@@ -2028,7 +2028,9 @@ ngx_http_fastcgi_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
     return;
 }
 
-
+/* 
+ *	[analy]	添加fastcgi模块中的变量到hash过的变量数组（cmcf->variables_keys.keys）
+ */
 static ngx_int_t
 ngx_http_fastcgi_add_variables(ngx_conf_t *cf)
 {
