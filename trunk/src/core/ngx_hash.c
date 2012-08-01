@@ -678,7 +678,11 @@ ngx_hash_strlow(u_char *dst, u_char *src, size_t n)
     return key;
 }
 
-
+/* 
+ *	[analy]	对 ngx_hash_keys_arrays_t 中个字段keys、dns_wc_head、dns_wc_tail(类型 ngx_hash_key_t )初始化
+ *			参数type:为NGX_HASH_SMALL时，keys、dns_wc_head、dns_wc_tail 这3个数组的大小为4， 
+ *			参数type:为NGX_HASH_LARGE时，keys、dns_wc_head、dns_wc_tail 这3个数组的大小为NGX_HASH_LARGE_ASIZE = 16384		
+ */
 ngx_int_t
 ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
 {
@@ -803,7 +807,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     k = 0;
 
-	//	计算key的hash值
+	//	计算key的hash值，这里与 ngx_hash_key_lc 的作用基本等同
     for (i = 0; i < last; i++) {
         if (!(flags & NGX_HASH_READONLY_KEY)) {					//	未使用 NGX_HASH_READONLY_KEY 时，将key转换为小写
             key->data[i] = ngx_tolower(key->data[i]);			
@@ -844,7 +848,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     *name = *key;
 
-    hk = ngx_array_push(&ha->keys);				//	增加 ngx_hash_key_t 变量到 ngx_hash_keys_arrays_t的keys字段
+    hk = ngx_array_push(&ha->keys);				//	增加 ngx_hash_key_t 变量到 ngx_hash_keys_arrays_t的 keys 字段
     if (hk == NULL) {
         return NGX_ERROR;
     }

@@ -71,7 +71,7 @@ typedef struct {
 
 typedef struct {
     ngx_regex_t                  *regex;
-    ngx_uint_t                    ncaptures;
+    ngx_uint_t                    ncaptures;			//	它是正则表达式里，出现的()的个数, 即反向引用的出现的次数
     ngx_http_regex_variable_t    *variables;
     ngx_uint_t                    nvariables;
     ngx_str_t                     name;

@@ -353,6 +353,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
 
         if (sc->source->data[i] == '$') {
 
+			// 以'$'结尾，是有错误的，因为这里处理的都是变量，而不是正则(正则里面末尾带$是有特别含义的)  
             if (++i == sc->source->len) {
                 goto invalid_variable;
             }
@@ -361,9 +362,11 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
             {
             ngx_uint_t  n;
 
+
+			//	"$1...$9"的处理
             if (sc->source->data[i] >= '1' && sc->source->data[i] <= '9') {
 
-                n = sc->source->data[i] - '0';
+                n = sc->source->data[i] - '0';			//	获取字符"$1...$9"整数部分
 
                 if (sc->captures_mask & (1 << n)) {
                     sc->dup_capture = 1;
@@ -381,15 +384,22 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
             }
             }
 #endif
-
+			/* 
+			 * 这里是个有意思的地方，举个例子，假设有个这样一个配置proxy_pass $host$uritest， 
+			 * 我们这里其实是想用nginx的两个内置变量，host和uri，但是对于$uritest来说，如果我们 
+			 * 不加处理，那么在函数里很明显会将uritest这个整体作为一个变量，这显然不是我们想要的。 
+			 * 那怎么办呢？nginx里面使用"{}"来把一些变量包裹起来，避免跟其他的字符串混在一起，在此处 
+			 * 我们可以这样用${uri}test，当然变量之后是数字，字母或者下划线之类的字符才有必要这样处理 
+			 * 代码中体现的很明显。 
+			 */ 
             if (sc->source->data[i] == '{') {
-                bracket = 1;
+                bracket = 1;							//	使用括号标记
 
-                if (++i == sc->source->len) {
+                if (++i == sc->source->len) {			//	以"{" 结尾，是错误的
                     goto invalid_variable;
                 }
 
-                name.data = &sc->source->data[i];
+                name.data = &sc->source->data[i];		//	name指向${uri}中的uri部分
 
             } else {
                 bracket = 0;
@@ -436,7 +446,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
             continue;
         }
 
-        if (sc->source->data[i] == '?' && sc->compile_args) {
+        if (sc->source->data[i] == '?' && sc->compile_args) {					//	????????????
             sc->args = 1;
             sc->compile_args = 0;
 
@@ -644,12 +654,16 @@ ngx_http_script_done(ngx_http_script_compile_t *sc)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	向ngx_http_rewrite_loc_conf_t结构中的 codes 数组中添元素
+ *			如果 codes 未分配，将分配256个大小为1的数组空间		
+ *			如果 codes 已分配，将增加参数size的个到 codes 数组中
+ */
 void *
 ngx_http_script_start_code(ngx_pool_t *pool, ngx_array_t **codes, size_t size)
 {
     if (*codes == NULL) {
-        *codes = ngx_array_create(pool, 256, 1);			//	不明白为啥创建数组时，指定元素的大小为1个字节
+        *codes = ngx_array_create(pool, 256, 1);			//	不明白为啥创建数组时，指定元素的大小为1个字节（难道是为了适应各种类型？）
         if (*codes == NULL) {
             return NULL;
         }
