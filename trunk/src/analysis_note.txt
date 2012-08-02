@@ -325,7 +325,7 @@ ngx_http_core_variables静态数组中的所有变量加入到 ngx_http_core_main_conf_t的 ng
 	ngx_hash_find(hash, key, addr[loop].data, addr[loop].len);		
 	
 	
----------------------  ---------------------
+---------------------  变量 ---------------------
 hash过的变量数组添加到 cmcf->variables_keys.keys 数组中
 索引变量被添加到 cmcf->variables 数组中
 1)	索引变量，我们通过ngx_http_get_variable_index来获得一个索引变量的索引号。然后可以通过
@@ -352,6 +352,47 @@ ngx_http_upstream_add_variables
 	|--ngx_http_add_variable--调用此函数时新添加的变量重新申请内存空间		
 		
 		
+---------------------  脚本引擎 ---------------------
+ngx_http_rewrite_set
+	|--ngx_http_add_variable
+	|--ngx_http_get_variable_index
+	|--ngx_http_rewrite_value
+		|--ngx_http_script_variables_count
+		|--value=常量字符串
+			|-- ngx_http_script_start_code(lcf->codes): ngx_http_script_value_code_t (ngx_http_script_value_code()函数处理)
+	
+	
+	|--ngx_http_script_start_code(lcf->codes)：ngx_http_script_var_code_t (ngx_http_script_set_var_code()函数处理)
+
+	
+
+if ( $uri = abc) {
+	set $test hello;
+	set $file ${uri}abc;
+}
+
+$uri 	->	ngx_http_script_var_code_t
+			ngx_http_script_var_code()		- 获取到变量到值存放在e->sp数组中
+
+abc  	->  ngx_http_script_value_code_t
+			ngx_http_script_value_code()	- 设置常量字符串的值到e-sp数组中
+		
+=		->  无
+			ngx_http_script_equal_code()
+		
+上边解析完后，会设置一个
+		->  ngx_http_script_if_code_t
+			ngx_http_script_if_code()
+
+$test	->	ngx_http_script_var_code_t
+		->	ngx_http_script_set_var_code
+	
+hello	->	ngx_http_script_value_code_t	
+			ngx_http_script_value_code
+
+
+
+
 		
 		
 		

@@ -351,6 +351,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
 
         name.len = 0;
 
+		//	编译的字符串中包含“$”符号
         if (sc->source->data[i] == '$') {
 
 			// 以'$'结尾，是有错误的，因为这里处理的都是变量，而不是正则(正则里面末尾带$是有特别含义的)  
@@ -392,7 +393,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
 			 * 我们可以这样用${uri}test，当然变量之后是数字，字母或者下划线之类的字符才有必要这样处理 
 			 * 代码中体现的很明显。 
 			 */ 
-            if (sc->source->data[i] == '{') {
+            if (sc->source->data[i] == '{') {			//	"$"符之后紧跟"{"符
                 bracket = 1;							//	使用括号标记
 
                 if (++i == sc->source->len) {			//	以"{" 结尾，是错误的
@@ -406,8 +407,10 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                 name.data = &sc->source->data[i];
             }
 
-            for ( /* void */ ; i < sc->source->len; i++, name.len++) {
-                ch = sc->source->data[i];
+			//	对变量名称检查，名称中只能出现[A-Z|a-z|0-9|_]
+
+            for ( /* void */ ; i < sc->source->len; i++, name.len++) {		//	这里到了真正的字符串检查部分 "${uri}abc"中的uri
+                ch = sc->source->data[i];			//	单个字符检查
 
                 if (ch == '}' && bracket) {
                     i++;
@@ -415,7 +418,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                     break;
                 }
 
-                if ((ch >= 'A' && ch <= 'Z')
+                if ((ch >= 'A' && ch <= 'Z')		
                     || (ch >= 'a' && ch <= 'z')
                     || (ch >= '0' && ch <= '9')
                     || ch == '_')
@@ -437,14 +440,14 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                 goto invalid_variable;
             }
 
-            sc->variables++;
+            sc->variables++;				//	变量的value中出现的内部变量的个数（e.g. set $abc ${uri}def）
 
             if (ngx_http_script_add_var_code(sc, &name) != NGX_OK) {
                 return NGX_ERROR;
             }
 
             continue;
-        }
+        }		//	End if
 
         if (sc->source->data[i] == '?' && sc->compile_args) {					//	????????????
             sc->args = 1;
@@ -480,14 +483,16 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
             name.len++;
         }
 
-        sc->size += name.len;
+        sc->size += name.len;			//	常量字符串的长度
 
+		//	增加常量字符串到...中，这里仅增加单个常量字符串abc(e.g. set $abc ${uri}abc${host}def)
+		//	i == sc->source->len 暂时猜测是以常量字符串结尾时为1
         if (ngx_http_script_add_copy_code(sc, &name, (i == sc->source->len))
             != NGX_OK)
         {
             return NGX_ERROR;
         }
-    }
+    }			//	End for
 
     return ngx_http_script_done(sc);
 
@@ -687,9 +692,9 @@ ngx_http_script_add_code(ngx_array_t *codes, size_t size, void *code)
     }
 
     if (code) {
-        if (elts != codes->elts) {
+        if (elts != codes->elts) {				//	猜测这里的判断是否是检查由于原有数组的空间大小不足，导致重新分配空间
             p = code;
-            *p += (u_char *) codes->elts - elts;
+            *p += (u_char *) codes->elts - elts;		//	这又是在做什么呢???
         }
     }
 
@@ -715,11 +720,11 @@ ngx_http_script_add_copy_code(ngx_http_script_compile_t *sc, ngx_str_t *value,
     }
 
     code->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
-    code->len = len;
+    code->len = len;			//	常量字符串的长度
 
     size = (sizeof(ngx_http_script_copy_code_t) + len + sizeof(uintptr_t) - 1)
-            & ~(sizeof(uintptr_t) - 1);
-
+            & ~(sizeof(uintptr_t) - 1);								//	目的按4字节对齐，不能整除4时，将余数砍掉
+	
     code = ngx_http_script_add_code(*sc->values, size, &sc->main);
     if (code == NULL) {
         return NGX_ERROR;
@@ -782,13 +787,15 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
     ngx_int_t                    index, *p;
     ngx_http_script_var_code_t  *code;
 
-    index = ngx_http_get_variable_index(sc->cf, name);
+	//	添加name参数到索引变量数组中， 单独加入索引变量的数组，会在ngx_http_block（）-> ngx_http_variables_init_vars（）
+	//	中判断在hash过的变量数组中是否存在，如果存在于使用hash过的数组中，将会使用hash过的数组中的变量字段赋值给索引变量数组中的变量
+    index = ngx_http_get_variable_index(sc->cf, name);			
 
     if (index == NGX_ERROR) {
         return NGX_ERROR;
     }
 
-    if (sc->flushes) {
+    if (sc->flushes) {			//	将索引变量加入到 sc->flushes 指向的数组中
         p = ngx_array_push(*sc->flushes);
         if (p == NULL) {
             return NGX_ERROR;
@@ -819,7 +826,9 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	获取指定索引的变量的长度
+ */
 size_t
 ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
 {
@@ -1413,25 +1422,31 @@ ngx_http_script_if_code(ngx_http_script_engine_t *e)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                    "http script if");
 
-    e->sp--;
+    e->sp--;			//	这里需要结合这类函数一起 ngx_http_script_equal_code （）才能搞清楚为什么
 
+	//	是否等于 ngx_http_variable_null_value 变量 acsii码0对应""
     if (e->sp->len && (e->sp->len !=1 || e->sp->data[0] != '0')) {
-        if (code->loc_conf) {
-            e->request->loc_conf = code->loc_conf;
+
+		//	如果if条件表达式在server层，loc_conf=NULL
+		//	如果if条件表达式是嵌套的，loc_conf!=NULL
+        if (code->loc_conf) {	
+            e->request->loc_conf = code->loc_conf;				//	这里的处理暂时还不清楚？
             ngx_http_update_location_config(e->request);
         }
 
-        e->ip += sizeof(ngx_http_script_if_code_t);
-        return;
+        e->ip += sizeof(ngx_http_script_if_code_t);				//	表达式为真时，继续执行block {...}内的其他指令脚本
+        return;		
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                    "http script if: false");
 
-    e->ip += code->next;
+    e->ip += code->next;						//	当if条件表达式为false时，将跳过整个if block{...}中所配置的指令
 }
 
-
+/* 
+ *	[analy]	此函数用于if 指令的表达式中的操作符"="
+ */
 void
 ngx_http_script_equal_code(ngx_http_script_engine_t *e)
 {
@@ -1440,13 +1455,16 @@ ngx_http_script_equal_code(ngx_http_script_engine_t *e)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                    "http script equal");
 
-    e->sp--;
-    val = e->sp;
-    res = e->sp - 1;
+	/*
+		e.g. if ( $uri = abc) 
+	*/
+    e->sp--;				//	由于sp的指针在每次添加完变量或常量字符串的value部分后，均向后移动一位，使用前需要做相应处理
+    val = e->sp;			//	例子中的常量字符串"abc"的value部分
+    res = e->sp - 1;		//	例子中的内部变量"$uri"的value部分
 
     e->ip += sizeof(uintptr_t);
 
-    if (val->len == res->len
+    if (val->len == res->len					//	表达式相等设置变量"$uri"的value等于 ngx_http_variable_true_value
         && ngx_strncmp(val->data, res->data, res->len) == 0)
     {
         *res = ngx_http_variable_true_value;
@@ -1459,7 +1477,9 @@ ngx_http_script_equal_code(ngx_http_script_engine_t *e)
     *res = ngx_http_variable_null_value;
 }
 
-
+/* 
+ *	[analy]	此函数用于if 指令的表达式中的操作符"!="
+ */
 void
 ngx_http_script_not_equal_code(ngx_http_script_engine_t *e)
 {
@@ -1645,7 +1665,7 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
     le.request = e->request;
     le.quote = e->quote;
 
-    for (len = 0; *(uintptr_t *) le.ip; len += lcode(&le)) {
+    for (len = 0; *(uintptr_t *) le.ip; len += lcode(&le)) {					//	执行 ngx_http_script_complex_value_code_t 中的lengths数组中的所有函数指针
         lcode = *(ngx_http_script_len_code_pt *) le.ip;
     }
 
@@ -1664,7 +1684,9 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
     e->sp++;
 }
 
-
+/*
+ *	[analy]	用于设置常量字符串
+ */
 void
 ngx_http_script_value_code(ngx_http_script_engine_t *e)
 {
@@ -1737,7 +1759,9 @@ ngx_http_script_var_set_handler_code(ngx_http_script_engine_t *e)
     code->handler(e->request, e->sp, code->data);
 }
 
-
+/* 
+ *	[analy] 获取索引变量的value并添加到 ngx_http_script_engine_t 的 sp 数组中
+ */
 void
 ngx_http_script_var_code(ngx_http_script_engine_t *e)
 {
