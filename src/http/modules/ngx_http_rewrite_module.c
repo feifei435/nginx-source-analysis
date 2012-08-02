@@ -11,6 +11,9 @@
 
 
 typedef struct {
+
+	//	codes中存放的是一个指针数组，指针指向的是含有函数指针的结构体。在解析完之后会依次调用 codes 中的函数。
+	//	重写过程会根据遇到的指令和变量类型不断往其中塞入不同的 code（ngx_http_script_start_code 函数）	
     ngx_array_t  *codes;        /* uintptr_t */
 
     ngx_uint_t    stack_size;
@@ -596,7 +599,7 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (ngx_http_rewrite_if_condition(cf, lcf) != NGX_CONF_OK) {
+    if (ngx_http_rewrite_if_condition(cf, lcf) != NGX_CONF_OK) {		//	解析条件表达式
         return NGX_CONF_ERROR;
     }
 
@@ -607,7 +610,9 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if_code->code = ngx_http_script_if_code;
 
-    elts = lcf->codes->elts;
+	//	备份原 ngx_http_rewrite_loc_conf_t->codes, 在下边解析的过程中有可能会
+	//	由于预申请的数组空间不足，重新申请数组空间的可能
+    elts = lcf->codes->elts;				
 
 
     /* the inner directives must be compiled to the same code array */
@@ -624,7 +629,7 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         cf->cmd_type = NGX_HTTP_SIF_CONF;			//	在 server {...} block 内解析
 
     } else {										//	在 location {...} block 内解析
-        if_code->loc_conf = ctx->loc_conf;
+        if_code->loc_conf = ctx->loc_conf;			//	设置 ngx_http_script_if_code_t->loc_conf 为当前上层的loc_conf
         cf->cmd_type = NGX_HTTP_LIF_CONF;
     }
 
@@ -636,13 +641,16 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return rv;
     }
 
-
+	/*
+		计算结构体ngx_http_script_if_code_t在lcf->codes中的地址到当前if block {...}结尾的偏移量
+		如果在解析block{...}过程中数组大小不足被重新申请，将会重新计算if_code在codes中的地址
+	*/
     if (elts != lcf->codes->elts) {
         if_code = (ngx_http_script_if_code_t *)
                    ((u_char *) if_code + ((u_char *) lcf->codes->elts - elts));
     }
 
-    if_code->next = (u_char *) lcf->codes->elts + lcf->codes->nelts
+    if_code->next = (u_char *) lcf->codes->elts + lcf->codes->nelts			
                                                 - (u_char *) if_code;
 
     /* the code array belong to parent block */
@@ -708,7 +716,9 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
     len = value[cur].len;			//	获得判断条件的的第一个变量的表达式
     p = value[cur].data;
 
-    if (len > 1 && p[0] == '$') {		//	表达式1是内部变量
+
+	//	表达式的比较
+    if (len > 1 && p[0] == '$') {		
 
         if (cur != last && cur + 2 != last) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -720,13 +730,14 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
             return NGX_CONF_ERROR;
         }
 
+		//	如果仅判断变量是否为空，则直接返回OK
         if (cur == last) {
             return NGX_CONF_OK;
         }
 
         cur++;
 
-        len = value[cur].len;
+        len = value[cur].len;		//	获取条件表达式
         p = value[cur].data;
 
         if (len == 1 && p[0] == '=') {								//	运算符是"="时
@@ -802,21 +813,23 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
                            "unexpected \"%V\" in condition", &value[cur]);
         return NGX_CONF_ERROR;
 
-    } else if ((len == 2 && p[0] == '-')
+    } else if ((len == 2 && p[0] == '-')							//	当 if 表达式是检查文件或目录是否存在是否具有可执行权限时，在此处处理
                || (len == 3 && p[0] == '!' && p[1] == '-'))
     {
-        if (cur + 1 != last) {
+        if (cur + 1 != last) {				//	验证表达式准确性
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "invalid condition \"%V\"", &value[cur]);
             return NGX_CONF_ERROR;
         }
 
-        value[last].data[value[last].len] = '\0';
+        value[last].data[value[last].len] = '\0';			//	为表达式补"\0"
         value[last].len++;
 
         if (ngx_http_rewrite_value(cf, lcf, &value[last]) != NGX_CONF_OK) {
             return NGX_CONF_ERROR;
         }
+
+		//	增加 ngx_http_script_file_code_t 到lcf->codes中
 
         fop = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                           sizeof(ngx_http_script_file_code_t));
@@ -880,7 +893,8 @@ ngx_http_rewrite_if_condition(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf)
 }
 
 /* 
- *	[analy] 仅用于指令"if"配置，并且只解析表达式以"$"开头的内部变量
+ *	[analy] 仅用于指令"if"条件表达式配置
+ *			
  */
 static char *
 ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
@@ -892,7 +906,7 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     value->len--;
     value->data++;				//	将指针指向去除"$"后的内部变量字符串开始处（"$http_user_agent"）
 
-    index = ngx_http_get_variable_index(cf, value);			//	获取变量在索引变量数组中的下标（cmcf->variables）
+    index = ngx_http_get_variable_index(cf, value);			//	增加变量到索引变量数组中（cmcf->variables）
 	
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
@@ -988,7 +1002,11 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* 
+ *	[analy]	用于设置 set指令 和 if_condition中的表达式2
+ *			表达式2可以是常量字符串和内部变量
+ *			注：正则匹配的不调用此函数
+ */
 static char *
 ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_str_t *value)
@@ -1000,7 +1018,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
 
     n = ngx_http_script_variables_count(value);				//	统计value中的"$"符号个数
 
-	//	value中不是complex value，仅是普通的字符串将直接加入 lcf->codes 中
+	//	value中不是complex value类型，仅是普通的字符串将直接加入 lcf->codes 中
     if (n == 0) {											
         val = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_value_code_t));

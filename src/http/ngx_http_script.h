@@ -16,8 +16,11 @@
 
 typedef struct {
     u_char                     *ip;					//	指向 ngx_http_rewrite_loc_conf_t->codes
-    u_char                     *pos;
-    ngx_http_variable_value_t  *sp;					//	指向 ngx_http_rewrite_loc_conf_t->stack_size 个数的 ngx_http_variable_value_t 数组中
+    u_char                     *pos;				//	pos 指向的是复杂变量被展开后的值
+	
+	//	指向 ngx_http_rewrite_loc_conf_t->stack_size 个数的 ngx_http_variable_value_t 数组中, 
+	//	在函数 ngx_http_script_value_code（）中进行赋值
+    ngx_http_variable_value_t  *sp;					
 
     ngx_str_t                   buf;
     ngx_str_t                   line;
@@ -40,7 +43,7 @@ typedef struct {
     ngx_conf_t                 *cf;
     ngx_str_t                  *source;					// 需要compile的字符串
 
-    ngx_array_t               **flushes;
+    ngx_array_t               **flushes;				//	array of ngx_uint_t's point
     ngx_array_t               **lengths;
     ngx_array_t               **values;
 
@@ -52,7 +55,7 @@ typedef struct {
 	 * 正是由于这个mask的存在，才比较容易得到是否有重复的$n出现。
 	 */
     ngx_uint_t                  captures_mask;
-    ngx_uint_t                  size;					// 待compile的字符串中，”常量字符串“的总长度
+    ngx_uint_t                  size;					// 待compile的字符串中，"常量字符串"的总长度
 
     void                       *main;
 
@@ -74,7 +77,7 @@ typedef struct {
 	 * 那么pcre正则自身的captures并不能满足我们的要求，我们需要用自己handler来处理。
 	 */
     unsigned                    dup_capture:1;
-    unsigned                    args:1;					// 待compile的字符串中是否发现了'?'
+    unsigned                    args:1;					// 待compile的字符串中是否发现了字符“?”
 } ngx_http_script_compile_t;
 
 
@@ -193,14 +196,14 @@ typedef enum {
 
 typedef struct {
     ngx_http_script_code_pt     code;
-    uintptr_t                   op;
+    uintptr_t                   op;					//	对应 ngx_http_script_file_op_e 枚举中的一个变量
 } ngx_http_script_file_code_t;
 
 
 typedef struct {
     ngx_http_script_code_pt     code;
-    uintptr_t                   next;
-    void                      **loc_conf;
+    uintptr_t                   next;				//	存放偏移量
+    void                      **loc_conf;			//	指向上层的location的配置
 } ngx_http_script_if_code_t;
 
 
