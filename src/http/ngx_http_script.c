@@ -1417,11 +1417,13 @@ ngx_http_script_return_code(ngx_http_script_engine_t *e)
     e->ip = ngx_http_script_exit;
 }
 
-
+/* 
+ *	[analy]	用于rewrite模块的break指令
+ */
 void
 ngx_http_script_break_code(ngx_http_script_engine_t *e)
 {
-    e->request->uri_changed = 0;
+    e->request->uri_changed = 0;			//	why？？
 
     e->ip = ngx_http_script_exit;
 }

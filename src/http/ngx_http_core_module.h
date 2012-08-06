@@ -185,16 +185,16 @@ typedef struct {
     ngx_str_t                   server_name;
 
     size_t                      connection_pool_size;
-    size_t                      request_pool_size;
-    size_t                      client_header_buffer_size;
+    size_t                      request_pool_size;				//	在处理请求时，所使用的内存池大小，默认是4K
+    size_t                      client_header_buffer_size;		//	设置处理从客户端过来的请求buffer大小
 
     ngx_bufs_t                  large_client_header_buffers;
 
     ngx_msec_t                  client_header_timeout;
 
-    ngx_flag_t                  ignore_invalid_headers;
+    ngx_flag_t                  ignore_invalid_headers;			//	是否忽略无效的请求头（ignore_invalid_headers指令）
     ngx_flag_t                  merge_slashes;
-    ngx_flag_t                  underscores_in_headers;
+    ngx_flag_t                  underscores_in_headers;			//	是否允许在header的字段中带下划线(underscores_in_headers指令)
 
     unsigned                    listen:1;						//	此字段是否说明 server{...} 块中 有listen指令
 #if (NGX_PCRE)

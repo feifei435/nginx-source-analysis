@@ -66,7 +66,7 @@ static ngx_int_t ngx_http_add_addrs6(ngx_conf_t *cf, ngx_http_port_t *hport,
     ngx_http_conf_addr_t *addr);
 #endif
 
-ngx_uint_t   ngx_http_max_module;
+ngx_uint_t   ngx_http_max_module;					//	在 ngx_http_block（）函数中进行累计，使用http模块类型的总个数
 
 
 ngx_int_t  (*ngx_http_top_header_filter) (ngx_http_request_t *r);
@@ -703,7 +703,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         case NGX_HTTP_POST_ACCESS_PHASE:
             if (use_access) {
                 ph->checker = ngx_http_core_post_access_phase;
-                ph->next = n;						//	?????????????
+                ph->next = n;						//	由于上一个phase已经加1，所以直接赋值为下一个phase的索引
                 ph++;
             }
 

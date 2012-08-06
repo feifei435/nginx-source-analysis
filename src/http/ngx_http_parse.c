@@ -790,7 +790,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
     }
 
     b->pos = p;
-    r->state = state;
+    r->state = state;		//	未解析完，保存request的请求状态，为下一次数据到来时使用
 
     return NGX_AGAIN;
 
@@ -803,7 +803,7 @@ done:
     }
 
     r->http_version = r->http_major * 1000 + r->http_minor;
-    r->state = sw_start;
+    r->state = sw_start;			//	初始化状态
 
     if (r->http_version == 9 && r->method != NGX_HTTP_GET) {
         return NGX_HTTP_PARSE_INVALID_09_METHOD;
@@ -812,7 +812,9 @@ done:
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]   按行解析请求头，每次解析一行
+ */
 ngx_int_t
 ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     ngx_uint_t allow_underscores)
@@ -832,6 +834,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
 
     /* the last '\0' is not needed because string is zero terminated */
 
+	//	ascii码表
     static u_char  lowcase[] =
         "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         "\0\0\0\0\0\0\0\0\0\0\0\0\0-\0\0" "0123456789\0\0\0\0\0\0"
@@ -888,7 +891,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             break;
 
         /* header name */
-        case sw_name:
+        case sw_name:			//	header name 解析
             c = lowcase[ch];
 
             if (c) {
@@ -898,8 +901,8 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
                 break;
             }
 
-            if (ch == '_') {
-                if (allow_underscores) {
+            if (ch == '_') {			//	遇见下划线时
+                if (allow_underscores) {				//	检查是否允许带下划线
                     hash = ngx_hash(hash, ch);
                     r->lowcase_header[i++] = ch;
                     i &= (NGX_HTTP_LC_HEADER_LEN - 1);
@@ -911,13 +914,13 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
                 break;
             }
 
-            if (ch == ':') {
+            if (ch == ':') {			//	遇见冒号时
                 r->header_name_end = p;
                 state = sw_space_before_value;
                 break;
             }
 
-            if (ch == CR) {
+            if (ch == CR) {				//	遇到回车时
                 r->header_name_end = p;
                 r->header_start = p;
                 r->header_end = p;
@@ -925,7 +928,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
                 break;
             }
 
-            if (ch == LF) {
+            if (ch == LF) {				//	遇到换行时
                 r->header_name_end = p;
                 r->header_start = p;
                 r->header_end = p;
@@ -954,7 +957,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
         case sw_space_before_value:
             switch (ch) {
             case ' ':
-                break;
+                break;		//	空格时，向后解析
             case CR:
                 r->header_start = p;
                 r->header_end = p;
@@ -1041,8 +1044,8 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             default:
                 return NGX_HTTP_PARSE_INVALID_HEADER;
             }
-        }
-    }
+        }	//	end switch
+    }	//	end for
 
     b->pos = p;
     r->state = state;
