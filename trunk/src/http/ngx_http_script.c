@@ -442,7 +442,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
 
             sc->variables++;				//	变量的value中出现的内部变量的个数（e.g. set $abc ${uri}def）
 
-            if (ngx_http_script_add_var_code(sc, &name) != NGX_OK) {
+            if (ngx_http_script_add_var_code(sc, &name) != NGX_OK) {			//	内部变量添加使用
                 return NGX_ERROR;
             }
 
@@ -462,7 +462,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
             continue;
         }
 
-        name.data = &sc->source->data[i];
+        name.data = &sc->source->data[i];				//	这里指向常量字符串
 
         while (i < sc->source->len) {
 
@@ -516,6 +516,7 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
+	//	这里的目的是什么？？？？？？？？？？？？、
     for (i = 0; i < cmcf->variables.nelts; i++) {
         if (r->variables[i].no_cacheable) {
             r->variables[i].valid = 0;
@@ -527,8 +528,9 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
 
     e.ip = code_lengths;
     e.request = r;
-    e.flushed = 1;
+    e.flushed = 1;		//	如果缓冲区中有直接在缓冲区中获取，否则相反
 
+	//	获取 变量和字符串常量的总长度
     while (*(uintptr_t *) e.ip) {
         lcode = *(ngx_http_script_len_code_pt *) e.ip;
         len += lcode(&e);
@@ -542,8 +544,9 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
     }
 
     e.ip = code_values;
-    e.pos = value->data;
+    e.pos = value->data;			//	e.pos指向参数value
 
+	//	调用所有获取 变量和字符串常量的 值
     while (*(uintptr_t *) e.ip) {
         code = *(ngx_http_script_code_pt *) e.ip;
         code((ngx_http_script_engine_t *) &e);
@@ -637,7 +640,7 @@ ngx_http_script_done(ngx_http_script_compile_t *sc)
         }
     }
 
-    if (sc->complete_lengths) {
+    if (sc->complete_lengths) {				//	设置lengths数组的终止符
         code = ngx_http_script_add_code(*sc->lengths, sizeof(uintptr_t), NULL);
         if (code == NULL) {
             return NGX_ERROR;
@@ -646,7 +649,7 @@ ngx_http_script_done(ngx_http_script_compile_t *sc)
         *code = (uintptr_t) NULL;
     }
 
-    if (sc->complete_values) {
+    if (sc->complete_values) {				//	设置values数组的终止符
         code = ngx_http_script_add_code(*sc->values, sizeof(uintptr_t),
                                         &sc->main);
         if (code == NULL) {
@@ -678,6 +681,10 @@ ngx_http_script_start_code(ngx_pool_t *pool, ngx_array_t **codes, size_t size)
 }
 
 
+/* 
+ *	[analy]	增加数据元素到code指向的数组中
+ *			如果数组的空间不足，调整数组中元素的指向
+ */
 void *
 ngx_http_script_add_code(ngx_array_t *codes, size_t size, void *code)
 {
@@ -692,9 +699,9 @@ ngx_http_script_add_code(ngx_array_t *codes, size_t size, void *code)
     }
 
     if (code) {
-        if (elts != codes->elts) {				//	猜测这里的判断是否是检查由于原有数组的空间大小不足，导致重新分配空间
+        if (elts != codes->elts) {						//	猜测这里的判断是否是检查由于原有数组的空间大小不足，导致重新分配空间
             p = code;
-            *p += (u_char *) codes->elts - elts;		//	这又是在做什么呢???
+            *p += (u_char *) codes->elts - elts;		//	计算新地址和旧地址的偏移量后移动指针
         }
     }
 
@@ -711,7 +718,7 @@ ngx_http_script_add_copy_code(ngx_http_script_compile_t *sc, ngx_str_t *value,
     ngx_http_script_copy_code_t  *code;
 
     zero = (sc->zero && last);
-    len = value->len + zero;
+    len = value->len + zero;			//	常量字符串的长度
 
     code = ngx_http_script_add_code(*sc->lengths,
                                     sizeof(ngx_http_script_copy_code_t), NULL);
@@ -737,14 +744,16 @@ ngx_http_script_add_copy_code(ngx_http_script_compile_t *sc, ngx_str_t *value,
                    value->data, value->len);
 
     if (zero) {
-        *p = '\0';
+        *p = '\0';			//	为什么需要添加结束符
         sc->zero = 0;
     }
 
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	用于常量字符串的长度获取
+ */
 size_t
 ngx_http_script_copy_len_code(ngx_http_script_engine_t *e)
 {
@@ -757,7 +766,9 @@ ngx_http_script_copy_len_code(ngx_http_script_engine_t *e)
     return code->len;
 }
 
-
+/* 
+ *	[analy]	用于拷贝常量字符串
+ */
 void
 ngx_http_script_copy_code(ngx_http_script_engine_t *e)
 {
@@ -827,7 +838,8 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
 }
 
 /* 
- *	[analy]	获取指定索引的变量的长度
+ *	[analy]	获取指定索引的变量value的长度
+ *			此函数在 ngx_http_script_compile（）中调用
  */
 size_t
 ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
@@ -835,11 +847,11 @@ ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
     ngx_http_variable_value_t   *value;
     ngx_http_script_var_code_t  *code;
 
-    code = (ngx_http_script_var_code_t *) e->ip;
+    code = (ngx_http_script_var_code_t *) e->ip;			//	e->ip 指向 sc->lengths 的数组
 
     e->ip += sizeof(ngx_http_script_var_code_t);
 
-    if (e->flushed) {
+    if (e->flushed) {			//	根据flushed值决定在缓存中获取还是重新获取
         value = ngx_http_get_indexed_variable(e->request, code->index);
 
     } else {
@@ -853,7 +865,10 @@ ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
     return 0;
 }
 
-
+/* 
+ *	[analy]	获取指定索引的变量value的值并拷贝到 ngx_http_script_engine_t->pos指向的数据区
+ *			ngx_http_script_engine_t->pos 指向的数据区
+ */
 void
 ngx_http_script_copy_var_code(ngx_http_script_engine_t *e)
 {
@@ -1665,7 +1680,10 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
     le.request = e->request;
     le.quote = e->quote;
 
-    for (len = 0; *(uintptr_t *) le.ip; len += lcode(&le)) {					//	执行 ngx_http_script_complex_value_code_t 中的lengths数组中的所有函数指针
+
+	//	执行 ngx_http_script_complex_value_code_t 中的lengths数组中注册的所有处理函数
+	//	lengths数组中存放的是变量value和常量字符串的长度=len，
+    for (len = 0; *(uintptr_t *) le.ip; len += lcode(&le)) {					
         lcode = *(ngx_http_script_len_code_pt *) le.ip;
     }
 
@@ -1677,7 +1695,7 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
         return;
     }
 
-    e->pos = e->buf.data;
+    e->pos = e->buf.data;				//	设置 e->pos 为后续调用的获取变量value和常量字符串的值时使用，拷贝数据到e->buf.data中
 
     e->sp->len = e->buf.len;
     e->sp->data = e->buf.data;
@@ -1705,7 +1723,11 @@ ngx_http_script_value_code(ngx_http_script_engine_t *e)
     e->sp++;
 }
 
-
+/*
+ *	[analy]	解析完毕后设置变量$file的值（也就是将“${uri}abc”展开后的值）到对应的request->variables的缓存中
+ *			此函数在ngx_http_rewrite_set()中的最后部分被设置
+ *			e.g. set $file ${uri}abc;
+ */
 void
 ngx_http_script_set_var_code(ngx_http_script_engine_t *e)
 {

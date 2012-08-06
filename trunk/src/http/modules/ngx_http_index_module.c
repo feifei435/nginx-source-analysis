@@ -275,7 +275,7 @@ ngx_http_index_handler(ngx_http_request_t *r)
         }
 
         return ngx_http_internal_redirect(r, &uri, &r->args);
-    }
+    }//	End for
 
     return NGX_DECLINED;
 }
@@ -430,7 +430,7 @@ ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         index->lengths = NULL;
         index->values = NULL;
 
-        conf->max_index_len = sizeof(NGX_HTTP_DEFAULT_INDEX);
+        conf->max_index_len = sizeof(NGX_HTTP_DEFAULT_INDEX);				//	使用默认值
 
         return NGX_CONF_OK;
     }
@@ -506,6 +506,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         n = ngx_http_script_variables_count(&value[i]);
 
+		//	index指令使用普通常量
         if (n == 0) {
             if (ilcf->max_index_len < index->name.len) {
                 ilcf->max_index_len = index->name.len;
@@ -521,6 +522,8 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
+
+		//	index指令中使用内部变量
         ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
 
         sc.cf = cf;

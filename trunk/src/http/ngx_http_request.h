@@ -379,7 +379,7 @@ struct ngx_http_request_s {
     time_t                            start_sec;
     ngx_msec_t                        start_msec;
 
-    ngx_uint_t                        method;						/* [analy]	请求行中的method值（NGX_HTTP_GET、NGX_HTTP_PUT、NGX_HTTP_POST） */
+    ngx_uint_t                        method;						//	请求行中的method值（NGX_HTTP_GET、NGX_HTTP_PUT、NGX_HTTP_POST）
     ngx_uint_t                        http_version;					/* [analy]	请求行中的httpVsersion */
 
     ngx_str_t                         request_line;					/* [analy]	请求行中的所有字符串（request_line.data->request_start） */
@@ -388,7 +388,7 @@ struct ngx_http_request_s {
     ngx_str_t                         exten;
     ngx_str_t                         unparsed_uri;
 
-    ngx_str_t                         method_name;					/* [analy]	请求行中的method字符串值（GET、PUT、POST） */
+    ngx_str_t                         method_name;					//	请求行中的method字符串值（GET、PUT、POST）
     ngx_str_t                         http_protocol;
 
     ngx_chain_t                      *out;
@@ -502,7 +502,7 @@ struct ngx_http_request_s {
     unsigned                          keepalive:1;					//	是否为keepalive连接
     unsigned                          lingering_close:1;
     unsigned                          discard_body:1;
-    unsigned                          internal:1;
+    unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()函数中设置）
     unsigned                          error_page:1;
     unsigned                          ignore_content_encoding:1;
     unsigned                          filter_finalize:1;
@@ -561,7 +561,7 @@ struct ngx_http_request_s {
 
     unsigned                          http_minor:16;
     unsigned                          http_major:16;
-};
+};			//	end ngx_http_request_s
 
 
 typedef struct {
