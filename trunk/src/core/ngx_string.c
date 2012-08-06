@@ -987,7 +987,9 @@ ngx_atoof(u_char *line, size_t n)
     }
 }
 
-
+/* 
+ *	[analy] 将字符串转换成整数
+ */
 time_t
 ngx_atotm(u_char *line, size_t n)
 {

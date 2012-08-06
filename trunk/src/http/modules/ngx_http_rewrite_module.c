@@ -153,6 +153,7 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
     index = cmcf->phase_engine.location_rewrite_index;
 
+	//	NGX_HTTP_REWRITE_PHASE ½×¶ÎµÄhandler£¬¼ì²éloc_conf
     if (r->phase_handler == index && r->loc_conf == cscf->ctx->loc_conf) {
         /* skipping location rewrite phase for server null location */
         return NGX_DECLINED;

@@ -256,22 +256,37 @@ NGX_HTTP_CONTENT_PHASE						ngx_http_core_content_phase
 NGX_HTTP_LOG_PHASE							ngx_http_core_generic_phase	
 
 
-NGX_HTTP_POST_READ_PHASE		------|	
-									  |
-NGX_HTTP_SERVER_REWRITE_PHASE	<-----|
+											注册的handler
+NGX_HTTP_POST_READ_PHASE					ngx_http_realip_handler()
+							
+NGX_HTTP_SERVER_REWRITE_PHASE				ngx_http_rewrite_handler()
 
-NGX_HTTP_FIND_CONFIG_PHASE		<-----|	<----|		
-											 |
-NGX_HTTP_REWRITE_PHASE				  |		 |
-									  |		 |
-NGX_HTTP_POST_REWRITE_PHASE		<-----|		 |
-									  |------| 	
-NGX_HTTP_PREACCESS_PHASE		
-NGX_HTTP_ACCESS_PHASE			
-NGX_HTTP_POST_ACCESS_PHASE		
-NGX_HTTP_TRY_FILES_PHASE		
-NGX_HTTP_CONTENT_PHASE			
-NGX_HTTP_LOG_PHASE				
+NGX_HTTP_FIND_CONFIG_PHASE					ngx_http_core_find_config_phase()里会自动调用相应的handler
+									
+NGX_HTTP_REWRITE_PHASE						ngx_http_rewrite_handler()	  
+									  
+NGX_HTTP_POST_REWRITE_PHASE					ngx_http_core_post_rewrite_phase()里会自动调用相应的handler
+								
+NGX_HTTP_PREACCESS_PHASE					ngx_http_degradation_handler()
+											ngx_http_limit_conn_handler()
+											ngx_http_limit_req_handler()
+											ngx_http_realip_handler()											
+											
+NGX_HTTP_ACCESS_PHASE						ngx_http_access_handler()
+											ngx_http_auth_basic_handler()
+											
+NGX_HTTP_POST_ACCESS_PHASE					ngx_http_core_post_access_phase()里会自动调用相应的handler
+
+NGX_HTTP_TRY_FILES_PHASE					ngx_http_core_try_files_phase()	里会自动调用相应的handler
+
+NGX_HTTP_CONTENT_PHASE						ngx_http_autoindex_handler()
+											ngx_http_dav_handler()
+											ngx_http_gzip_static_handler()
+											ngx_http_index_handler()
+											ngx_http_random_index_handler()
+											ngx_http_static_handler()
+
+NGX_HTTP_LOG_PHASE							ngx_http_log_handler()
 
 
 
@@ -295,10 +310,10 @@ ngx_http_init_connection
 		|__ngx_http_process_request_line
 			|__ngx_http_read_request_header(读取request line)
 			|__ngx_http_parse_request_line(解析request line)
-			|__ngx_http_process_request_headers(解析request headers)
+			|__ngx_http_process_request_headers(处理request headers)
 				|__ngx_http_read_request_header(读取request header)
 				|__ngx_http_parse_header_line(解析request header)
-				|__ngx_http_process_request_header
+				|__ngx_http_process_request_header	做一些检查操作
 				|__ngx_http_process_request
 					|__ngx_http_handler
 						|__ngx_http_core_run_phases

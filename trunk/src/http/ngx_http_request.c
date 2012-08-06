@@ -450,7 +450,7 @@ ngx_http_init_request(ngx_event_t *rev)
         c->log->log_level = clcf->error_log->log_level;
     }
 
-    if (c->buffer == NULL) {							//	buffer缓冲区为空时，申请 ngx_buf_t 缓冲区
+    if (c->buffer == NULL) {															//	connection的buffer缓冲区为空时，申请 ngx_buf_t 缓冲区
         c->buffer = ngx_create_temp_buf(c->pool,
                                         cscf->client_header_buffer_size);
         if (c->buffer == NULL) {
@@ -459,18 +459,18 @@ ngx_http_init_request(ngx_event_t *rev)
         }
     }
 
-    if (r->header_in == NULL) {
+    if (r->header_in == NULL) {															//	如果request的header_in缓冲区为空时，将使用connection的buffer缓冲区
         r->header_in = c->buffer;
     }
 
-    r->pool = ngx_create_pool(cscf->request_pool_size, c->log);
+    r->pool = ngx_create_pool(cscf->request_pool_size, c->log);							//	创建请求使用的内存池根据指令"request_pool_size"大小
     if (r->pool == NULL) {
         ngx_http_close_connection(c);
         return;
     }
 
 
-    if (ngx_list_init(&r->headers_out.headers, r->pool, 20,
+    if (ngx_list_init(&r->headers_out.headers, r->pool, 20,								//	初始化 ngx_http_headers_out_t的 headers
                       sizeof(ngx_table_elt_t))
         != NGX_OK)
     {
@@ -479,7 +479,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-    r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
+    r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);				//	申请后做什么？？
     if (r->ctx == NULL) {
         ngx_destroy_pool(r->pool);
         ngx_http_close_connection(c);
@@ -513,7 +513,7 @@ ngx_http_init_request(ngx_event_t *rev)
     r->headers_out.content_length_n = -1;
     r->headers_out.last_modified_time = -1;
 
-    r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
+    r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;					//	初始化 uri_changes 的最大个数
     r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;
 
     r->http_state = NGX_HTTP_READING_REQUEST_STATE;
@@ -529,7 +529,7 @@ ngx_http_init_request(ngx_event_t *rev)
     (void) ngx_atomic_fetch_add(ngx_stat_requests, 1);
 #endif
 
-    rev->handler(rev);
+    rev->handler(rev);					//	调用 ngx_http_process_request_line（）
 }
 
 
@@ -731,6 +731,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, rev->log, 0,
                    "http process request line");
 
+	//	超时检查
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
         c->timedout = 1;
@@ -758,11 +759,11 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             /* the request line has been parsed successfully */
 
-            r->request_line.len = r->request_end - r->request_start;					//	------------------	设置request_line字段
+            r->request_line.len = r->request_end - r->request_start;					//	设置request_line字段(e.g. "GET / HTTP/1.1")
             r->request_line.data = r->request_start;
 
 
-            if (r->args_start) {														//	------------------	设置uri字段
+            if (r->args_start) {														//	设置uri字段
                 r->uri.len = r->args_start - 1 - r->uri_start;
             } else {
                 r->uri.len = r->uri_end - r->uri_start;
@@ -793,21 +794,21 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            r->unparsed_uri.len = r->uri_end - r->uri_start;						//	------------------	设置unparsed_uri字段	
+            r->unparsed_uri.len = r->uri_end - r->uri_start;						//	设置unparsed_uri字段（未解析的，最原始部分的URI）
             r->unparsed_uri.data = r->uri_start;
 
-            r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;						//	------------------	设置valid_unparsed_uri字段
+            r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;						//	设置valid_unparsed_uri字段???????
 
-            r->method_name.len = r->method_end - r->request_start + 1;				//	------------------	设置method_name字段
+            r->method_name.len = r->method_end - r->request_start + 1;				//	设置method_name字段
             r->method_name.data = r->request_line.data;
 
 
-            if (r->http_protocol.data) {											//	------------------	设置http_protocol字段
+            if (r->http_protocol.data) {											//	设置http_protocol字段
                 r->http_protocol.len = r->request_end - r->http_protocol.data;
             }
 
 
-            if (r->uri_ext) {
+            if (r->uri_ext) {														//	??????
                 if (r->args_start) {
                     r->exten.len = r->args_start - 1 - r->uri_ext;
                 } else {
@@ -906,7 +907,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            if (ngx_list_init(&r->headers_in.headers, r->pool, 20,							//	------------------	设置headers_in字段中的headers子字段
+            if (ngx_list_init(&r->headers_in.headers, r->pool, 20,							//	设置headers_in字段中的headers子字段
                               sizeof(ngx_table_elt_t))
                 != NGX_OK)
             {
@@ -915,7 +916,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,							//	------------------	设置headers_in字段中的cookies子字段
+            if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,							//	设置headers_in字段中的cookies子字段
                                sizeof(ngx_table_elt_t *))
                 != NGX_OK)
             {
@@ -926,7 +927,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             c->log->action = "reading client request headers";
 
             rev->handler = ngx_http_process_request_headers;								//	---------修改当前请求的事件处理句柄---------	执行request header并且解析headers。
-            ngx_http_process_request_headers(rev);
+            ngx_http_process_request_headers(rev);											//	处理请求头部分
 
             return;
         }
@@ -966,6 +967,9 @@ ngx_http_process_request_line(ngx_event_t *rev)
 }
 
 
+/* 
+ *	[analy]   处理请求头部分
+ */
 static void
 ngx_http_process_request_headers(ngx_event_t *rev)
 {
@@ -986,7 +990,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, rev->log, 0,
                    "http process request header line");
 
-    if (rev->timedout) {
+    if (rev->timedout) {			//	超时检查
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
         c->timedout = 1;
         ngx_http_close_request(r, NGX_HTTP_REQUEST_TIME_OUT);
@@ -1053,7 +1057,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
         if (rc == NGX_OK) {
 
-            if (r->invalid_header && cscf->ignore_invalid_headers) {
+            if (r->invalid_header && cscf->ignore_invalid_headers) {		//	检查请求头是否有效
 
                 /* there was error while a header line parsing */
 
@@ -1072,33 +1076,33 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 return;
             }
 
-            h->hash = r->header_hash;
+            h->hash = r->header_hash;										//	设置ngx_table_elt_t的 hash
 
-            h->key.len = r->header_name_end - r->header_name_start;
+            h->key.len = r->header_name_end - r->header_name_start;			//	设置ngx_table_elt_t的 key
             h->key.data = r->header_name_start;
             h->key.data[h->key.len] = '\0';
 
-            h->value.len = r->header_end - r->header_start;
+            h->value.len = r->header_end - r->header_start;					//	设置ngx_table_elt_t的 value
             h->value.data = r->header_start;
             h->value.data[h->value.len] = '\0';
 
-            h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
+            h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);				//	设置ngx_table_elt_t的 lowcase_key
             if (h->lowcase_key == NULL) {
                 ngx_http_close_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
                 return;
             }
 
-            if (h->key.len == r->lowcase_index) {
+            if (h->key.len == r->lowcase_index) {							//	why??什么情况下判断这个
                 ngx_memcpy(h->lowcase_key, r->lowcase_header, h->key.len);
 
             } else {
                 ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
             }
 
-            hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,
+            hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,				//	在ngx_http_headers_in 静态数组的hash表中查找
                                h->lowcase_key, h->key.len);
 
-            if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {
+            if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {			//	在hash表中找到后调用对应的handler
                 return;
             }
 
@@ -1120,7 +1124,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
 
-            rc = ngx_http_process_request_header(r);
+            rc = ngx_http_process_request_header(r);								//	这里做一些
 
             if (rc != NGX_OK) {
                 return;
@@ -1455,7 +1459,7 @@ ngx_http_process_user_agent(ngx_http_request_t *r, ngx_table_elt_t *h,
 {
     u_char  *user_agent, *msie;
 
-    if (r->headers_in.user_agent) {
+    if (r->headers_in.user_agent) {			//	已经解析过，不需要在解析
         return NGX_OK;
     }
 

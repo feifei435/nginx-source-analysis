@@ -826,7 +826,7 @@ ngx_http_handler(ngx_http_request_t *r)
 
     r->connection->unexpected_eof = 0;
 
-    if (!r->internal) {
+    if (!r->internal) {								//	当前请求不是内部跳转时，phase_handler从0开始运行
         switch (r->headers_in.connection_type) {
         case 0:
             r->keepalive = (r->http_version > NGX_HTTP_VERSION_10);
@@ -1061,6 +1061,7 @@ ngx_http_core_post_rewrite_phase(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "post rewrite phase: %ui", r->phase_handler);
 
+	//	如果没有rewrite的话，直接返回again，继续接下来的handler处理
     if (!r->uri_changed) {
         r->phase_handler++;
         return NGX_AGAIN;
@@ -1076,6 +1077,7 @@ ngx_http_core_post_rewrite_phase(ngx_http_request_t *r,
      *     unsigned  uri_changes:4
      */
 
+	//	如果uri_changes的次数达到0，说明改变的次数太多，此时直接返回错误
     r->uri_changes--;
 
     if (r->uri_changes == 0) {
@@ -1087,15 +1089,20 @@ ngx_http_core_post_rewrite_phase(ngx_http_request_t *r,
         return NGX_OK;
     }
 
+	//	如果有rewrite，将返回到 NGX_HTTP_FIND_CONFIG_PHASE 继续执行
     r->phase_handler = ph->next;
 
+	//	重新获取loc_conf
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+
     r->loc_conf = cscf->ctx->loc_conf;
 
     return NGX_AGAIN;
 }
 
-
+/* 
+ *	[analy]   主要验证当前请求是否允许通过
+ */
 ngx_int_t
 ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
@@ -1393,6 +1400,8 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_int_t  rc;
     ngx_str_t  path;
 
+
+	//	如果 r->content_handler 被赋值，将仅执行此函数后返回
     if (r->content_handler) {
         r->write_event_handler = ngx_http_request_empty_handler;
         ngx_http_finalize_request(r, r->content_handler(r));

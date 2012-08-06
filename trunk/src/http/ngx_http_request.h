@@ -9,7 +9,7 @@
 #define _NGX_HTTP_REQUEST_H_INCLUDED_
 
 
-#define NGX_HTTP_MAX_URI_CHANGES           10
+#define NGX_HTTP_MAX_URI_CHANGES           10						//	最大URI的重定向次数
 #define NGX_HTTP_MAX_SUBREQUESTS           200
 
 /* must be 2^n */
@@ -235,7 +235,7 @@ typedef struct {
  *	[analy]	定义了所有可以设置的HTTP Response Header信息, 这里并不包含所有HTTP头信息 
  */	
 typedef struct {
-    ngx_list_t                        headers;
+    ngx_list_t                        headers;				//	存放请求头中的header name(list of ngx_table_elt_t)
 
     ngx_uint_t                        status;
     ngx_str_t                         status_line;
@@ -356,8 +356,8 @@ struct ngx_http_request_s {
     void                            **srv_conf;
     void                            **loc_conf;
 
-    ngx_http_event_handler_pt         read_event_handler;						//	在 ngx_http_request_handler 中调用
-    ngx_http_event_handler_pt         write_event_handler;						//	在 ngx_http_request_handler 中调用
+    ngx_http_event_handler_pt         read_event_handler;						//	仅在 ngx_http_request_handler（） 中调用， ngx_http_request_handler（）在事件可读或可写是触发
+    ngx_http_event_handler_pt         write_event_handler;						//	仅在 ngx_http_request_handler（） 中调用
 
 #if (NGX_HTTP_CACHE)
     ngx_http_cache_t                 *cache;
@@ -380,16 +380,16 @@ struct ngx_http_request_s {
     ngx_msec_t                        start_msec;
 
     ngx_uint_t                        method;						//	请求行中的method值（NGX_HTTP_GET、NGX_HTTP_PUT、NGX_HTTP_POST）
-    ngx_uint_t                        http_version;					/* [analy]	请求行中的httpVsersion */
+    ngx_uint_t                        http_version;					//	请求头中主次版本号的拼装（e.g. http1.1 = 1001)
 
-    ngx_str_t                         request_line;					/* [analy]	请求行中的所有字符串（request_line.data->request_start） */
-    ngx_str_t                         uri;
+    ngx_str_t                         request_line;					//	请求行的内容 (e.g. "GET / HTTP/1.1")
+    ngx_str_t                         uri;							//	请求行中uri部分(e.g. "/", 就一个字节)
     ngx_str_t                         args;
     ngx_str_t                         exten;
-    ngx_str_t                         unparsed_uri;
+    ngx_str_t                         unparsed_uri;					//	备份请求行中原始的uri（uri有复合类型的）
 
     ngx_str_t                         method_name;					//	请求行中的method字符串值（GET、PUT、POST）
-    ngx_str_t                         http_protocol;
+    ngx_str_t                         http_protocol;				//	请求行中的http协议版本字符串(e.g. "HTTP/1.1")
 
     ngx_chain_t                      *out;
     ngx_http_request_t               *main;
@@ -400,14 +400,14 @@ struct ngx_http_request_s {
 
     ngx_http_virtual_names_t         *virtual_names;
 
-    ngx_int_t                         phase_handler;
-    ngx_http_handler_pt               content_handler;
+    ngx_int_t                         phase_handler;				//	在运行phase中的handler时，用此字段标识phase中下一个要执行的handler的下标
+    ngx_http_handler_pt               content_handler;				//	有些特殊？？？？？？
     ngx_uint_t                        access_code;
 
-	// 变量在每个请求中的值是不一样的，也就是说变量是请求相关的
-	// 所以在ngx_http_request_s 中有一个变量数组，主要用于缓存当前请求的变量结果
-	// 从而可以避免一个变量的多次计数，计算过一次的变量就不用再计算了
-	// 但里面保存的一定是索引变量的值，是否缓存，也要由变量的特性来决定
+	/* 变量在每个请求中的值是不一样的，也就是说变量是请求相关的
+	 所以在ngx_http_request_s 中有一个变量数组，主要用于缓存当前请求的变量结果
+	 从而可以避免一个变量的多次计数，计算过一次的变量就不用再计算了
+	 但里面保存的一定是索引变量的值，是否缓存，也要由变量的特性来决定 */
     ngx_http_variable_value_t        *variables;					//	array of ngx_http_variable_value_t
 
 #if (NGX_PCRE)
@@ -421,7 +421,7 @@ struct ngx_http_request_s {
     /* used to learn the Apache compatible response length without a header */
     size_t                            header_size;
 
-    off_t                             request_length;
+    off_t                             request_length;				//	请求头的长度
 
     ngx_uint_t                        err_status;
 
@@ -431,7 +431,7 @@ struct ngx_http_request_s {
 
     ngx_http_cleanup_t               *cleanup;
 
-    unsigned                          subrequests:8;
+    unsigned                          subrequests:8;				//	subrequests的最大次数（ngx_http_init_request()函数中初始化）
     unsigned                          count:8;
     unsigned                          blocked:8;
 
@@ -449,15 +449,15 @@ struct ngx_http_request_s {
     unsigned                          plus_in_uri:1;
 
     /* URI with " " */
-    unsigned                          space_in_uri:1;
+    unsigned                          space_in_uri:1;					//	???????????
 
-    unsigned                          invalid_header:1;
+    unsigned                          invalid_header:1;					//	标识当前解析的请求头是否有效（单行中的）
 
     unsigned                          add_uri_to_alias:1;
-    unsigned                          valid_location:1;
-    unsigned                          valid_unparsed_uri:1;
-    unsigned                          uri_changed:1;
-    unsigned                          uri_changes:4;
+    unsigned                          valid_location:1;					//	??????????
+    unsigned                          valid_unparsed_uri:1;				//	????????????
+    unsigned                          uri_changed:1;					//	当前的uri是否被重定向，是否改变
+    unsigned                          uri_changes:4;					//	uri可以重定向的最大次数，最大10次（ngx_http_init_request()函数中初始化）
 
     unsigned                          request_body_in_single_buf:1;
     unsigned                          request_body_in_file_only:1;
@@ -496,7 +496,7 @@ struct ngx_http_request_s {
 #endif
 
     unsigned                          pipeline:1;
-    unsigned                          plain_http:1;
+    unsigned                          plain_http:1;					//	用在ssl中
     unsigned                          chunked:1;
     unsigned                          header_only:1;
     unsigned                          keepalive:1;					//	是否为keepalive连接
@@ -529,16 +529,17 @@ struct ngx_http_request_s {
 
     /* used to parse HTTP headers */
 
-    ngx_uint_t                        state;
+    ngx_uint_t                        state;							//	在解析request line时，由于client一次未发送完全，导致没有全部解析完毕，
+																		//	备份的解析当前位置 ngx_http_parse_request_line() 函数中进行设置
 
-    ngx_uint_t                        header_hash;
-    ngx_uint_t                        lowcase_index;
-    u_char                            lowcase_header[NGX_HTTP_LC_HEADER_LEN];
+    ngx_uint_t                        header_hash;						//	header name的hash值
+    ngx_uint_t                        lowcase_index;					//	应该是header name的字符个数
+    u_char                            lowcase_header[NGX_HTTP_LC_HEADER_LEN];	//	小写的 header name字符串（e.g. "user-agent"）
 
-    u_char                           *header_name_start;
-    u_char                           *header_name_end;
-    u_char                           *header_start;
-    u_char                           *header_end;
+    u_char                           *header_name_start;				//	指向请求头中header name开始（e.g. "User-Agent: curl/7.20.0"）
+    u_char                           *header_name_end;					//	指向请求头中header name结束（e.g. "User-Agent"）
+    u_char                           *header_start;						//	指向请求头中header value的起始位置 （e.g. "curl/7.20.0"）
+    u_char                           *header_end;						//	指向请求头中header value的结束位置 （e.g. "curl/7.20.0"）
 
     /*
      * a memory that can be reused after parsing a request line
@@ -547,7 +548,7 @@ struct ngx_http_request_s {
 
     u_char                           *uri_start;					/* [analy]	uri开始地址 */
     u_char                           *uri_end;
-    u_char                           *uri_ext;
+    u_char                           *uri_ext;						//	?????????????
     u_char                           *args_start;
     u_char                           *request_start;				/* [analy]	请求的开始地址-> "GET .. ... .. " */
     u_char                           *request_end;					/* [analy]	请求行的结束地址		 */
@@ -559,8 +560,8 @@ struct ngx_http_request_s {
     u_char                           *port_start;					/* [analy]	设置port开始地址(http://www.baidu.com:80/在80开始位置) */
     u_char                           *port_end;						/* [analy]	设置port结束地址(http://www.baidu.com:80/在80结束位置) */
 
-    unsigned                          http_minor:16;
-    unsigned                          http_major:16;
+    unsigned                          http_minor:16;				//	请求头中的http协议次本号
+    unsigned                          http_major:16;				//	请求头中的http协议主本号
 };			//	end ngx_http_request_s
 
 
