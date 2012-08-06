@@ -160,7 +160,7 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_rewrite_module);
 
-    if (rlcf->codes == NULL) {			//	codes为空在什么情况下发生？？？？
+    if (rlcf->codes == NULL) {			//	codes为空，说明在配置文件中没有使用变量相关
         return NGX_DECLINED;
     }
 
@@ -183,7 +183,7 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
 
 	//	依次运行 ngx_http_script_engine_t->ip 所指向的 ngx_http_rewrite_loc_conf_t->codes 函数指针
 	//	依次对e->ip 数组中的不同结构进行处理，在处理时通过将当前结构进行强转，就可以得到具体的处理handler，因为每个结构的第一个变量就是一个handler  
-	//	e->ip的移动偏移量在code()中进行设置
+	//	e->ip的移动偏移量在code()中设置
     while (*(uintptr_t *) e->ip) {						
         code = *(ngx_http_script_code_pt *) e->ip;
         code(e);
@@ -968,8 +968,10 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         v->get_handler = ngx_http_rewrite_var;
         v->data = index;
     }
-
-    if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {
+	
+	//	这里先处理表达式2是有原因的， 当在lcf->codes表中注册处理结构时，由于set的表达式1处理函数
+	//	中需要使用表达式2的value，所以这里运行lcf->codes表中的函数时，需要先将具体的值填充好
+    if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {				
         return NGX_CONF_ERROR;
     }
 
@@ -1040,7 +1042,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
         return NGX_CONF_OK;
     }
 
-	//	value是complex value类型的，
+	//	value是complex value类型的
     complex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                  sizeof(ngx_http_script_complex_value_code_t));
     if (complex == NULL) {
@@ -1050,12 +1052,14 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     complex->code = ngx_http_script_complex_value_code;
     complex->lengths = NULL;
 
+	//	这里设置 lcf->codes 存放变量的value和常量字符串的值， ngx_http_script_compile（）函数中设置
+	//	的函数会在ngx_http_script_complex_value_code（）函数之后执行
     ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
 
     sc.cf = cf;
     sc.source = value;
     sc.lengths = &complex->lengths;
-    sc.values = &lcf->codes;
+    sc.values = &lcf->codes;					
     sc.variables = n;
     sc.complete_lengths = 1;
 

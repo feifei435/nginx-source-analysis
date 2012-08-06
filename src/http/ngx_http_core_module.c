@@ -4153,7 +4153,9 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*  
+ *	[analy]	解析root和alias指令
+ */
 static char *
 ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -4164,7 +4166,7 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_uint_t                  n;
     ngx_http_script_compile_t   sc;
 
-    alias = (cmd->name.len == sizeof("alias") - 1) ? 1 : 0;
+    alias = (cmd->name.len == sizeof("alias") - 1) ? 1 : 0;		//	alias指令
 
     if (clcf->root.data) {
 
@@ -4227,7 +4229,7 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    n = ngx_http_script_variables_count(&clcf->root);
+    n = ngx_http_script_variables_count(&clcf->root);				//	检查是否使用了变量
 
     ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
     sc.variables = n;

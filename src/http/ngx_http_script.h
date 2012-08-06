@@ -29,7 +29,7 @@ typedef struct {
     u_char                     *args;
 
     unsigned                    flushed:1;
-    unsigned                    skip:1;
+    unsigned                    skip:1;				//	？？？？在拷贝的时候会跳过拷贝
     unsigned                    quote:1;
     unsigned                    is_args:1;
     unsigned                    log:1;
@@ -47,7 +47,7 @@ typedef struct {
     ngx_array_t               **lengths;
     ngx_array_t               **values;
 
-    ngx_uint_t                  variables;
+    ngx_uint_t                  variables;				// 普通变量的个数，而非其他三种(args变量，$n变量以及常量字符串)  
     ngx_uint_t                  ncaptures;				// 当前处理时，出现的$n变量的最大值，如配置的最大为$3，那么ncaptures就等于3
 
 	/*
@@ -106,7 +106,7 @@ typedef size_t (*ngx_http_script_len_code_pt) (ngx_http_script_engine_t *e);
 
 typedef struct {
     ngx_http_script_code_pt     code;
-    uintptr_t                   len;
+    uintptr_t                   len;			//	单个常量字符串的长度
 } ngx_http_script_copy_code_t;
 
 

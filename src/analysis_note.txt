@@ -371,24 +371,73 @@ if ( $uri = abc) {
 	set $file ${uri}abc;
 }
 
-$uri 	->	ngx_http_script_var_code_t
-			ngx_http_script_var_code()		- 获取到变量到值存放在e->sp数组中
+$uri 		->	ngx_http_script_var_code_t
+				ngx_http_script_var_code()		- 获取到变量到值存放在e->sp数组中
 
-abc  	->  ngx_http_script_value_code_t
-			ngx_http_script_value_code()	- 设置常量字符串的值到e-sp数组中
+abc  		->  ngx_http_script_value_code_t
+				ngx_http_script_value_code()	- 设置常量字符串的值到e-sp数组中
 		
-=		->  无
-			ngx_http_script_equal_code()
+=			->  无
+				ngx_http_script_equal_code()
 		
 上边解析完后，会设置一个
-		->  ngx_http_script_if_code_t
-			ngx_http_script_if_code()
-
-$test	->	ngx_http_script_var_code_t
-		->	ngx_http_script_set_var_code
+			->  ngx_http_script_if_code_t
+				ngx_http_script_if_code()
+			
+hello		->	ngx_http_script_value_code_t	
+				ngx_http_script_value_code()
+			
+$test		->	ngx_http_script_var_code_t
+			->	ngx_http_script_set_var_code()
+		
+${uri}abc	->	ngx_http_script_complex_value_code_t
+				ngx_http_script_complex_value_code()				
+	${uri}  ->	ngx_http_script_add_var_code()
+					|--ngx_http_script_add_code(sc->lengths)
+					|--ngx_http_script_var_code_t
+					|--ngx_http_script_copy_var_len_code()	
+					------------------------------------------
+					|--ngx_http_script_add_code(sc->values)
+					|--ngx_http_script_var_code_t
+					|--ngx_http_script_copy_var_code()	
+					
+	abc		->	ngx_http_script_add_copy_code()
+					|--ngx_http_script_add_code(sc->lengths)
+					|--ngx_http_script_copy_code_t
+					|--ngx_http_script_copy_len_code()
+					------------------------------------------
+					|--ngx_http_script_add_code(sc->values)
+					|--ngx_http_script_copy_code_t + len
+					|--ngx_http_script_copy_code()
+	ngx_http_script_done()
+		
+				
+				
+$file		->
 	
-hello	->	ngx_http_script_value_code_t	
-			ngx_http_script_value_code
+
+使用前 lengths和values 两个字段需要指向需要的字段，指向的字段可以为空不分配空间，
+空间将会再 ngx_http_script_init_arrays() 函数中申请	。
+
+ngx_http_script_compile()
+	|-- ngx_http_script_init_arrays()
+	|-- ngx_http_script_add_var_code() 变量添加使用
+		|-- ngx_http_get_variable_index() 添加变量到变量索引数组
+		|-- ngx_http_script_add_code(sc->lengths, ngx_http_script_var_code_t) 添加结构到lengths数组
+			|-- ngx_http_script_copy_var_len_code()
+			|-- index = 变量索引数组Index
+		|-- ngx_http_script_add_code(sc->values, ngx_http_script_var_code_t) 添加结构到values数组
+			|-- ngx_http_script_copy_var_code()
+			|-- index = 变量索引数组Index
+	|-- ngx_http_script_add_copy_code() 普通字符串常量添加使用
+		|-- ngx_http_script_add_code(sc->lengths, ngx_http_script_copy_code_t) 添加结构到lengths数组
+			|-- ngx_http_script_copy_len_code()
+			|-- code->len = 常量字符串的长度
+		|-- ngx_http_script_add_code(sc->values, ngx_http_script_copy_code_t + len(常量字符串长度)) 添加结构到values数组
+			|-- ngx_http_script_copy_code()
+			|-- code->len = 常量字符串的长度
+			
+	|-- ngx_http_script_done()
 
 
 
