@@ -827,7 +827,10 @@ ngx_http_handler(ngx_http_request_t *r)
     r->connection->unexpected_eof = 0;
 
     if (!r->internal) {								//	当前请求不是内部跳转时，phase_handler从0开始运行
-        switch (r->headers_in.connection_type) {
+
+		//	r->headers_in.connection_type == 0, 说明client发起的请求未指明 "Connection: close(1.0)/Keep-Alive(1.1)" 域
+		//	将会根据http协议版本确定连接类型
+        switch (r->headers_in.connection_type) {		
         case 0:
             r->keepalive = (r->http_version > NGX_HTTP_VERSION_10);
             break;

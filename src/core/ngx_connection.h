@@ -117,10 +117,10 @@ struct ngx_connection_s {
 
     ngx_socket_t        fd;					/* [analy]	用于通信的socket描述符 */
 
-    ngx_recv_pt         recv;
-    ngx_send_pt         send;
-    ngx_recv_chain_pt   recv_chain;
-    ngx_send_chain_pt   send_chain;
+    ngx_recv_pt         recv;				//	ngx_unix_recv()
+    ngx_send_pt         send;				//	ngx_unix_send()
+    ngx_recv_chain_pt   recv_chain;			//	ngx_readv_chain
+    ngx_send_chain_pt   send_chain;			//	ngx_writev_chain()
 
     ngx_listening_t    *listening;			/* [analy]	该连接对应的监听 */
 

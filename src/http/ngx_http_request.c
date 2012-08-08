@@ -1099,10 +1099,11 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
             }
 
-            hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,				//	在ngx_http_headers_in 静态数组的hash表中查找
+			//	在ngx_http_headers_in 静态数组的hash表中查找, 在hash表中找到后调用对应的handler
+            hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,				
                                h->lowcase_key, h->key.len);
 
-            if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {			//	在hash表中找到后调用对应的handler
+            if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {			
                 return;
             }
 
@@ -1369,7 +1370,7 @@ ngx_http_process_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
 
     ph = (ngx_table_elt_t **) ((char *) &r->headers_in + offset);
 
-    if (*ph == NULL) {
+    if (*ph == NULL) {				//	如果指针指向的地址为空，将为它赋值
         *ph = h;
     }
 

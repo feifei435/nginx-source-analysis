@@ -630,7 +630,7 @@ ngx_http_test_expect(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "send 100 Continue");
 
-    n = r->connection->send(r->connection,
+    n = r->connection->send(r->connection,													//	调用 ngx_unix_send()函数发送 "HTTP/1.1 100 Continue"
                             (u_char *) "HTTP/1.1 100 Continue" CRLF CRLF,
                             sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1);
 

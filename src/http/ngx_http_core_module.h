@@ -188,9 +188,9 @@ typedef struct {
     size_t                      request_pool_size;				//	在处理请求时，所使用的内存池大小，默认是4K
     size_t                      client_header_buffer_size;		//	设置处理从客户端过来的请求buffer大小
 
-    ngx_bufs_t                  large_client_header_buffers;
+    ngx_bufs_t                  large_client_header_buffers;	//	指定客户端一些比较大的请求头使用的缓冲区数量和大小(large_client_header_buffers指令)
 
-    ngx_msec_t                  client_header_timeout;
+    ngx_msec_t                  client_header_timeout;			//	指令指定读取客户端请求头标题的超时时间（client_header_timeout指令）
 
     ngx_flag_t                  ignore_invalid_headers;			//	是否忽略无效的请求头（ignore_invalid_headers指令）
     ngx_flag_t                  merge_slashes;
@@ -349,7 +349,7 @@ struct ngx_http_core_loc_conf_s {
     size_t        client_body_buffer_size; /* client_body_buffer_size */
     size_t        send_lowat;              /* send_lowat */
     size_t        postpone_output;         /* postpone_output */
-    size_t        limit_rate;              /* limit_rate */
+    size_t        limit_rate;              /* limit_rate 限制将应答传送到客户端的速度，单位为字节/秒 */
     size_t        limit_rate_after;        /* limit_rate_after */
     size_t        sendfile_max_chunk;      /* sendfile_max_chunk */
     size_t        read_ahead;              /* read_ahead */
@@ -390,7 +390,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_flag_t    log_not_found;           /* log_not_found */
     ngx_flag_t    log_subrequest;          /* log_subrequest */
     ngx_flag_t    recursive_error_pages;   /* recursive_error_pages */
-    ngx_flag_t    server_tokens;           /* server_tokens */
+    ngx_flag_t    server_tokens;           /* server_tokens: 是否在错误页面和服务器头中输出nginx版本信息 */
     ngx_flag_t    chunked_transfer_encoding; /* chunked_transfer_encoding */
 
 #if (NGX_HTTP_GZIP)

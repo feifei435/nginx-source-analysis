@@ -9,6 +9,13 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+/*
+*	[analy]	此模块默认不被编译的，需要手动添加
+*		这个模块可以在当前的location之前或者之后增加别的location。它作为一个输出过滤器执行，
+*		包含到其他location中的主请求和子请求不会被完全缓冲，并且仍然以流的形式传递到客户端，
+*		因为最终应答体的长度在传递HTTP头的时候是未知的，HTTP的chunked编码总是在这里使用。
+*/
+
 
 typedef struct {
     ngx_str_t     before_body;
