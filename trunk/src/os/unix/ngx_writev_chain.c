@@ -9,13 +9,19 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 
-
+//	IOV_MAX 的最大上限，在LINUX上怎样查看？
 #if (IOV_MAX > 64)
 #define NGX_IOVS  64
 #else
 #define NGX_IOVS  IOV_MAX
 #endif
 
+/*
+	struct iovec {
+		void  *iov_base;    // Starting address
+		size_t iov_len;     // Number of bytes to transfer 
+	};
+*/
 
 ngx_chain_t *
 ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
@@ -56,6 +62,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
     send = 0;
     complete = 0;
 
+	//	构建IO向量数组 array of (struct iovec)
     vec.elts = iovs;
     vec.size = sizeof(struct iovec);
     vec.nalloc = NGX_IOVS;
@@ -71,6 +78,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
         /* create the iovec and coalesce the neighbouring bufs */
 
+		//	合并相邻的bufs
         for (cl = in; cl && vec.nelts < IOV_MAX && send < limit; cl = cl->next)
         {
             if (ngx_buf_special(cl->buf)) {
@@ -106,7 +114,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             send += size;
         }
 
-        n = writev(c->fd, vec.elts, vec.nelts);
+        n = writev(c->fd, vec.elts, vec.nelts);			//	聚集写数据到socket
 
         if (n == -1) {
             err = ngx_errno;
@@ -177,5 +185,5 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
         }
 
         in = cl;
-    }
+    }	//	end for
 }

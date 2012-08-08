@@ -292,15 +292,15 @@ ngx_http_gzip_header_filter(ngx_http_request_t *r)
 
     ngx_http_gzip_filter_memory(r, ctx);
 
-    h = ngx_list_push(&r->headers_out.headers);
+    h = ngx_list_push(&r->headers_out.headers);				//	增加响应头字段到 r->headers_out.headers 中
     if (h == NULL) {
         return NGX_ERROR;
     }
 
     h->hash = 1;
-    ngx_str_set(&h->key, "Content-Encoding");
+    ngx_str_set(&h->key, "Content-Encoding");				//	设置 "Content-Encoding: gzip" 字段
     ngx_str_set(&h->value, "gzip");
-    r->headers_out.content_encoding = h;
+    r->headers_out.content_encoding = h;					//	设置 content_encoding 指针
 
     r->main_filter_need_in_memory = 1;
 

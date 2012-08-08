@@ -56,7 +56,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     c = r->connection;
 
-    if (c->error) {
+    if (c->error) {						//	????
         return NGX_ERROR;
     }
 
@@ -119,7 +119,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         cl->buf = ln->buf;
-        *ll = cl;
+        *ll = cl;						//	这里如果不执行上边那个循环，此时将会使 r->out指向参数in。
         ll = &cl->next;
 
         ngx_log_debug7(NGX_LOG_DEBUG_EVENT, c->log, 0,
@@ -151,18 +151,18 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 #endif
 
-        size += ngx_buf_size(cl->buf);
+        size += ngx_buf_size(cl->buf);					//	计算buf大小
 
         if (cl->buf->flush || cl->buf->recycled) {
             flush = 1;
         }
 
-        if (cl->buf->last_buf) {
+        if (cl->buf->last_buf) {			//	当前buf是链表中的最后一个缓冲区，设置last字段
             last = 1;
         }
     }
 
-    *ll = NULL;
+    *ll = NULL;																		//	????
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter: l:%d f:%d s:%O", last, flush, size);
@@ -175,7 +175,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
      * is smaller than "postpone_output" directive
      */
 
-    if (!last && !flush && in && size < (off_t) clcf->postpone_output) {
+    if (!last && !flush && in && size < (off_t) clcf->postpone_output) {			//	????
         return NGX_OK;
     }
 
@@ -239,7 +239,8 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter limit %O", limit);
 
-    chain = c->send_chain(c, r->out, limit);
+	//	limit 限制速度
+    chain = c->send_chain(c, r->out, limit);						//	此处调用的是 ngx_writev_chain()
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter %p", chain);

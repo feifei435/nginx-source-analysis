@@ -70,13 +70,13 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
         return NGX_HTTP_NOT_ALLOWED;
     }
 
-    rc = ngx_http_discard_request_body(r);
+    rc = ngx_http_discard_request_body(r);								//	???
 
     if (rc != NGX_OK) {
         return rc;
     }
 
-    ngx_str_set(&r->headers_out.content_type, "text/plain");
+    ngx_str_set(&r->headers_out.content_type, "text/plain");			//	设置 Content_type 域
 
     if (r->method == NGX_HTTP_HEAD) {
         r->headers_out.status = NGX_HTTP_OK;
@@ -93,7 +93,7 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
            + 6 + 3 * NGX_ATOMIC_T_LEN
            + sizeof("Reading:  Writing:  Waiting:  \n") + 3 * NGX_ATOMIC_T_LEN;
 
-    b = ngx_create_temp_buf(r->pool, size);
+    b = ngx_create_temp_buf(r->pool, size);								//	创建缓冲区
     if (b == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -118,10 +118,10 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     b->last = ngx_sprintf(b->last, "Reading: %uA Writing: %uA Waiting: %uA \n",
                           rd, wr, ac - (rd + wr));
 
-    r->headers_out.status = NGX_HTTP_OK;
-    r->headers_out.content_length_n = b->last - b->pos;
+    r->headers_out.status = NGX_HTTP_OK;								//	设置状态码
+    r->headers_out.content_length_n = b->last - b->pos;					//	计算response body length 
 
-    b->last_buf = 1;
+    b->last_buf = 1;													//	此缓冲区为链表中最后一个元素
 
     rc = ngx_http_send_header(r);
 

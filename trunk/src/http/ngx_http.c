@@ -453,9 +453,9 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 				ngx_http_userid_init,                  
 				ngx_http_xslt_filter_init,             
 				ngx_http_copy_filter_init,             
-				ngx_http_header_filter_init,           
+				ngx_http_header_filter_init,					//	此初始化函数被先调用(设置 ngx_http_top_header_filter)      
 				ngx_http_postpone_filter_init,         
-				ngx_http_write_filter_init,
+				ngx_http_write_filter_init,						//	此初始化函数被先调用(设置 ngx_http_top_body_filter)
 	*/
 
     for (m = 0; ngx_modules[m]; m++) {

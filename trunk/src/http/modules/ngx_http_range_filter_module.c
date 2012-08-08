@@ -9,6 +9,12 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+/*
+ *	[analy]	包含两个模块：
+ *				ngx_http_range_header_filter_module
+ *				ngx_http_range_body_filter_module
+ */
+
 
 /*
  * the single part format:

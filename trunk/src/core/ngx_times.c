@@ -229,13 +229,15 @@ ngx_time_sigsafe_update(void)
 
 #endif
 
-
+/*
+ *	[analy]	获取http时间（http格式）
+ */
 u_char *
 ngx_http_time(u_char *buf, time_t t)
 {
     ngx_tm_t  tm;
 
-    ngx_gmtime(t, &tm);
+    ngx_gmtime(t, &tm);			//	转换t时间到tm结构中
 
     return ngx_sprintf(buf, "%s, %02d %s %4d %02d:%02d:%02d GMT",
                        week[tm.ngx_tm_wday],

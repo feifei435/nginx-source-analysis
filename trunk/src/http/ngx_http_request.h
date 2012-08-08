@@ -166,7 +166,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_list_t                        headers;						//	array of ngx_table_elt_t
+    ngx_list_t                        headers;						//	存放请求头中的header name, 在函数 ngx_http_process_request_headers（）中设置
 
     ngx_table_elt_t                  *host;
     ngx_table_elt_t                  *connection;
@@ -181,7 +181,7 @@ typedef struct {
     ngx_table_elt_t                  *if_range;
 
     ngx_table_elt_t                  *transfer_encoding;
-    ngx_table_elt_t                  *expect;
+    ngx_table_elt_t                  *expect;						//	request header field "Expect: 100-continue"
 
 #if (NGX_HTTP_GZIP)
     ngx_table_elt_t                  *accept_encoding;
@@ -190,7 +190,7 @@ typedef struct {
 
     ngx_table_elt_t                  *authorization;
 
-    ngx_table_elt_t                  *keep_alive;
+    ngx_table_elt_t                  *keep_alive;					//	client发送的request请求头中包含的"Keep-alive:"域
 
 #if (NGX_HTTP_PROXY || NGX_HTTP_REALIP || NGX_HTTP_GEO)
     ngx_table_elt_t                  *x_forwarded_for;
@@ -221,7 +221,7 @@ typedef struct {
     off_t                             content_length_n;
     time_t                            keep_alive_n;
 
-    unsigned                          connection_type:2;
+    unsigned                          connection_type:2;			//	客户端请求类型（close或keepalive（http1.1 keepalive））
     unsigned                          msie:1;
     unsigned                          msie6:1;
     unsigned                          opera:1;
@@ -235,15 +235,15 @@ typedef struct {
  *	[analy]	定义了所有可以设置的HTTP Response Header信息, 这里并不包含所有HTTP头信息 
  */	
 typedef struct {
-    ngx_list_t                        headers;				//	存放请求头中的header name(list of ngx_table_elt_t)
+    ngx_list_t                        headers;							//	list of ngx_table_elt_t
 
-    ngx_uint_t                        status;
+    ngx_uint_t                        status;							//	response status code (e.g. 状态码：200)
     ngx_str_t                         status_line;
 
     ngx_table_elt_t                  *server;
     ngx_table_elt_t                  *date;
     ngx_table_elt_t                  *content_length;
-    ngx_table_elt_t                  *content_encoding;
+    ngx_table_elt_t                  *content_encoding;					//	
     ngx_table_elt_t                  *location;
     ngx_table_elt_t                  *refresh;
     ngx_table_elt_t                  *last_modified;
@@ -255,15 +255,15 @@ typedef struct {
 
     ngx_str_t                        *override_charset;
 
-    size_t                            content_type_len;
-    ngx_str_t                         content_type;
+    size_t                            content_type_len;					
+    ngx_str_t                         content_type;						//	用于 content_type域 （服务器发送内容的类型和编码类型）
     ngx_str_t                         charset;
     u_char                           *content_type_lowcase;
     ngx_uint_t                        content_type_hash;
 
     ngx_array_t                       cache_control;
 
-    off_t                             content_length_n;
+    off_t                             content_length_n;					//	用于response body length
     time_t                            date_time;
     time_t                            last_modified_time;
 } ngx_http_headers_out_t;				
@@ -391,7 +391,7 @@ struct ngx_http_request_s {
     ngx_str_t                         method_name;					//	请求行中的method字符串值（GET、PUT、POST）
     ngx_str_t                         http_protocol;				//	请求行中的http协议版本字符串(e.g. "HTTP/1.1")
 
-    ngx_chain_t                      *out;
+    ngx_chain_t                      *out;							//	??????
     ngx_http_request_t               *main;
     ngx_http_request_t               *parent;
     ngx_http_postponed_request_t     *postponed;
@@ -416,10 +416,10 @@ struct ngx_http_request_s {
     u_char                           *captures_data;
 #endif
 
-    size_t                            limit_rate;
+    size_t                            limit_rate;					//	根据ngx_http_core_loc_conf_t->limit_rate值设置（ngx_http_update_location_config()函数中设置）
 
     /* used to learn the Apache compatible response length without a header */
-    size_t                            header_size;
+    size_t                            header_size;					//	消息头长度（在 ngx_http_header_filter（）函数中有设置）
 
     off_t                             request_length;				//	请求头的长度
 
@@ -474,7 +474,7 @@ struct ngx_http_request_s {
 #endif
 
 #if (NGX_HTTP_GZIP)
-    unsigned                          gzip_tested:1;
+    unsigned                          gzip_tested:1;					//	gzip相关的设置
     unsigned                          gzip_ok:1;
     unsigned                          gzip_vary:1;
 #endif
@@ -497,9 +497,9 @@ struct ngx_http_request_s {
 
     unsigned                          pipeline:1;
     unsigned                          plain_http:1;					//	用在ssl中
-    unsigned                          chunked:1;
-    unsigned                          header_only:1;
-    unsigned                          keepalive:1;					//	是否为keepalive连接
+    unsigned                          chunked:1;					//	是否为chunked传输
+    unsigned                          header_only:1;				//	是否仅有消息头
+    unsigned                          keepalive:1;					//	是否为keepalive连接( ngx_http_handler()函数中根据 r->headers_in.connection_type类型确定 )
     unsigned                          lingering_close:1;
     unsigned                          discard_body:1;
     unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()函数中设置）
@@ -517,7 +517,7 @@ struct ngx_http_request_s {
 
     unsigned                          buffered:4;
 
-    unsigned                          main_filter_need_in_memory:1;
+    unsigned                          main_filter_need_in_memory:1;		//	???
     unsigned                          filter_need_in_memory:1;
     unsigned                          filter_need_temporary:1;
     unsigned                          allow_ranges:1;
