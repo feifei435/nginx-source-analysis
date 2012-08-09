@@ -63,10 +63,11 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
     size = 0;
     flush = 0;
     last = 0;
-    ll = &r->out;
+    ll = &r->out;		//	得到上次没有发送完毕的chain , 如果有的话
 
     /* find the size, the flush point and the last link of the saved chain */
 
+	//	接下来这部分是校验并统计out chain，也就是上次没有完成的chain buf。 
     for (cl = r->out; cl; cl = cl->next) {
         ll = &cl->next;
 
@@ -99,12 +100,14 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 #endif
 
-        size += ngx_buf_size(cl->buf);
+        size += ngx_buf_size(cl->buf);				//	得到上次没有发完的buf大小
 
+		//	当传输完毕后是否要刷新buf
         if (cl->buf->flush || cl->buf->recycled) {
             flush = 1;
         }
 
+		//	是否为最后一个包
         if (cl->buf->last_buf) {
             last = 1;
         }
@@ -112,6 +115,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     /* add the new chain to the existent one */
 
+	//	接下来这部分是用来链接新的chain到上面的out chain后面
     for (ln = in; ln; ln = ln->next) {
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
@@ -119,7 +123,9 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         cl->buf = ln->buf;
-        *ll = cl;						//	这里如果不执行上边那个循环，此时将会使 r->out指向参数in。
+        *ll = cl;						//	这里如果没有未发送完的数据时，此时将会直接使 r->out 指向参数in
+										//	存在未发送完的数据时，将会使当前新的out chain 挂接到上次未发送
+										//	完的chain上，即 chain->next
         ll = &cl->next;
 
         ngx_log_debug7(NGX_LOG_DEBUG_EVENT, c->log, 0,
@@ -151,13 +157,13 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 #endif
 
-        size += ngx_buf_size(cl->buf);					//	计算buf大小
+        size += ngx_buf_size(cl->buf);					//	计算新的chain buf大小加上之前计算的chain buf大小
 
-        if (cl->buf->flush || cl->buf->recycled) {
+        if (cl->buf->flush || cl->buf->recycled) {		//	是否发送完后刷新缓冲区
             flush = 1;
         }
 
-        if (cl->buf->last_buf) {			//	当前buf是链表中的最后一个缓冲区，设置last字段
+        if (cl->buf->last_buf) {			//	查看新的chain buf是否为最后一个缓冲区
             last = 1;
         }
     }
@@ -175,16 +181,23 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
      * is smaller than "postpone_output" directive
      */
 
-    if (!last && !flush && in && size < (off_t) clcf->postpone_output) {			//	????
+	//	也就是说将要发送的字节数小于 postpone_output 并且不是最后一个buf，并且不需要刷新chain的话，就直接返回
+    if (!last && !flush && in && size < (off_t) clcf->postpone_output) {		
         return NGX_OK;
     }
 
+
+	//	现在不能发送了，得等另外的地方取消了delayed才能发送，此时我们修改连接的buffered的标记。
+	//	如果设置了write的delayed,则设置connection的buffered标记
     if (c->write->delayed) {
         c->buffered |= NGX_HTTP_WRITE_BUFFERED;
         return NGX_AGAIN;
     }
 
+	//	如果size为0,并且没有设置buffered标记，则进入清理工作
     if (size == 0 && !(c->buffered & NGX_LOWLEVEL_BUFFERED)) {
+
+		//	如果是最后一个buf，则清理buffered标记然后清理out chain
         if (last) {
             r->out = NULL;
             c->buffered &= ~NGX_HTTP_WRITE_BUFFERED;
@@ -192,6 +205,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
             return NGX_OK;
         }
 
+		//	如果有设置flush的话，则会强行传输当前buf之前的所有buf，因此这里就需要清理out chain。
         if (flush) {
             do {
                 r->out = r->out->next;
@@ -210,12 +224,13 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-    if (r->limit_rate) {
+	//	对请求有限速时
+    if (r->limit_rate) {					
         limit = r->limit_rate * (ngx_time() - r->start_sec + 1)
                 - (c->sent - clcf->limit_rate_after);
 
         if (limit <= 0) {
-            c->write->delayed = 1;
+            c->write->delayed = 1;				//	设置延迟发送，事件的delayed = 1
             ngx_add_timer(c->write,
                           (ngx_msec_t) (- limit * 1000 / r->limit_rate + 1));
 
@@ -234,13 +249,14 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         limit = clcf->sendfile_max_chunk;
     }
 
-    sent = c->sent;
+    sent = c->sent;			//	获取缓冲区偏移量
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter limit %O", limit);
 
 	//	limit 限制速度
-    chain = c->send_chain(c, r->out, limit);						//	此处调用的是 ngx_writev_chain()
+    chain = c->send_chain(c, r->out, limit);						//	如果系统支持sendfile，此处调用的是ngx_linux_sendfile_chain()，
+																	//	否则会调用ngx_writev_chain()，它返回还没有发送完的chain
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter %p", chain);
@@ -284,10 +300,12 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_add_timer(c->write, 1);
     }
 
+	//	循环去掉不需要的chain在r->out链表中，并将未发送完的chain添加到r->out
+	//	有未发送完的chain时，设置连接的 buffered 字段，并返回NGX_AGAIN。
     for (cl = r->out; cl && cl != chain; /* void */) {
         ln = cl;
         cl = cl->next;
-        ngx_free_chain(r->pool, ln);
+        ngx_free_chain(r->pool, ln);			//	释放pool的chain链表上的除ln以外的所有chain
     }
 
     r->out = chain;
@@ -297,9 +315,9 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_AGAIN;
     }
 
-    c->buffered &= ~NGX_HTTP_WRITE_BUFFERED;
+    c->buffered &= ~NGX_HTTP_WRITE_BUFFERED;			//	正常发送去掉 c->buffered 中的标记
 
-    if ((c->buffered & NGX_LOWLEVEL_BUFFERED) && r->postponed == NULL) {
+    if ((c->buffered & NGX_LOWLEVEL_BUFFERED) && r->postponed == NULL) {			//	???
         return NGX_AGAIN;
     }
 

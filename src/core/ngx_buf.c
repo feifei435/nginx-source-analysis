@@ -47,7 +47,11 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-
+/* 
+ *	[analy] 获取一个ngx_chain_t结构
+ *			首先查看pool->chain链表上是否有空闲 ngx_chain_t, 如果有将直接返回空闲的chain
+ *			并将 pool->chain 指向链表中下一个 chain, 否则将重新在内存池上申请 
+ */
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {

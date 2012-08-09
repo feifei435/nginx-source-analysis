@@ -348,10 +348,10 @@ struct ngx_http_core_loc_conf_s {
 
     size_t        client_body_buffer_size; /* client_body_buffer_size */
     size_t        send_lowat;              /* send_lowat */
-    size_t        postpone_output;         /* postpone_output */
-    size_t        limit_rate;              /* limit_rate 限制将应答传送到客户端的速度，单位为字节/秒 */
+    size_t        postpone_output;         /* postpone_output		延迟发送的阀值，默认1460 */
+    size_t        limit_rate;              /* limit_rate			限制将应答传送到客户端的速度，单位为字节/秒 */
     size_t        limit_rate_after;        /* limit_rate_after */
-    size_t        sendfile_max_chunk;      /* sendfile_max_chunk */
+    size_t        sendfile_max_chunk;      /* sendfile_max_chunk    sendfile()系统调用传输的数据统计限制 */
     size_t        read_ahead;              /* read_ahead */
 
     ngx_msec_t    client_body_timeout;     /* client_body_timeout */

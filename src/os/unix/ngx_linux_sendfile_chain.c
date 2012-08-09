@@ -374,5 +374,5 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
         }
 
         in = cl;
-    }
+    }	//	end for
 }
