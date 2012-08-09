@@ -129,8 +129,8 @@
 #define NGX_HTTP_INSUFFICIENT_STORAGE      507
 
 
-#define NGX_HTTP_LOWLEVEL_BUFFERED         0xf0
-#define NGX_HTTP_WRITE_BUFFERED            0x10
+#define NGX_HTTP_LOWLEVEL_BUFFERED         0xf0			//	未使用到
+#define NGX_HTTP_WRITE_BUFFERED            0x10			//	这个表示在最终的write filter中被buffered
 #define NGX_HTTP_GZIP_BUFFERED             0x20
 #define NGX_HTTP_SSI_BUFFERED              0x01
 #define NGX_HTTP_SUB_BUFFERED              0x02
@@ -391,7 +391,8 @@ struct ngx_http_request_s {
     ngx_str_t                         method_name;					//	请求行中的method字符串值（GET、PUT、POST）
     ngx_str_t                         http_protocol;				//	请求行中的http协议版本字符串(e.g. "HTTP/1.1")
 
-    ngx_chain_t                      *out;							//	??????
+	ngx_chain_t                      *out;							//	这个chain保存的是上一次还没有被发完的buf，这样每次我们接收到新的chain的话，
+																	//	就需要将新的chain连接到老的out chain上，然后再发出去。 
     ngx_http_request_t               *main;
     ngx_http_request_t               *parent;
     ngx_http_postponed_request_t     *postponed;
@@ -416,7 +417,7 @@ struct ngx_http_request_s {
     u_char                           *captures_data;
 #endif
 
-    size_t                            limit_rate;					//	根据ngx_http_core_loc_conf_t->limit_rate值设置（ngx_http_update_location_config()函数中设置）
+    size_t                            limit_rate;					//	限速速率，根据ngx_http_core_loc_conf_t->limit_rate值设置（ngx_http_update_location_config()函数中设置）
 
     /* used to learn the Apache compatible response length without a header */
     size_t                            header_size;					//	消息头长度（在 ngx_http_header_filter（）函数中有设置）

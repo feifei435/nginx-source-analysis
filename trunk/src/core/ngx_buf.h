@@ -26,7 +26,7 @@ struct ngx_buf_s {
     u_char          *start;         /* start of buffer */
     u_char          *end;           /* end of buffer */
     ngx_buf_tag_t    tag;
-    ngx_file_t      *file;
+    ngx_file_t      *file;			//	文件结构指针
     ngx_buf_t       *shadow;
 
 
@@ -50,7 +50,7 @@ struct ngx_buf_s {
     unsigned         last_in_chain:1;	//	链表的尾部
 
     unsigned         last_shadow:1;
-    unsigned         temp_file:1;
+    unsigned         temp_file:1;		//	是否是临时文件中的缓冲
 
     /* STUB */ int   num;
 };
@@ -61,7 +61,7 @@ struct ngx_chain_s {
     ngx_chain_t  *next;
 };
 
-
+//	缓冲区尺寸大小
 typedef struct {
     ngx_int_t    num;
     size_t       size;
@@ -149,6 +149,10 @@ ngx_chain_t *ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs);
 #define ngx_calloc_buf(pool) ngx_pcalloc(pool, sizeof(ngx_buf_t))
 
 ngx_chain_t *ngx_alloc_chain_link(ngx_pool_t *pool);
+
+/* 
+ *	[analy] 挂载cl到pool->chain的链表上，顺序是按照后释放在前的原则
+ */
 #define ngx_free_chain(pool, cl)                                             \
     cl->next = pool->chain;                                                  \
     pool->chain = cl

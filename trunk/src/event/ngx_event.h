@@ -67,7 +67,9 @@ struct ngx_event_s {
     unsigned         timedout:1;
     unsigned         timer_set:1;
 
-    unsigned         delayed:1;
+    unsigned         delayed:1;							//	延迟发送， c->write->delayed,这个表示当前的连接的写必须要被delay了，
+														//	也就是说现在不能发送了，得等另外的地方取消了delayed才能发送，此时我们修改连接的buffered的标记
+														//	根据r->limit_rate 决定此值的
 
     unsigned         read_discarded:1;
 

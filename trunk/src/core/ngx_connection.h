@@ -122,9 +122,9 @@ struct ngx_connection_s {
     ngx_recv_chain_pt   recv_chain;			//	ngx_readv_chain
     ngx_send_chain_pt   send_chain;			//	ngx_writev_chain()
 
-    ngx_listening_t    *listening;			/* [analy]	该连接对应的监听 */
+    ngx_listening_t    *listening;			//	该连接对应的监听
 
-    off_t               sent;
+    off_t               sent;				//	发送缓冲区数据的位置偏移量
 
     ngx_log_t          *log;				/* [analy]	日志指针 */
 
@@ -148,7 +148,7 @@ struct ngx_connection_s {
 
     ngx_uint_t          requests;
 
-    unsigned            buffered:8;
+    unsigned            buffered:8;		//	数据被延迟发送了
 
     unsigned            log_error:3;     /* ngx_connection_log_error_e */
 
