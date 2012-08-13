@@ -980,8 +980,10 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
         return NGX_OK;
     }
 
+	//	这里找到对应的location以后，在获取loc_conf时，都是个性化的location blcok{}块中的内容了
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	当前请求不是内部调用，此location配置了internal指令，将会断开连接并返回404
     if (!r->internal && clcf->internal) {
         ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND);
         return NGX_OK;
@@ -1012,6 +1014,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
         return NGX_OK;
     }
 
+	//	auto redirect
     if (rc == NGX_DONE) {
         ngx_http_clear_location(r);
 
@@ -1098,7 +1101,7 @@ ngx_http_core_post_rewrite_phase(ngx_http_request_t *r,
 	//	重新获取loc_conf
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
 
-    r->loc_conf = cscf->ctx->loc_conf;
+    r->loc_conf = cscf->ctx->loc_conf;				//	这里将server层的loc_conf赋值给了r->loc_conf?????????????
 
     return NGX_AGAIN;
 }
@@ -1457,11 +1460,13 @@ ngx_http_update_location_config(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	????????
     if (r->method & clcf->limit_except) {
         r->loc_conf = clcf->limit_except_loc_conf;
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
     }
 
+	//	?????????
     if (r == r->main) {
         r->connection->log->file = clcf->error_log->file;
 
@@ -1470,6 +1475,8 @@ ngx_http_update_location_config(ngx_http_request_t *r)
         }
     }
 
+	//	设置此连接是否使用sendfile系统调用发送数据，首先系统支持sendfile，
+	//	并且配置文件中sendfile指令是打开状态（默认未开启）
     if ((ngx_io.flags & NGX_IO_SENDFILE) && clcf->sendfile) {
         r->connection->sendfile = 1;
 
@@ -1477,6 +1484,7 @@ ngx_http_update_location_config(ngx_http_request_t *r)
         r->connection->sendfile = 0;
     }
 
+	//	client_body_in_file_only被开启后
     if (clcf->client_body_in_file_only) {
         r->request_body_in_file_only = 1;
         r->request_body_in_persistent_file = 1;
@@ -1490,6 +1498,7 @@ ngx_http_update_location_config(ngx_http_request_t *r)
 
     r->request_body_in_single_buf = clcf->client_body_in_single_buffer;
 
+	//	设置请求的keepalive
     if (r->keepalive) {
         if (clcf->keepalive_timeout == 0) {
             r->keepalive = 0;
@@ -1521,15 +1530,18 @@ ngx_http_update_location_config(ngx_http_request_t *r)
         }
     }
 
+	//	?????????
     if (!clcf->tcp_nopush) {
         /* disable TCP_NOPUSH/TCP_CORK use */
         r->connection->tcp_nopush = NGX_TCP_NOPUSH_DISABLED;
     }
 
+	//	当前请求的 limit_rate未设置时，将根据配置指令 limit_rate 来设置
     if (r->limit_rate == 0) {
         r->limit_rate = clcf->limit_rate;
     }
 
+	//	设置 r->content_handler
     if (clcf->handler) {
         r->content_handler = clcf->handler;
     }
@@ -1559,6 +1571,7 @@ ngx_http_core_find_location(ngx_http_request_t *r)
 
     pclcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	在三叉树中查找
     rc = ngx_http_core_find_static_location(r, pclcf->static_locations);
 
     if (rc == NGX_AGAIN) {
@@ -1620,7 +1633,7 @@ ngx_http_core_find_location(ngx_http_request_t *r)
  * NGX_AGAIN    - inclusive match
  * NGX_DECLINED - no match
  */
-
+//	查找到对应的location时，将会设置 r->loc_conf 为找到的 loc_conf
 static ngx_int_t
 ngx_http_core_find_static_location(ngx_http_request_t *r,
     ngx_http_location_tree_node_t *node)
@@ -1933,7 +1946,9 @@ ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
     return rc;
 }
 
-
+/*
+ *	[analy]	根据request->uri和root或alias指令拼装path
+ */
 u_char *
 ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
     size_t *root_length, size_t reserved)
@@ -1946,6 +1961,7 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
 
     alias = clcf->alias;
 
+	//	????????
     if (alias && !r->valid_location) {
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
                       "\"alias\" cannot be used in location \"%V\" "
@@ -1955,15 +1971,31 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
 
     if (clcf->root_lengths == NULL) {
 
-        *root_length = clcf->root.len;
+        *root_length = clcf->root.len;			//	root或alias指令指定的目录长度
 
+		/*
+			location  /i/ {
+				alias  /spool/w3/images/;
+				root   /spool/w3/images/;	
+			}
+			request uri:	/i/top.gif  --> /spool/w3/images/top.gif
+			request uri:	/i/top.gif  --> /spool/w3/images/i/top.gif
+		
+			root指令时： strlen("/spool/w3/images") + sizeof("index.html") + strlen("/i/top.gif") - 0 + 1;
+			alias指令时： strlen("/spool/w3/images/") + sizeof("index.html") + strlen("/i/top.gif") - strlen("/i/") + 1;
+		*/
         path->len = clcf->root.len + reserved + r->uri.len - alias + 1;
 
         path->data = ngx_pnalloc(r->pool, path->len);
         if (path->data == NULL) {
             return NULL;
         }
-
+		
+		/*
+			首先拷贝root和alias指令配置部分
+			root  -> /spool/w3/images
+			alias -> /spool/w3/images/
+		*/		
         last = ngx_copy(path->data, clcf->root.data, clcf->root.len);
 
     } else {
@@ -2005,6 +2037,10 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
 #endif
     }
 
+	/*
+		root  -> /spool/w3/images/i/top.gif
+		alias -> /spool/w3/images/top.gif
+	*/
     last = ngx_cpystrn(last, r->uri.data + alias, r->uri.len - alias + 1);
 
     return last;
@@ -2858,7 +2894,9 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    pctx = cf->ctx;														//	pctx 指向父级的ngx_http_conf_ctx_t, 使用ngx_http_core_server（）函数中创建的ctx
+    pctx = cf->ctx;														//	pctx 指向父级的ngx_http_conf_ctx_t, 在server block {...}下时使用ngx_http_core_server（）函数中创建的ctx
+																		//	在location block {...}下时使用父的location中创建的ctx
+
     ctx->main_conf = pctx->main_conf;									//	父级的main_conf、srv_conf
     ctx->srv_conf = pctx->srv_conf;
 
@@ -4196,6 +4234,7 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	//	alias不能用在命名location中
     if (clcf->named && alias) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "the \"alias\" directive cannot be used "
@@ -4206,6 +4245,7 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+	//	$document_root变量不能使用在"root"和"alias"指令中
     if (ngx_strstr(value[1].data, "$document_root")
         || ngx_strstr(value[1].data, "${document_root}"))
     {
@@ -4217,6 +4257,7 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	//	$realpath_root变量不能使用在"root"和"alias"指令中
     if (ngx_strstr(value[1].data, "$realpath_root")
         || ngx_strstr(value[1].data, "${realpath_root}"))
     {
@@ -4228,14 +4269,14 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    clcf->alias = alias ? clcf->name.len : 0;
-    clcf->root = value[1];
+    clcf->alias = alias ? clcf->name.len : 0;					//	是"alias"指令时，等于location名字长度."root"指令时，等于0
+    clcf->root = value[1];										//	root和alias指令共用
 
-    if (!alias && clcf->root.data[clcf->root.len - 1] == '/') {
+    if (!alias && clcf->root.data[clcf->root.len - 1] == '/') {	//	是"root"指令时，如果root指定的是目录，将root将去掉最后的"/"
         clcf->root.len--;
     }
 
-    if (clcf->root.data[0] != '$') {
+    if (clcf->root.data[0] != '$') {							//	"root"和alias指令配置不以变量开始
         if (ngx_conf_full_name(cf->cycle, &clcf->root, 0) != NGX_OK) {
             return NGX_CONF_ERROR;
         }

@@ -560,8 +560,8 @@ ngx_http_header_filter(ngx_http_request_t *r)
         b->last = ngx_cpymem(b->last, "Connection: keep-alive" CRLF,		//	request是keep-alive时，设置 "Connection: keep-alive"
                              sizeof("Connection: keep-alive" CRLF) - 1);
 
-        if (clcf->keepalive_header) {
-            b->last = ngx_sprintf(b->last, "Keep-Alive: timeout=%T" CRLF,	//	keep-Alive: timeout=
+        if (clcf->keepalive_header) {					//	keepalive_timeout指令的第二个参数决定是否向客户端指定关闭连接的时间
+            b->last = ngx_sprintf(b->last, "Keep-Alive: timeout=%T" CRLF,	//	keep-Alive: timeout=time
                                   clcf->keepalive_header);
         }
 
