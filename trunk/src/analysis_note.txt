@@ -304,6 +304,34 @@ NGX_HTTP_LOG_PHASE							ngx_http_log_handler()
 		NGX_HTTP_POST_ACCESS_PHASE
 		NGX_HTTP_TRY_FILES_PHASE
 		
+//  
+ph[0].checker = ngx_http_core_generic_phase;  
+ph[0].handler = ngx_http_rewrite_handler;  
+ph[1].checker = ngx_http_core_find_config_phase;  
+ph[1].handler = NULL;  
+ph[2].checker = ngx_http_core_generic_phase;  
+ph[2].handler = ngx_http_rewrite_handler;  
+ph[3].checker = ngx_http_core_post_rewrite_phase;  
+ph[3].handler = NULL;  
+ph[4].checker = ngx_http_core_generic_phase;  
+ph[4].handler = ngx_http_limit_req_handler;  
+ph[5].checker = ngx_http_core_generic_phase;  
+ph[5].handler = ngx_http_limit_zone_handler;  
+ph[6].checker = ngx_http_core_access_phase;  
+ph[6].handler = ngx_http_access_handler;  
+ph[7].checker = ngx_http_core_access_phase;  
+ph[7].handler = ngx_http_auth_basic_handler;  
+ph[8].checker = ngx_http_core_post_access_phase;  
+ph[8].handler = NULL;  
+ph[9].checker = ngx_http_core_content_phase;  
+ph[9].handler = ngx_http_index_handler;  
+ph[10].checker = ngx_http_core_content_phase;  
+ph[10].handler = ngx_http_autoindex_handler;  
+ph[11].checker = ngx_http_core_content_phase;  
+ph[11].handler = ngx_http_static_handler;  
+ph[12].checker = ngx_http_core_generic_phase;  
+ph[12].handler = ngx_http_log_handler; 
+		
 --------------- 请求处理流程 -------------------------			
 ngx_http_init_connection
 	|__ngx_http_init_request
