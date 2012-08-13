@@ -153,14 +153,19 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
     index = cmcf->phase_engine.location_rewrite_index;
 
-	//	NGX_HTTP_REWRITE_PHASE 阶段的handler，检查loc_conf
+	//	判断是否为NGX_HTTP_REWRITE_PHASE 阶段调用的ngx_http_rewrite_handler（），
+	//	如果是将检查r->loc_conf是否在配置文件中找对对应，如果未找到，它将等于ngx_http_core_srv_conf_t中的ctx->loc_conf
+	//	因为在init request（）函数中， r->loc_conf 被赋值为 ngx_http_core_srv_conf_t中的ctx->loc_conf，只有在find location
+	//	phase阶段找到对应的Location才会改变r->loc_conf的值
     if (r->phase_handler == index && r->loc_conf == cscf->ctx->loc_conf) {
         /* skipping location rewrite phase for server null location */
         return NGX_DECLINED;
     }
 
+	//	如果是server的rewrite阶段调用的ngx_http_rewrite_handler，此时
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_rewrite_module);
 
+	//	这里的rlcf或许在server层，也或许在location层中
     if (rlcf->codes == NULL) {			//	codes为空，说明在配置文件中没有使用变量相关
         return NGX_DECLINED;
     }
@@ -971,7 +976,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 	
 	//	这里先处理表达式2是有原因的， 当在lcf->codes表中注册处理结构时，由于set的表达式1处理函数
-	//	中需要使用表达式2的value，所以这里运行lcf->codes表中的函数时，需要先将具体的值填充好
+	//	中需要使用表达式2的value，所以运行lcf->codes表中的函数时，需要先将具体的值填充好
     if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {				
         return NGX_CONF_ERROR;
     }

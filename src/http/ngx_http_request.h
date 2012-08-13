@@ -184,7 +184,7 @@ typedef struct {
     ngx_table_elt_t                  *expect;						//	request header field "Expect: 100-continue"
 
 #if (NGX_HTTP_GZIP)
-    ngx_table_elt_t                  *accept_encoding;
+    ngx_table_elt_t                  *accept_encoding;				//	请求字段 accept_encoding
     ngx_table_elt_t                  *via;
 #endif
 
@@ -402,7 +402,7 @@ struct ngx_http_request_s {
     ngx_http_virtual_names_t         *virtual_names;
 
     ngx_int_t                         phase_handler;				//	在运行phase中的handler时，用此字段标识phase中下一个要执行的handler的下标
-    ngx_http_handler_pt               content_handler;				//	有些特殊？？？？？？
+    ngx_http_handler_pt               content_handler;				//	此handler被设置后，执行完将退出phase的所有处理
     ngx_uint_t                        access_code;
 
 	/* 变量在每个请求中的值是不一样的，也就是说变量是请求相关的

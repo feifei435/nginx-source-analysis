@@ -109,7 +109,7 @@ ngx_http_index_handler(ngx_http_request_t *r)
     ngx_http_index_loc_conf_t    *ilcf;
     ngx_http_script_len_code_pt   lcode;
 
-    if (r->uri.data[r->uri.len - 1] != '/') {
+    if (r->uri.data[r->uri.len - 1] != '/') {		//	uri不是“/”结尾时，说明uri中最后指定了文件
         return NGX_DECLINED;
     }
 
@@ -117,7 +117,8 @@ ngx_http_index_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    ilcf = ngx_http_get_module_loc_conf(r, ngx_http_index_module);
+	//	这里获取的r->loc_conf可能是server层的也有可能是location层的，需要检查是否有匹配到配置文件中的Location
+    ilcf = ngx_http_get_module_loc_conf(r, ngx_http_index_module);			
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
     allocated = 0;
@@ -414,6 +415,8 @@ ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->max_index_len = prev->max_index_len;
     }
 
+	//	上层（server）和本层（location）都未配置index指令
+	//	将添加默认“index.html”conf->indices中
     if (conf->indices == NULL) {
         conf->indices = ngx_array_create(cf->pool, 1, sizeof(ngx_http_index_t));
         if (conf->indices == NULL) {
@@ -506,7 +509,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         n = ngx_http_script_variables_count(&value[i]);
 
-		//	index指令使用普通常量
+		//	index指令使用的是字符串常量
         if (n == 0) {
             if (ilcf->max_index_len < index->name.len) {
                 ilcf->max_index_len = index->name.len;

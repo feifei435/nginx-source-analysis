@@ -70,6 +70,7 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
     send = 0;
 
+	//	拼装io向量数组
     header.elts = headers;
     header.size = sizeof(struct iovec);
     header.nalloc = NGX_HEADERS;
@@ -93,6 +94,8 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
              cl && header.nelts < IOV_MAX && send < limit;
              cl = cl->next)
         {
+
+			//	??????
             if (ngx_buf_special(cl->buf)) {
                 continue;
             }

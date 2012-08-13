@@ -400,11 +400,13 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     for (s = 0; s < cmcf->servers.nelts; s++) {								//	创建location-tree
 
-        clcf = cscfp[s]->ctx->loc_conf[ngx_http_core_module.ctx_index];
+        clcf = cscfp[s]->ctx->loc_conf[ngx_http_core_module.ctx_index];		//	在server层的loc_conf上创建了location trees
 
-        if (ngx_http_init_locations(cf, cscfp[s], clcf) != NGX_OK) {
+		//	初始化location队列并将它们赋值到各自的数组
+        if (ngx_http_init_locations(cf, cscfp[s], clcf) != NGX_OK) {		
             return NGX_CONF_ERROR;
         }
+
 
         if (ngx_http_init_static_location_trees(cf, clcf) != NGX_OK) {
             return NGX_CONF_ERROR;
@@ -846,7 +848,14 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
     return NGX_CONF_OK;
 }
 
-
+/*
+ *	[analy]	初始化locations到各自的数组中
+ *			cscf: server层的 srv_conf
+ *			pclcf: server层的 loc_conf，也有可能是父locationd的loc_conf
+ *			此函数将对locations队列进行排序，排序后的规则exact_match --> regex(regex==1) --> named(regex==1) --> noname(regex==1)
+ *			对队列中各种类型的Location进行定位，然后将named类型的Location赋值到 cscf->named_locations
+ *			将named类型的Location赋值到 pclcf->regex_locations
+ */
 static ngx_int_t
 ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -861,13 +870,15 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_queue_t                 *regex;
 #endif
 
-    locations = pclcf->locations;
+	//	server层的location队列，在解析location block时将增加location节点到队列中
+    locations = pclcf->locations;			
 
     if (locations == NULL) {
         return NGX_OK;
     }
 
-    ngx_queue_sort(locations, ngx_http_cmp_locations);				//	locations队列排序，怎样排序后续分析？？
+	//	locations插入排序
+    ngx_queue_sort(locations, ngx_http_cmp_locations);				
 
     named = NULL;
     n = 0;
@@ -877,13 +888,14 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 #endif
 
     for (q = ngx_queue_head(locations);
-         q != ngx_queue_sentinel(locations);
+         q != ngx_queue_sentinel(locations);			//	尾节点等于队列头的时候将退出循环
          q = ngx_queue_next(q))
     {
         lq = (ngx_http_location_queue_t *) q;
 
-        clcf = lq->exact ? lq->exact : lq->inclusive;
+        clcf = lq->exact ? lq->exact : lq->inclusive;			//	获取location层的location blcok
 
+		/* 由于可能存在nested location，也就是location里面嵌套的location，这里需要递归的处理一下当前location下面的nested location */
         if (ngx_http_init_locations(cf, NULL, clcf) != NGX_OK) {
             return NGX_ERROR;
         }
@@ -891,7 +903,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 #if (NGX_PCRE)
 
         if (clcf->regex) {
-            r++;
+            r++;					//	正则匹配的location总个数
 
             if (regex == NULL) {
                 regex = q;
@@ -903,25 +915,30 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 #endif
 
         if (clcf->named) {
-            n++;
+            n++;						//	命名匹配的location总数
 
-            if (named == NULL) {
-                named = q;
+            if (named == NULL) {		//	????
+                named = q;		
             }
 
             continue;
         }
 
-        if (clcf->noname) {
+        if (clcf->noname) {				//	经过上边的排序，noname已经排在了队列的尾端，当遇到队列中第一个noname时，将直接跳出循环
             break;
         }
     }
 
-    if (q != ngx_queue_sentinel(locations)) {
+    if (q != ngx_queue_sentinel(locations)) {			//	此时就是仅当队列中有noname时，分割队列。
         ngx_queue_split(locations, q, &tail);
     }
 
+	// 如果有named location，将它们保存在所属server的named_locations数组中
+	// 当队列中存在noname类型的location时，会将noname类型的Location单独分离出去，
+	// 所以可以在named location的开始节点处循环将named location加入到 cscf->named_locations 数组中
     if (named) {
+
+		//	申请named location的节点空间
         clcfp = ngx_palloc(cf->pool,
                            (n + 1) * sizeof(ngx_http_core_loc_conf_t **));
         if (clcfp == NULL) {
@@ -931,7 +948,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         cscf->named_locations = clcfp;
 
         for (q = named;
-             q != ngx_queue_sentinel(locations);
+             q != ngx_queue_sentinel(locations);			//	尾节点等于队列头的时候将退出循环
              q = ngx_queue_next(q))
         {
             lq = (ngx_http_location_queue_t *) q;
@@ -941,11 +958,14 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
         *clcfp = NULL;
 
-        ngx_queue_split(locations, named, &tail);
+        ngx_queue_split(locations, named, &tail);		//	将named节点分离出去，此时队列中仅剩 exact_match和regex location
     }
 
 #if (NGX_PCRE)
-
+	/* 
+		如果有正则匹配location，将它们保存在所属server的http core模块的loc配置的regex_locations 数组中， 
+		这里和named location保存位置不同的原因是由于named location只能存在server里面，而regex location可以作为nested location 
+	*/  
     if (regex) {
 
         clcfp = ngx_palloc(cf->pool,
@@ -975,7 +995,10 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     return NGX_OK;
 }
 
-
+/*
+ *	[analy]	初始化locations
+ *			pclcf: server层的 loc_conf
+ */
 static ngx_int_t
 ngx_http_init_static_location_trees(ngx_conf_t *cf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -984,13 +1007,16 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
     ngx_http_core_loc_conf_t   *clcf;
     ngx_http_location_queue_t  *lq;
 
-    locations = pclcf->locations;
-
-    if (locations == NULL) {
+	//	此处的locations有可能存在两种，因为当前函数存在递归调用
+	//	第一种情况是 pclcf 属于server层
+	//	第二种情况是 pclcf 属于层location层，当location下有嵌套location时，将是父location的队列
+    locations = pclcf->locations;			
+											
+    if (locations == NULL) {				//	检查locations队列是否申请了空间，未申请直接返回
         return NGX_OK;
     }
 
-    if (ngx_queue_empty(locations)) {
+    if (ngx_queue_empty(locations)) {		//	检查队列是否为空，为空直接返回
         return NGX_OK;
     }
 
@@ -1000,17 +1026,20 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
     {
         lq = (ngx_http_location_queue_t *) q;
 
-        clcf = lq->exact ? lq->exact : lq->inclusive;
+        clcf = lq->exact ? lq->exact : lq->inclusive;			//	获取location层的location
 
         if (ngx_http_init_static_location_trees(cf, clcf) != NGX_OK) {
             return NGX_ERROR;
         }
     }
 
+	/* join队列中名字相同的inclusive和exact类型location，也就是如果某个exact_match的location名字和普通字符串匹配的location名字相同的话， 
+		就将它们合到一个节点中，分别保存在节点的exact和inclusive下，这一步的目的实际是去重，为后面的建立排序树做准备 */
     if (ngx_http_join_exact_locations(cf, locations) != NGX_OK) {
         return NGX_ERROR;
     }
 
+	//	整合location
     ngx_http_create_locations_list(locations, ngx_queue_head(locations));
 
     pclcf->static_locations = ngx_http_create_locations_tree(cf, locations, 0);
@@ -1071,6 +1100,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 /* 
  *	[analy]	进行location排序比较
  *			exact_match --> regex(regex==1) --> named(regex==1) --> noname(regex==1)
+ *			e.g. /abc -> /abcd -> /abf
  */
 static ngx_int_t
 ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
@@ -1146,17 +1176,21 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 }
 
 
+/* 
+ *	[analy]	join队列中名字相同的inclusive和exact类型location，也就是如果某个exact_match的location名字和普通字符串匹配的location名字相同的话，
+ *			就将它们合到一个节点中，分别保存在节点的exact和inclusive下，这一步的目的实际是去重，为后面的建立排序树做准备
+ */
 static ngx_int_t
 ngx_http_join_exact_locations(ngx_conf_t *cf, ngx_queue_t *locations)
 {
     ngx_queue_t                *q, *x;
     ngx_http_location_queue_t  *lq, *lx;
 
-    q = ngx_queue_head(locations);
+    q = ngx_queue_head(locations);				//	队列头节点
 
     while (q != ngx_queue_last(locations)) {
 
-        x = ngx_queue_next(q);
+        x = ngx_queue_next(q);					//	下一个节点
 
         lq = (ngx_http_location_queue_t *) q;
         lx = (ngx_http_location_queue_t *) x;
@@ -1178,13 +1212,17 @@ ngx_http_join_exact_locations(ngx_conf_t *cf, ngx_queue_t *locations)
             continue;
         }
 
-        q = ngx_queue_next(q);
+        q = ngx_queue_next(q);		//	取下一个节点
     }
 
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	整合location
+ *			locations: 队列
+ *			q: locations队列中的头节点
+ */
 static void
 ngx_http_create_locations_list(ngx_queue_t *locations, ngx_queue_t *q)
 {
@@ -1193,7 +1231,7 @@ ngx_http_create_locations_list(ngx_queue_t *locations, ngx_queue_t *q)
     ngx_queue_t                *x, tail;
     ngx_http_location_queue_t  *lq, *lx;
 
-    if (q == ngx_queue_last(locations)) {
+    if (q == ngx_queue_last(locations)) {		//	检查队列
         return;
     }
 
@@ -1258,11 +1296,13 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
     ngx_http_location_queue_t      *lq;
     ngx_http_location_tree_node_t  *node;
 
+	//	根节点取排完序的中间结点
     q = ngx_queue_middle(locations);
 
     lq = (ngx_http_location_queue_t *) q;
     len = lq->name->len - prefix;
 
+	//	为根节点结点申请空间
     node = ngx_palloc(cf->pool,
                       offsetof(ngx_http_location_tree_node_t, name) + len);
     if (node == NULL) {
@@ -1281,6 +1321,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
     node->len = (u_char) len;
     ngx_memcpy(node->name, &lq->name->data[prefix], len);
 
+	//	拆分队列
     ngx_queue_split(locations, q, &tail);
 
     if (ngx_queue_empty(locations)) {
@@ -1291,6 +1332,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
         goto inclusive;
     }
 
+	//	创建左子树
     node->left = ngx_http_create_locations_tree(cf, locations, prefix);
     if (node->left == NULL) {
         return NULL;
@@ -1302,6 +1344,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
         goto inclusive;
     }
 
+	//	创建右子树
     node->right = ngx_http_create_locations_tree(cf, &tail, prefix);
     if (node->right == NULL) {
         return NULL;

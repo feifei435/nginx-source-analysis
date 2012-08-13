@@ -162,7 +162,7 @@ struct ngx_connection_s {
     unsigned            reusable:1;
     unsigned            close:1;
 
-    unsigned            sendfile:1;
+    unsigned            sendfile:1;			//	此连接是否使用sendfile系统调用（ngx_http_update_location_config()函数中有设置）
     unsigned            sndlowat:1;
     unsigned            tcp_nodelay:2;   /* ngx_connection_tcp_nodelay_e */
     unsigned            tcp_nopush:2;    /* ngx_connection_tcp_nopush_e */

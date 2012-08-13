@@ -148,7 +148,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_array_t                servers;								/* ngx_http_core_srv_conf_t */
+    ngx_array_t                servers;								// array of ngx_http_core_srv_conf_t
 
     ngx_http_phase_engine_t    phase_engine;
 
@@ -201,7 +201,7 @@ typedef struct {
     unsigned                    captures:1;
 #endif
 
-    ngx_http_core_loc_conf_t  **named_locations;				//	???
+    ngx_http_core_loc_conf_t  **named_locations;				//	命名匹配location数组(ngx_http_init_locations()函数中赋值)
 } ngx_http_core_srv_conf_t;
 
 
@@ -304,12 +304,13 @@ struct ngx_http_core_loc_conf_s {
 
     unsigned      noname:1;									/* "if () {}" block or limit_except */ //	nginx会把if 指令配置也看做一个location，即noname类型。
     unsigned      lmt_excpt:1;								//	location中有“limit_except”指令时为1
-    unsigned      named:1;									//	命名匹配("@")
+    unsigned      named:1;									//	命名匹配("@") {子location不允许为命名匹配}
 
     unsigned      exact_match:1;							//	精确匹配("=")
     unsigned      noregex:1;								//	非正则匹配( " ^~ " )
 
     unsigned      auto_redirect:1;
+
 #if (NGX_HTTP_GZIP)
     unsigned      gzip_disable_msie6:2;
 #if (NGX_HTTP_DEGRADATION)
@@ -317,9 +318,9 @@ struct ngx_http_core_loc_conf_s {
 #endif
 #endif
 
-    ngx_http_location_tree_node_t   *static_locations;
+    ngx_http_location_tree_node_t   *static_locations;		//	字符串匹配的三叉排序树
 #if (NGX_PCRE)
-    ngx_http_core_loc_conf_t       **regex_locations;
+    ngx_http_core_loc_conf_t       **regex_locations;		//	正则匹配的location数组(ngx_http_init_locations()函数中赋值)
 #endif
 
     /* pointer to the modules' loc_conf */
@@ -328,11 +329,11 @@ struct ngx_http_core_loc_conf_s {
     uint32_t      limit_except;
     void        **limit_except_loc_conf;
 
-    ngx_http_handler_pt  handler;
+    ngx_http_handler_pt  handler;							//	此handler被设置后将被赋值给 r->content_handler
 
     /* location name length for inclusive location with inherited alias */
-    size_t        alias;
-    ngx_str_t     root;                    /* root, alias */
+    size_t        alias;									//	"alias"指令时，长度大于0."root"指令时，长度等于0
+    ngx_str_t     root;										/* root, alias */
     ngx_str_t     post_action;
 
     ngx_array_t  *root_lengths;
@@ -349,34 +350,40 @@ struct ngx_http_core_loc_conf_s {
     size_t        client_body_buffer_size; /* client_body_buffer_size */
     size_t        send_lowat;              /* send_lowat */
     size_t        postpone_output;         /* postpone_output		延迟发送的阀值，默认1460 */
-    size_t        limit_rate;              /* limit_rate			限制将应答传送到客户端的速度，单位为字节/秒 */
+    size_t        limit_rate;              // limit_rate 指令限制将应答传送到客户端的速度，单位为字节/秒
     size_t        limit_rate_after;        /* limit_rate_after */
     size_t        sendfile_max_chunk;      /* sendfile_max_chunk    sendfile()系统调用传输的数据统计限制 */
     size_t        read_ahead;              /* read_ahead */
 
     ngx_msec_t    client_body_timeout;     /* client_body_timeout */
     ngx_msec_t    send_timeout;            /* send_timeout */
-    ngx_msec_t    keepalive_timeout;       /* keepalive_timeout */
+    ngx_msec_t    keepalive_timeout;       /* keepalive_timeout指令的第一个参数使用此字段，服务器主动关闭连接的超时时间， 默认是75000
+													参数的第一个值指定了客户端与服务器长连接的超时时间，超过这个时间，服务器将关闭连接。
+													参数的第二个值（可选）指定了应答头中Keep-Alive: timeout=time的time值，这个值可以使一些浏览器知道什么时候关闭连接，
+													以便服务器不用重复关闭，如果不指定这个参数，nginx不会在应答头中发送Keep-Alive信息。
+										   */
+
     ngx_msec_t    lingering_time;          /* lingering_time */
     ngx_msec_t    lingering_timeout;       /* lingering_timeout */
     ngx_msec_t    resolver_timeout;        /* resolver_timeout */
 
     ngx_resolver_t  *resolver;             /* resolver */
 
-    time_t        keepalive_header;        /* keepalive_timeout */
+    time_t        keepalive_header;        // keepalive_timeout指令的第二个参数使用
+										   // 决定是否在响应头中发送包含timeout=time的值
+										   
 
-    ngx_uint_t    keepalive_requests;      /* keepalive_requests */
+    ngx_uint_t    keepalive_requests;      // keepalive_requests指令指定服务器保持长连接的请求数???????????????????????。默认是100
     ngx_uint_t    keepalive_disable;       /* keepalive_disable */
     ngx_uint_t    satisfy;                 /* satisfy */
     ngx_uint_t    lingering_close;         /* lingering_close */
     ngx_uint_t    if_modified_since;       /* if_modified_since */
     ngx_uint_t    max_ranges;              /* max_ranges */
-    ngx_uint_t    client_body_in_file_only; /* client_body_in_file_only */
+    ngx_uint_t    client_body_in_file_only;			// client_body_in_file_only指令打开后将始终保存request的信息
 
-    ngx_flag_t    client_body_in_single_buffer;
-                                           /* client_body_in_singe_buffer */
-    ngx_flag_t    internal;                /* internal */
-    ngx_flag_t    sendfile;                /* sendfile */
+    ngx_flag_t    client_body_in_single_buffer;     // client_body_in_singe_buffer
+    ngx_flag_t    internal;                // internal指令指定某个location只能被“内部的”请求调用，外部的调用请求会返回”Not found” (404)
+    ngx_flag_t    sendfile;                // sendfile指令将会在发送文件时，使用sendfile()系统调用
 #if (NGX_HAVE_FILE_AIO)
     ngx_flag_t    aio;                     /* aio */
 #endif
@@ -387,7 +394,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_flag_t    port_in_redirect;        /* port_in_redirect */
     ngx_flag_t    msie_padding;            /* msie_padding */
     ngx_flag_t    msie_refresh;            /* msie_refresh */
-    ngx_flag_t    log_not_found;           /* log_not_found */
+    ngx_flag_t    log_not_found;           /* log_not_found: 指令指定是否将一些文件没有找到的错误信息写入error_log指定的文件中 */
     ngx_flag_t    log_subrequest;          /* log_subrequest */
     ngx_flag_t    recursive_error_pages;   /* recursive_error_pages */
     ngx_flag_t    server_tokens;           /* server_tokens: 是否在错误页面和服务器头中输出nginx版本信息 */
@@ -405,7 +412,7 @@ struct ngx_http_core_loc_conf_s {
 #endif
 
 #if (NGX_HAVE_OPENAT)
-    ngx_uint_t    disable_symlinks;        /* disable_symlinks */
+    ngx_uint_t    disable_symlinks;        /* disable_symlinks： Determines how symbolic links should be treated when opening files:  */
     ngx_http_complex_value_t  *disable_symlinks_from;
 #endif
 
@@ -415,9 +422,10 @@ struct ngx_http_core_loc_conf_s {
     ngx_path_t   *client_body_temp_path;   /* client_body_temp_path */
 
     ngx_open_file_cache_t  *open_file_cache;
-    time_t        open_file_cache_valid;
-    ngx_uint_t    open_file_cache_min_uses;
-    ngx_flag_t    open_file_cache_errors;
+    time_t        open_file_cache_valid;		//	这个指令指定了何时需要检查open_file_cache中缓存项目的有效信息。 
+    ngx_uint_t    open_file_cache_min_uses;		//	这个指令指定了在open_file_cache指令无效的参数中一定的时间范围内
+												//	可以使用的最小文件数，如果使用更大的值，文件描述符在cache中总是打开状态。 
+    ngx_flag_t    open_file_cache_errors;		//	这个指令指定是否在搜索一个文件时记录cache错误。 
     ngx_flag_t    open_file_cache_events;
 
     ngx_log_t    *error_log;
@@ -425,7 +433,9 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    types_hash_max_size;
     ngx_uint_t    types_hash_bucket_size;
 
-    ngx_queue_t  *locations;					//	ngx_http_location_queue_t 的队列头
+    ngx_queue_t  *locations;					//	ngx_http_location_queue_t 的队列头，server层和location层均有自己的队列
+												//	根据指令"if和location"所在位置的不同，如果在server {...}中时location队列挂接到server层，
+												//	如果在location {...} 内时为location队列挂接到location层。
 
 #if 0
     ngx_http_core_loc_conf_t  *prev_location;

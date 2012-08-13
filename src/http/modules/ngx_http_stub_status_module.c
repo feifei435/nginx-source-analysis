@@ -76,7 +76,7 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
         return rc;
     }
 
-    ngx_str_set(&r->headers_out.content_type, "text/plain");			//	设置 Content_type 域
+    ngx_str_set(&r->headers_out.content_type, "text/plain");			//	设置 Content_type 域 为 纯文本格式
 
     if (r->method == NGX_HTTP_HEAD) {
         r->headers_out.status = NGX_HTTP_OK;
@@ -137,6 +137,8 @@ static char *ngx_http_set_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_core_loc_conf_t  *clcf;
 
+	//	当 stub_status 指令配置在 location时，由于cf->ctx使用的是当前创建的location->loc_conf
+	//	所以设立设置 clcf->handler，尽在当前location被调用时会执行。
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
     clcf->handler = ngx_http_status_handler;
 

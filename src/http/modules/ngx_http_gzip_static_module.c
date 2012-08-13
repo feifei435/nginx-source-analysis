@@ -10,6 +10,12 @@
 #include <ngx_http.h>
 
 
+/*
+ *	[analy]	默认此模块不被添加到编译工程中
+ *			
+ */
+
+
 typedef struct {
     ngx_flag_t  enable;
 } ngx_http_gzip_static_conf_t;

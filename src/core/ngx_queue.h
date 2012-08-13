@@ -60,10 +60,15 @@ struct ngx_queue_s {
     (h)->prev = x
 
 
+/* 
+ *	[analy]	获取队列的头节点
+ */
 #define ngx_queue_head(h)                                                     \
     (h)->next
 
-
+/* 
+ *	[analy]	获取队列的尾节点
+ */
 #define ngx_queue_last(h)                                                     \
     (h)->prev
 

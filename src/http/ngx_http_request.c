@@ -276,7 +276,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-    c->requests++;					//	此连接的所有请求数之和
+    c->requests++;					//	此连接的所有请求数之和，是指？？？？？？？？？？？？？
 
     hc = c->data;					//	2. 在 ngx_connection_t 中获取 ngx_http_connection_t 	
 
@@ -401,7 +401,7 @@ ngx_http_init_request(ngx_event_t *rev)
     /* the default server configuration for the address:port */
     cscf = addr_conf->default_server;
 
-    r->main_conf = cscf->ctx->main_conf;								//	设置main_conf、srv_conf、loc_conf
+    r->main_conf = cscf->ctx->main_conf;								//	设置request的main_conf、srv_conf、loc_conf为server层的ctx。why????????????
     r->srv_conf = cscf->ctx->srv_conf;	
     r->loc_conf = cscf->ctx->loc_conf;
 
