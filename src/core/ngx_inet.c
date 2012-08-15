@@ -616,6 +616,9 @@ ngx_parse_unix_domain_url(ngx_pool_t *pool, ngx_url_t *u)
 }
 
 
+/*
+ *	[analy]	ipv4地址解析
+ */
 static ngx_int_t
 ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 {
@@ -631,15 +634,15 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
     u->family = AF_INET;
 
-    host = u->url.data;					//	url的首地址 e.g. 192.168.124.129:8011;
+    host = u->url.data;					//	url的首地址 e.g. 192.168.124.129:8011 或 www.baidu.com;
 
     last = host + u->url.len;			//	url的尾地址
 
     port = ngx_strlchr(host, last, ':');	//	在url字符串中查找":"端口
 
-    uri = ngx_strlchr(host, last, '/');
-
-    args = ngx_strlchr(host, last, '?');
+    uri = ngx_strlchr(host, last, '/');		//	查找uri
+	
+    args = ngx_strlchr(host, last, '?');	//	查找args
 
     if (args) {
         if (uri == NULL) {
@@ -725,7 +728,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         u->no_port = 1;
     }
 
-    len = last - host;					//	计算字符串ip地址的长度
+    len = last - host;					//	计算字符串ip地址或域名的长度
 
     if (len == 0) {
         u->err = "no host";
@@ -739,7 +742,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
     u->host.len = len;					//	设置ip地址
     u->host.data = host;
 
-    if (u->no_resolve) {				//	??????????????
+    if (u->no_resolve) {				//	no_resolve被设置时，将会直接返回，不进行以下的解析
         return NGX_OK;
     }
 

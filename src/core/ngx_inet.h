@@ -98,7 +98,7 @@ typedef struct {
     ngx_addr_t               *addrs;
     ngx_uint_t                naddrs;
 
-    char                     *err;
+    char                     *err;						//	´íÎóĞÅÏ¢×Ö·û´®
 } ngx_url_t;
 
 

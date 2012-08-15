@@ -61,8 +61,8 @@ typedef struct {
     ngx_str_t                      body_source;
 
     ngx_str_t                      method;
-    ngx_str_t                      location;
-    ngx_str_t                      url;
+    ngx_str_t                      location;			//	所属location层的name字段的值 /hellobaidu
+    ngx_str_t                      url;					//	指向proxy_pass参数部分例如："http://www.baidu.com"
 
 #if (NGX_HTTP_CACHE)
     ngx_http_complex_value_t       cache_key;
@@ -3317,7 +3317,16 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
     return ngx_hash_init(&hash, headers_names.elts, headers_names.nelts);
 }
 
+/* 
+ *	[analy]			
+	 ngx_http_upstream_module模块在location层的配置被修改，
+	 向 ngx_http_upstream_main_conf_t->upstreams数组中添加一个ngx_http_upstream_srv_conf_t配置
 
+	 plcf->upstream.upstream指向的是ngx_http_upstream_main_conf_t->upstreams数组中的第一个元素
+	 plcf->vars
+	 plcf->location
+	 plcf->url
+ */
 static char *
 ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -3331,23 +3340,23 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_core_loc_conf_t   *clcf;
     ngx_http_script_compile_t   sc;
 
-    if (plcf->upstream.upstream || plcf->proxy_lengths) {
+    if (plcf->upstream.upstream || plcf->proxy_lengths) {			//	????????
         return "is duplicate";
     }
 
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
-    clcf->handler = ngx_http_proxy_handler;
+    clcf->handler = ngx_http_proxy_handler;							//	设置handler后，content phase阶段的其他handler将不会被执行
 
-    if (clcf->name.data[clcf->name.len - 1] == '/') {
+    if (clcf->name.data[clcf->name.len - 1] == '/') {				//	proxy_pass 指定的地址最后以"/"
         clcf->auto_redirect = 1;
     }
 
     value = cf->args->elts;
 
-    url = &value[1];
-
-    n = ngx_http_script_variables_count(url);
+    url = &value[1];	//	获取url
+	
+    n = ngx_http_script_variables_count(url);						
 
     if (n) {
 
@@ -3374,6 +3383,8 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
+
+	//	检查URL的格式，只能是“http://”和“https://”
     if (ngx_strncasecmp(url->data, (u_char *) "http://", 7) == 0) {
         add = 7;
         port = 80;
@@ -3400,9 +3411,9 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(&u, sizeof(ngx_url_t));
 
-    u.url.len = url->len - add;
+    u.url.len = url->len - add;				//	获取proxy_pass 配置中去掉http://或https://之后的部分
     u.url.data = url->data + add;
-    u.default_port = port;
+    u.default_port = port;					//	http://的端口是80，https;//端口是443
     u.uri_part = 1;
     u.no_resolve = 1;
 
@@ -3411,11 +3422,11 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    plcf->vars.schema.len = add;
-    plcf->vars.schema.data = url->data;
-    plcf->vars.key_start = plcf->vars.schema;
+    plcf->vars.schema.len = add;			//	7
+    plcf->vars.schema.data = url->data;		//	http://
+    plcf->vars.key_start = plcf->vars.schema;	//	http://www.baidu.com
 
-    ngx_http_proxy_set_vars(&u, &plcf->vars);
+    ngx_http_proxy_set_vars(&u, &plcf->vars);	//	设置变量vars
 
     plcf->location = clcf->name;
 
@@ -3993,6 +4004,7 @@ ngx_http_proxy_set_vars(ngx_url_t *u, ngx_http_proxy_vars_t *v)
 {
     if (u->family != AF_UNIX) {
 
+		//	url中没有设置端口，或设置的端口与默认端口不一致
         if (u->no_port || u->port == u->default_port) {
 
             v->host_header = u->host;

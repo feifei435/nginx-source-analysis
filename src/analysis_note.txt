@@ -484,7 +484,11 @@ ngx_http_script_compile()
 
 
 
+-----------------	 ngx_http_finalize_request	 --------------------
 
+ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)			Ω· ¯«Î«Û
+	|-- ngx_http_close_request()
+	|--	ngx_http_finalize_connection()
 		
 		
 		

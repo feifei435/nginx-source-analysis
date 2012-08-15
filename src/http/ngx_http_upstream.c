@@ -381,7 +381,9 @@ ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[] = {
     { ngx_null_string, 0 }
 };
 
-
+/* 
+ *	[analy]  在r->upstream上创建upstream
+ */
 ngx_int_t
 ngx_http_upstream_create(ngx_http_request_t *r)
 {
@@ -4318,7 +4320,7 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
+//	增加 ngx_http_upstream_srv_conf_s 到 ngx_http_upstream_main_conf_t中upstreams数组中
 ngx_http_upstream_srv_conf_t *
 ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 {
@@ -4398,11 +4400,11 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
     }
 
     uscf->flags = flags;
-    uscf->host = u->host;
-    uscf->file_name = cf->conf_file->file.name.data;
-    uscf->line = cf->conf_file->line;
-    uscf->port = u->port;
-    uscf->default_port = u->default_port;
+    uscf->host = u->host;								//	"www.baidu.com"
+    uscf->file_name = cf->conf_file->file.name.data;	//	"/usr/local/nginx/conf/nginx.conf"
+    uscf->line = cf->conf_file->line;					//	proxy在配置文件中的行号
+    uscf->port = u->port;								//	端口号
+    uscf->default_port = u->default_port;				//	默认端口号 80
 
     if (u->naddrs == 1) {
         uscf->servers = ngx_array_create(cf->pool, 1,

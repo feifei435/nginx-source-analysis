@@ -315,12 +315,12 @@ ngx_http_header_filter(ngx_http_request_t *r)
         && r->headers_out.location->value.data[0] == '/')
     {
         r->headers_out.location->hash = 0;
-
-        if (clcf->server_name_in_redirect) {
+	
+        if (clcf->server_name_in_redirect) {			//	使用指令 "server_name_in_redirect" 时，重定向将使用 server_name指令指定的第一个参数
             cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
-            host = cscf->server_name;
+            host = cscf->server_name;		//	指向server_names数组中第一个元素
 
-        } else if (r->headers_in.server.len) {
+        } else if (r->headers_in.server.len) {			//	使用请求头中的host字段
             host = r->headers_in.server;
 
         } else {
@@ -535,7 +535,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
             b->last = ngx_sprintf(b->last, ":%ui", port);
         }
 
-        b->last = ngx_copy(b->last, r->headers_out.location->value.data,
+        b->last = ngx_copy(b->last, r->headers_out.location->value.data,	//	拷贝请求的uri
                            r->headers_out.location->value.len);
 
         /* update r->headers_out.location->value for possible logging */

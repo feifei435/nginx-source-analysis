@@ -54,7 +54,7 @@ struct ngx_event_s {
     unsigned         disabled:1;
 
     /* the ready event; in aio mode 0 means that no operation can be posted */
-    unsigned         ready:1;
+    unsigned         ready:1;							//	有读写事件发生，可以读取或写入数据了
 
     unsigned         oneshot:1;
 

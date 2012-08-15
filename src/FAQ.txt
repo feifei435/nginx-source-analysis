@@ -1,1 +1,10 @@
 1. 怎样更改默认日志级别？
+
+2. 下边这两条配置的区别？nginx怎样处理这两个proxy_pass？
+location /hellobaidu/ {
+	1. proxy_pass http://www.baidu.com/index.php?tn=ylmf_4_pg&ch=7;
+	2. proxy_pass http://www.baidu.com;
+}
+
+3. 
+
