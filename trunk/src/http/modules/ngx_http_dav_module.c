@@ -10,6 +10,12 @@
 #include <ngx_http.h>
 
 
+/*
+	这个模块增加一些HTTP和webdav扩展动作（PUT, DELETE, MKCOL, COPY和MOVE）。
+	要使用这个模块必须在编译时指定下列编译参数
+	./configure --with-http_dav_module
+*/
+
 #define NGX_HTTP_DAV_COPY_BLOCK      65536
 
 #define NGX_HTTP_DAV_OFF             2

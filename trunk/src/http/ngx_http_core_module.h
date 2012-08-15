@@ -182,17 +182,18 @@ typedef struct {
     /* server ctx */
     ngx_http_conf_ctx_t        *ctx;							//	指向在ngx_http_core_server（）中申请的ctx
 
-    ngx_str_t                   server_name;
+    ngx_str_t                   server_name;					//	是 server_names 数组中第一个服务器名称
 
-    size_t                      connection_pool_size;
-    size_t                      request_pool_size;				//	在处理请求时，所使用的内存池大小，默认是4K
-    size_t                      client_header_buffer_size;		//	设置处理从客户端过来的请求buffer大小
-
+    size_t                      connection_pool_size;			//	指令 "connection_pool_size" 为每个连接分配的内存池
+    size_t                      request_pool_size;				//	指令 "request_pool_size" 在处理请求时，所使用的内存池大小，默认是4K
+	size_t                      client_header_buffer_size;		//	指令 "client_header_buffer_size" 指定客户端请求头部的缓冲区大小, 绝大多数情况下一个请求头不会大于1k
+																//					不过如果有来自于wap客户端的较大的cookie它可能会大于1k设置处理从客户端过来的请求buffer大小
+	
     ngx_bufs_t                  large_client_header_buffers;	//	指定客户端一些比较大的请求头使用的缓冲区数量和大小(large_client_header_buffers指令)
 
-    ngx_msec_t                  client_header_timeout;			//	指令指定读取客户端请求头标题的超时时间（client_header_timeout指令）
+    ngx_msec_t                  client_header_timeout;			//	指令 "client_header_timeout" 指定读取客户端请求头标题的超时时间
 
-    ngx_flag_t                  ignore_invalid_headers;			//	是否忽略无效的请求头（ignore_invalid_headers指令）
+    ngx_flag_t                  ignore_invalid_headers;			//	指令 "ignore_invalid_headers" 是否忽略无效的请求头
     ngx_flag_t                  merge_slashes;
     ngx_flag_t                  underscores_in_headers;			//	是否允许在header的字段中带下划线(underscores_in_headers指令)
 
@@ -272,8 +273,8 @@ struct ngx_http_server_name_s {
 #if (NGX_PCRE)
     ngx_http_regex_t          *regex;
 #endif
-    ngx_http_core_srv_conf_t  *server;   /* virtual name server conf */
-    ngx_str_t                  name;
+    ngx_http_core_srv_conf_t  *server;					//	server层的创建的srv_conf			/* virtual name server conf */
+    ngx_str_t                  name;					//	server_name指令指定的参数名称
 };
 
 
@@ -334,7 +335,7 @@ struct ngx_http_core_loc_conf_s {
     /* location name length for inclusive location with inherited alias */
     size_t        alias;									//	"alias"指令时，长度大于0."root"指令时，长度等于0
     ngx_str_t     root;										/* root, alias */
-    ngx_str_t     post_action;
+    ngx_str_t     post_action;								//	指令 "post_action" 指定为当前完成请求的子请求定义一个URI。
 
     ngx_array_t  *root_lengths;
     ngx_array_t  *root_values;
@@ -363,8 +364,8 @@ struct ngx_http_core_loc_conf_s {
 													以便服务器不用重复关闭，如果不指定这个参数，nginx不会在应答头中发送Keep-Alive信息。
 										   */
 
-    ngx_msec_t    lingering_time;          /* lingering_time */
-    ngx_msec_t    lingering_timeout;       /* lingering_timeout */
+    ngx_msec_t    lingering_time;          /* lingering_time 指令指定 */
+    ngx_msec_t    lingering_timeout;       /* lingering_timeout 指令指定 */
     ngx_msec_t    resolver_timeout;        /* resolver_timeout */
 
     ngx_resolver_t  *resolver;             /* resolver */
@@ -376,12 +377,13 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    keepalive_requests;      // keepalive_requests指令指定服务器保持长连接的请求数???????????????????????。默认是100
     ngx_uint_t    keepalive_disable;       /* keepalive_disable */
     ngx_uint_t    satisfy;                 /* satisfy */
-    ngx_uint_t    lingering_close;         /* lingering_close */
+    ngx_uint_t    lingering_close;         /* lingering_close 指令默认是开启的，指定socket的SO_LINGER选项 */
     ngx_uint_t    if_modified_since;       /* if_modified_since */
     ngx_uint_t    max_ranges;              /* max_ranges */
-    ngx_uint_t    client_body_in_file_only;			// client_body_in_file_only指令打开后将始终保存request的信息
+    ngx_uint_t    client_body_in_file_only;			// client_body_in_file_only 指令打开后将始终保存request的body信息
 
-    ngx_flag_t    client_body_in_single_buffer;     // client_body_in_singe_buffer
+	ngx_flag_t    client_body_in_single_buffer;     // client_body_in_singe_buffer 指定是否将客户端连接请求完整的放入一个缓冲区，当使用变量$request_body时推荐使用这个指令以减少复制操作。
+													//	如果无法将一个请求放入单个缓冲区，将会被放入磁盘。
     ngx_flag_t    internal;                // internal指令指定某个location只能被“内部的”请求调用，外部的调用请求会返回”Not found” (404)
     ngx_flag_t    sendfile;                // sendfile指令将会在发送文件时，使用sendfile()系统调用
 #if (NGX_HAVE_FILE_AIO)

@@ -16,7 +16,7 @@
 #define NGX_HTTP_LC_HEADER_LEN             32
 
 
-#define NGX_HTTP_DISCARD_BUFFER_SIZE       4096
+#define NGX_HTTP_DISCARD_BUFFER_SIZE       4096						//	request_discard_buffer_size
 #define NGX_HTTP_LINGERING_BUFFER_SIZE     4096
 
 
@@ -168,13 +168,13 @@ typedef struct {
 typedef struct {
     ngx_list_t                        headers;						//	存放请求头中的header name, 在函数 ngx_http_process_request_headers（）中设置
 
-    ngx_table_elt_t                  *host;
+    ngx_table_elt_t                  *host;							//	如果请求头中有host字段，首先添加到headers列表里，然后将使host指针指向数组中的位置
     ngx_table_elt_t                  *connection;
     ngx_table_elt_t                  *if_modified_since;
     ngx_table_elt_t                  *if_unmodified_since;
     ngx_table_elt_t                  *user_agent;
     ngx_table_elt_t                  *referer;
-    ngx_table_elt_t                  *content_length;
+    ngx_table_elt_t                  *content_length;				//	指向 "content_length" 请求头域
     ngx_table_elt_t                  *content_type;
 
     ngx_table_elt_t                  *range;
@@ -217,8 +217,8 @@ typedef struct {
 
     ngx_array_t                       cookies;
 
-    ngx_str_t                         server;						//	==host
-    off_t                             content_length_n;
+    ngx_str_t                         server;						//	指向请求头中host字段
+    off_t                             content_length_n;				//	请求头长度
     time_t                            keep_alive_n;
 
     unsigned                          connection_type:2;			//	客户端请求类型（close或keepalive（http1.1 keepalive））
@@ -351,7 +351,7 @@ struct ngx_http_request_s {
 
     ngx_connection_t                 *connection;
 
-    void                            **ctx;
+    void                            **ctx;										//	各个模块的ctx
     void                            **main_conf;
     void                            **srv_conf;
     void                            **loc_conf;
@@ -433,7 +433,7 @@ struct ngx_http_request_s {
     ngx_http_cleanup_t               *cleanup;
 
     unsigned                          subrequests:8;				//	subrequests的最大次数（ngx_http_init_request()函数中初始化）
-    unsigned                          count:8;
+    unsigned                          count:8;						//	????????//
     unsigned                          blocked:8;
 
     unsigned                          aio:1;
@@ -460,12 +460,12 @@ struct ngx_http_request_s {
     unsigned                          uri_changed:1;					//	当前的uri是否被重定向，是否改变
     unsigned                          uri_changes:4;					//	uri可以重定向的最大次数，最大10次（ngx_http_init_request()函数中初始化）
 
-    unsigned                          request_body_in_single_buf:1;
-    unsigned                          request_body_in_file_only:1;
-    unsigned                          request_body_in_persistent_file:1;
-    unsigned                          request_body_in_clean_file:1;
+    unsigned                          request_body_in_single_buf:1;		//	指令 "client_body_in_single_buffer" 打开时，将设置为1
+    unsigned                          request_body_in_file_only:1;		//	指令 "client_body_in_file_only" 打开时，将设置为1
+    unsigned                          request_body_in_persistent_file:1;//	指令 "client_body_in_file_only" 打开时，将设置为1
+    unsigned                          request_body_in_clean_file:1;		//	指令 "client_body_in_file_only" == 2时，将设置为1
     unsigned                          request_body_file_group_access:1;
-    unsigned                          request_body_file_log_level:3;
+    unsigned                          request_body_file_log_level:3;	//	日志级别
 
     unsigned                          subrequest_in_memory:1;
     unsigned                          waited:1;
@@ -506,7 +506,7 @@ struct ngx_http_request_s {
     unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()函数中设置）
     unsigned                          error_page:1;
     unsigned                          ignore_content_encoding:1;
-    unsigned                          filter_finalize:1;
+    unsigned                          filter_finalize:1;			//	仅在 ngx_http_filter_finalize_request（）函数中调用
     unsigned                          post_action:1;
     unsigned                          request_complete:1;
     unsigned                          request_output:1;

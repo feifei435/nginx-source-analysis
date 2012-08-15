@@ -1121,11 +1121,11 @@ ngx_http_process_request_headers(ngx_event_t *rev)
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "http header done");
 
-            r->request_length += r->header_in->pos - r->header_in->start;
+            r->request_length += r->header_in->pos - r->header_in->start;			//	r->header_in->pos 这里指向了请求头的结尾地址部分
 
             r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
 
-            rc = ngx_http_process_request_header(r);								//	这里做一些
+            rc = ngx_http_process_request_header(r);								//	这里做一些检查操作
 
             if (rc != NGX_OK) {
                 return;
@@ -1554,7 +1554,7 @@ ngx_http_process_request_header(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    if (r->headers_in.host == NULL && r->http_version > NGX_HTTP_VERSION_10) {
+    if (r->headers_in.host == NULL && r->http_version > NGX_HTTP_VERSION_10) {			//	如果请求没有带host字段，并且是http1.1协议，将返回400给client
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "client sent HTTP/1.1 request without \"Host\" header");
         ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
@@ -1582,7 +1582,7 @@ ngx_http_process_request_header(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    if (r->method & NGX_HTTP_TRACE) {
+    if (r->method & NGX_HTTP_TRACE) {													//	client使用trace方法请求时，将返回给clinet 405
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                       "client sent TRACE method");
         ngx_http_finalize_request(r, NGX_HTTP_NOT_ALLOWED);
@@ -1590,7 +1590,7 @@ ngx_http_process_request_header(ngx_http_request_t *r)
     }
 
     if (r->headers_in.transfer_encoding
-        && ngx_strcasestrn(r->headers_in.transfer_encoding->value.data,
+        && ngx_strcasestrn(r->headers_in.transfer_encoding->value.data,					//	请求中使用transfer_encoding:chunked字段时，将返回给client 411
                            "chunked", 7 - 1))
     {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
@@ -1681,9 +1681,14 @@ ngx_http_process_request(ngx_http_request_t *r)
     r->stat_writing = 1;
 #endif
 
+	/*
+		这里为什么注册事件的读写句柄呢，目前只能猜测下：
+		当已经解析完请求头后，在处理请求时，又发来请求这时将调用
+	*/
+
     c->read->handler = ngx_http_request_handler;				//	在这注册的event-handler，在 ngx_epoll_process_events（）函数中调用
     c->write->handler = ngx_http_request_handler;
-    r->read_event_handler = ngx_http_block_reading;
+    r->read_event_handler = ngx_http_block_reading;				//	为什么这里选择阻塞的方式进行读数据？？？
 
     ngx_http_handler(r);
 
@@ -1712,7 +1717,7 @@ ngx_http_validate_host(ngx_http_request_t *r, u_char **host, size_t len,
     state = sw_usual;
 
     for (i = 0; i < len; i++) {
-        ch = h[i];
+        ch = h[i];						//	对每个字符进行检查
 
         switch (ch) {
 
@@ -1757,8 +1762,8 @@ ngx_http_validate_host(ngx_http_request_t *r, u_char **host, size_t len,
             }
 
             break;
-        }
-    }
+        }	//	END SWITCH
+    }	//	END FOR
 
     if (dot_pos == host_len - 1) {
         host_len--;
@@ -1947,7 +1952,7 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
-    if (rc == NGX_OK && r->filter_finalize) {
+    if (rc == NGX_OK && r->filter_finalize) {			//	????
         c->error = 1;
         return;
     }
@@ -2365,7 +2370,7 @@ ngx_http_block_reading(ngx_http_request_t *r)
 
     /* aio does not call this handler */
 
-    if ((ngx_event_flags & NGX_USE_LEVEL_EVENT)
+    if ((ngx_event_flags & NGX_USE_LEVEL_EVENT)						//	使用水平触发，并且此连接的读事件在激活状态，将删除此连接上的读事件，使用阻塞的方式。
         && r->connection->read->active)
     {
         if (ngx_del_event(r->connection->read, NGX_READ_EVENT, 0) != NGX_OK) {
@@ -3070,10 +3075,12 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
     r->connection->destroyed = 1;
 
-    ngx_destroy_pool(r->pool);
+    ngx_destroy_pool(r->pool);			//	释放请求request的内存池
 }
 
-
+/*
+ *	[analy]	运行所有 "NGX_HTTP_LOG_PHASE" 阶段注册的handler
+ */
 static void
 ngx_http_log_request(ngx_http_request_t *r)
 {

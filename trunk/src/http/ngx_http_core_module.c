@@ -826,7 +826,7 @@ ngx_http_handler(ngx_http_request_t *r)
 
     r->connection->unexpected_eof = 0;
 
-    if (!r->internal) {								//	当前请求不是内部跳转时，phase_handler从0开始运行
+    if (!r->internal) {								//	当前请求不是内部跳转时，phase_handler从0开始运行,是内部请求时，将从server_rewrite开始执行
 
 		//	r->headers_in.connection_type == 0, 说明client发起的请求未指明 "Connection: close(1.0)/Keep-Alive(1.1)" 域
 		//	将会根据http协议版本确定连接类型
@@ -1656,7 +1656,7 @@ ngx_http_core_find_static_location(ngx_http_request_t *r,
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "test location: \"%*s\"", node->len, node->name);
 
-        n = (len <= (size_t) node->len) ? len : node->len;
+        n = (len <= (size_t) node->len) ? len : node->len;				//	将 uri 长度与 location-name长度做比较，使用较小的
 
         rc = ngx_filename_cmp(uri, node->name, n);
 
@@ -1810,7 +1810,9 @@ ngx_http_set_content_type(ngx_http_request_t *r)
     return NGX_OK;
 }
 
-
+/*
+ *	[analy]	设置 r->exten 
+ */
 void
 ngx_http_set_exten(ngx_http_request_t *r)
 {
@@ -2561,9 +2563,9 @@ ngx_http_internal_redirect(ngx_http_request_t *r,
         return NGX_DONE;
     }
 
-    r->uri = *uri;
+    r->uri = *uri;				//	改变请求的uri
 
-    if (args) {
+    if (args) {					//	改变请求的args
         r->args = *args;
 
     } else {
@@ -2573,12 +2575,12 @@ ngx_http_internal_redirect(ngx_http_request_t *r,
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "internal redirect: \"%V?%V\"", uri, &r->args);
 
-    ngx_http_set_exten(r);
+    ngx_http_set_exten(r);			//	设置 r->exten
 
     /* clear the modules contexts */
     ngx_memzero(r->ctx, sizeof(void *) * ngx_http_max_module);
 
-    cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+    cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);			//	重新将 r->loc_conf 设置成server层的loc_conf
     r->loc_conf = cscf->ctx->loc_conf;
 
     ngx_http_update_location_config(r);
@@ -2621,7 +2623,7 @@ ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name)
 
     if (cscf->named_locations) {
 
-        for (clcfp = cscf->named_locations; *clcfp; clcfp++) {
+        for (clcfp = cscf->named_locations; *clcfp; clcfp++) {					//	循环查找named locations
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "test location: \"%V\"", &(*clcfp)->name);
@@ -2636,9 +2638,9 @@ ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name)
                            "using location: %V \"%V?%V\"",
                            name, &r->uri, &r->args);
 
-            r->internal = 1;
+            r->internal = 1;												//	找到了named location
             r->content_handler = NULL;
-            r->loc_conf = (*clcfp)->loc_conf;
+            r->loc_conf = (*clcfp)->loc_conf;								//	设置named location的loc_conf
 
             /* clear the modules contexts */
             ngx_memzero(r->ctx, sizeof(void *) * ngx_http_max_module);
@@ -2647,7 +2649,7 @@ ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name)
 
             cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
-            r->phase_handler = cmcf->phase_engine.location_rewrite_index;
+            r->phase_handler = cmcf->phase_engine.location_rewrite_index;	//	直接在location_rewrite阶段执行
 
             ngx_http_core_run_phases(r);
 

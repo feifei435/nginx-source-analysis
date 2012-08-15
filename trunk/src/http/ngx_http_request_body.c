@@ -477,6 +477,7 @@ ngx_http_discard_request_body(ngx_http_request_t *r)
 
     r->read_event_handler = ngx_http_discarded_request_body_handler;
 
+	//	加入读事件到epoll事件处理队列中
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
