@@ -2665,7 +2665,9 @@ ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name)
     return NGX_DONE;
 }
 
-
+/* 
+ *	[analy] 增加一个节点 ngx_http_cleanup_t 到 r->cleanup 链表中，组成一个单向循环列表
+ */
 ngx_http_cleanup_t *
 ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
 {

@@ -105,7 +105,7 @@ typedef struct {
 
 struct ngx_http_upstream_srv_conf_s {
     ngx_http_upstream_peer_t         peer;
-    void                           **srv_conf;
+    void                           **srv_conf;	//	在 ngx_http_upstream()函数中被设置，指向的是本层的srv_conf
 
     ngx_array_t                     *servers;  /* ngx_http_upstream_server_t */
 

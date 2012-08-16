@@ -111,11 +111,11 @@ typedef enum {
 
 
 struct ngx_connection_s {
-	void               *data;				/* [analy]	指向连接池中下一个元素，最后一个元素此字段等于NULL */
-    ngx_event_t        *read;				/* [analy]	读事件，与cycle字段中read_events数组对应 */
-    ngx_event_t        *write;				/* [analy]	写事件 */
+	void               *data;				//	指向连接池中下一个元素，最后一个元素此字段等于NULL
+    ngx_event_t        *read;				//	读事件，与cycle字段中read_events数组对应
+    ngx_event_t        *write;				//	写事件
 
-    ngx_socket_t        fd;					/* [analy]	用于通信的socket描述符 */
+    ngx_socket_t        fd;					//	用于通信的socket描述符
 
     ngx_recv_pt         recv;				//	ngx_unix_recv()
     ngx_send_pt         send;				//	ngx_unix_send()
@@ -126,11 +126,11 @@ struct ngx_connection_s {
 
     off_t               sent;				//	发送缓冲区数据的位置偏移量
 
-    ngx_log_t          *log;				/* [analy]	日志指针 */
+    ngx_log_t          *log;				//	日志指针
 
-    ngx_pool_t         *pool;				/* [analy]	内存池指针 */
+    ngx_pool_t         *pool;				//	内存池指针
 
-    struct sockaddr    *sockaddr;			/* [analy]	保存客户端的地址信息 */
+    struct sockaddr    *sockaddr;			//	保存客户端的地址信息
     socklen_t           socklen;
     ngx_str_t           addr_text;
 
@@ -163,9 +163,9 @@ struct ngx_connection_s {
     unsigned            close:1;
 
     unsigned            sendfile:1;			//	此连接是否使用sendfile系统调用（ngx_http_update_location_config()函数中有设置）
-    unsigned            sndlowat:1;
-    unsigned            tcp_nodelay:2;   /* ngx_connection_tcp_nodelay_e */
-    unsigned            tcp_nopush:2;    /* ngx_connection_tcp_nopush_e */
+    unsigned            sndlowat:1;			//	是否设置了发送缓冲区下限 （ngx_send_lowat()函数中设置的）
+    unsigned            tcp_nodelay:2;		/* ngx_connection_tcp_nodelay_e */
+    unsigned            tcp_nopush:2;		/* ngx_connection_tcp_nopush_e */
 
 #if (NGX_HAVE_IOCP)
     unsigned            accept_context_updated:1;

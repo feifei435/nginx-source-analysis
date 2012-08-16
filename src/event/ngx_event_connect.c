@@ -27,6 +27,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         return rc;
     }
 
+	//	创建socket
     s = ngx_socket(pc->sockaddr->sa_family, SOCK_STREAM, 0);
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, pc->log, 0, "socket %d", s);
@@ -50,6 +51,8 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     }
 
     if (pc->rcvbuf) {
+
+		//	设置socket的接收缓冲区大小
         if (setsockopt(s, SOL_SOCKET, SO_RCVBUF,
                        (const void *) &pc->rcvbuf, sizeof(int)) == -1)
         {

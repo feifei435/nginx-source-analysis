@@ -908,7 +908,9 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ *	[analy]	设置socket发送缓冲区大小
+ */
 ngx_int_t
 ngx_send_lowat(ngx_connection_t *c, size_t lowat)
 {
@@ -923,7 +925,7 @@ ngx_send_lowat(ngx_connection_t *c, size_t lowat)
 
 #endif
 
-    if (lowat == 0 || c->sndlowat) {
+    if (lowat == 0 || c->sndlowat) {		//	设置发送缓冲区大小如果为0，或已经设置过，将直接返回。
         return NGX_OK;
     }
 
