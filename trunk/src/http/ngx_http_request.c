@@ -1561,7 +1561,7 @@ ngx_http_process_request_header(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    if (r->headers_in.content_length) {
+    if (r->headers_in.content_length) {					//	如果请求有Body，将字符串转换成整数后存于 headers_in.content_length_n
         r->headers_in.content_length_n =
                             ngx_atoof(r->headers_in.content_length->value.data,
                                       r->headers_in.content_length->value.len);

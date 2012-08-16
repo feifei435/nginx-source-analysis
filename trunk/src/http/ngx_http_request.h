@@ -174,7 +174,7 @@ typedef struct {
     ngx_table_elt_t                  *if_unmodified_since;
     ngx_table_elt_t                  *user_agent;
     ngx_table_elt_t                  *referer;
-    ngx_table_elt_t                  *content_length;				//	指向 "content_length" 请求头域
+    ngx_table_elt_t                  *content_length;				//	指向 "content_length" 请求头域，指定请求中body的长度
     ngx_table_elt_t                  *content_type;
 
     ngx_table_elt_t                  *range;
@@ -218,7 +218,7 @@ typedef struct {
     ngx_array_t                       cookies;
 
     ngx_str_t                         server;						//	指向请求头中host字段
-    off_t                             content_length_n;				//	请求头长度
+    off_t                             content_length_n;				//	content_length指向的整数值
     time_t                            keep_alive_n;
 
     unsigned                          connection_type:2;			//	客户端请求类型（close或keepalive（http1.1 keepalive））
@@ -373,8 +373,8 @@ struct ngx_http_request_s {
     ngx_http_headers_in_t             headers_in;					//	请求header的结构体
     ngx_http_headers_out_t            headers_out;
 
-    ngx_http_request_body_t          *request_body;
-
+    ngx_http_request_body_t          *request_body;					//	ngx_http_read_client_request_body()函数中申请
+	
     time_t                            lingering_time;
     time_t                            start_sec;
     ngx_msec_t                        start_msec;
@@ -430,7 +430,7 @@ struct ngx_http_request_s {
 
     ngx_http_log_handler_pt           log_handler;
 
-    ngx_http_cleanup_t               *cleanup;
+    ngx_http_cleanup_t               *cleanup;						//	ngx_http_cleanup_t类型的单向循环列表
 
     unsigned                          subrequests:8;				//	subrequests的最大次数（ngx_http_init_request()函数中初始化）
     unsigned                          count:8;						//	????????//

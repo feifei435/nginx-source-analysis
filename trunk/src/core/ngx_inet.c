@@ -739,7 +739,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         len = 0;
     }
 
-    u->host.len = len;					//	设置ip地址
+    u->host.len = len;					//	设置ip地址或域名
     u->host.data = host;
 
     if (u->no_resolve) {				//	no_resolve被设置时，将会直接返回，不进行以下的解析

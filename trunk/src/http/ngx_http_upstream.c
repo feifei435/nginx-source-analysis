@@ -382,7 +382,7 @@ ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[] = {
 };
 
 /* 
- *	[analy]  在r->upstream上创建upstream
+ *	[analy]  在r->upstream上创建ngx_http_upstream_t
  */
 ngx_int_t
 ngx_http_upstream_create(ngx_http_request_t *r)
@@ -433,9 +433,9 @@ ngx_http_upstream_init(ngx_http_request_t *r)
         ngx_del_timer(c->read);
     }
 
-    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {
+    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {			//	事件模型使用边缘触发时（edge-triggered）
 
-        if (!c->write->active) {
+        if (!c->write->active) {							//	如果此连接的写事件未在活跃状态，将添加写事件到事件处理队列中
             if (ngx_add_event(c->write, NGX_WRITE_EVENT, NGX_CLEAR_EVENT)
                 == NGX_ERROR)
             {
@@ -461,7 +461,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
     ngx_http_upstream_srv_conf_t   *uscf, **uscfp;
     ngx_http_upstream_main_conf_t  *umcf;
 
-    if (r->aio) {
+    if (r->aio) {				//	?????
         return;
     }
 
@@ -4090,7 +4090,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     ngx_memzero(&u, sizeof(ngx_url_t));
 
     value = cf->args->elts;
-    u.host = value[1];
+    u.host = value[1];				//	设置upstream host name
     u.no_resolve = 1;
 
     uscf = ngx_http_upstream_add(cf, &u, NGX_HTTP_UPSTREAM_CREATE
@@ -4104,13 +4104,13 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
 
-    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));		//	本层的ctx
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;
+    http_ctx = cf->ctx;								//	获取http block {...}层的ctx
+    ctx->main_conf = http_ctx->main_conf;			//	本层ctx->main_conf指向 http层的ctx
 
     /* the upstream{}'s srv_conf */
 
@@ -4119,9 +4119,9 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    ctx->srv_conf[ngx_http_upstream_module.ctx_index] = uscf;
+    ctx->srv_conf[ngx_http_upstream_module.ctx_index] = uscf;		//	设置申请的 upstream 模块在 srv_conf中的
 
-    uscf->srv_conf = ctx->srv_conf;
+    uscf->srv_conf = ctx->srv_conf;					//	upstream模块的srv_conf指向本层的srv_conf
 
 
     /* the upstream{}'s loc_conf */
@@ -4131,6 +4131,8 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
+
+	//	每个模块创建 srv_conf 和 loc_conf
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -4194,6 +4196,8 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_uint_t                   i;
     ngx_http_upstream_server_t  *us;
 
+
+	//	uscf->servers 未添加时，将默认创建4个元素的数组
     if (uscf->servers == NULL) {
         uscf->servers = ngx_array_create(cf->pool, 4,
                                          sizeof(ngx_http_upstream_server_t));
@@ -4329,7 +4333,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
     ngx_http_upstream_srv_conf_t   *uscf, **uscfp;
     ngx_http_upstream_main_conf_t  *umcf;
 
-    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {
+    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {				//	flags中设置了非 NGX_HTTP_UPSTREAM_CREATE 标记时
 
         if (ngx_parse_url(cf->pool, u) != NGX_OK) {
             if (u->err) {
@@ -4646,7 +4650,10 @@ ngx_http_upstream_create_main_conf(ngx_conf_t *cf)
     return umcf;
 }
 
-
+/*
+ *	[analy]	1. 调用 umcf->upstreams 中的server->peer.init_upstream 函数指针
+			2. 初始化 umcf->headers_in_hash 表
+ */
 static char *
 ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 {
@@ -4662,11 +4669,14 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 
     uscfp = umcf->upstreams.elts;
 
+	//	循环检查 是否有upstream server
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
+		//	检查 init_upstream 是否被赋值，未赋值时给它添加一个
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 
+		//	调用 init_upstream 函数指针
         if (init(cf, uscfp[i]) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
@@ -4675,6 +4685,7 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 
     /* upstream_headers_in_hash */
 
+	//	对所有 ngx_http_upstream_headers_in 中的字段进行hash计算，并设置到 umcf->headers_in_hash 中
     if (ngx_array_init(&headers_in, cf->temp_pool, 32, sizeof(ngx_hash_key_t))
         != NGX_OK)
     {

@@ -37,13 +37,14 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
     ngx_http_request_body_t   *rb;
     ngx_http_core_loc_conf_t  *clcf;
 
-    r->main->count++;
+    r->main->count++;				//	?????
 
     if (r->request_body || r->discard_body) {
         post_handler(r);
         return NGX_OK;
     }
 
+	//	检查请求是否有"expect"字段
     if (ngx_http_test_expect(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -55,7 +56,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
     r->request_body = rb;
 
-    if (r->headers_in.content_length_n < 0) {
+    if (r->headers_in.content_length_n < 0) {			//	判断请求是否包含正文部分，如果没有将调用 post_handler() 函数后返回
         post_handler(r);
         return NGX_OK;
     }
@@ -602,7 +603,10 @@ ngx_http_read_discarded_request_body(ngx_http_request_t *r)
     }
 }
 
-
+/*
+ *	[analy]	检查客户端请求是否包含"expect: "字段,并且检查http版本是否低于1.1
+ *			如果低于1.1版本将直接返回，不做任何处理，否则将响应客户端 "HTTP/1.1 100 Continue"。
+ */
 static ngx_int_t
 ngx_http_test_expect(ngx_http_request_t *r)
 {
@@ -618,6 +622,7 @@ ngx_http_test_expect(ngx_http_request_t *r)
 
     r->expect_tested = 1;
 
+	//	检查请求头中字段expect中的字符串是否为"100-continue"
     expect = &r->headers_in.expect->value;
 
     if (expect->len != sizeof("100-continue") - 1
