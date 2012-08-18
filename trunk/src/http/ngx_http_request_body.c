@@ -435,7 +435,9 @@ ngx_http_write_request_body(ngx_http_request_t *r, ngx_chain_t *body)
     return NGX_OK;
 }
 
-
+/*
+ *	[analy]	client请求中包含请求Body部分，将读取出来并丢弃
+ */
 ngx_int_t
 ngx_http_discard_request_body(ngx_http_request_t *r)
 {
@@ -446,6 +448,7 @@ ngx_http_discard_request_body(ngx_http_request_t *r)
         return NGX_OK;
     }
 
+	//	检查客户端请求是否包含"expect: "字段，是将返回100 continue
     if (ngx_http_test_expect(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -458,18 +461,26 @@ ngx_http_discard_request_body(ngx_http_request_t *r)
         ngx_del_timer(rev);
     }
 
+	//	如果请求头中指定的 content_length 长度小于等于0将直接返回 并且
+	//	request_body已经指向了数据说明已经读取过了的请求体也将直接返回
     if (r->headers_in.content_length_n <= 0 || r->request_body) {
         return NGX_OK;
     }
 
-    size = r->header_in->last - r->header_in->pos;
+	//	使用独到的数据末尾指针减去已经解析完的数据指针，如果大于0说明独到的request body部分的数据。	
+    size = r->header_in->last - r->header_in->pos;				
 
     if (size) {
+
         if (r->headers_in.content_length_n > size) {
+
+			//	说明请求头中的 content_length 字段指定的body大小，大于读到的多余部分数据，所以将缓冲区指针移动到相应的位置
             r->header_in->pos += size;
             r->headers_in.content_length_n -= size;
 
         } else {
+
+			//	这里是在请求头中没有指定 content_length 字段的情况下，然后读到的数据除请求头以外还包含多余的数据
             r->header_in->pos += (size_t) r->headers_in.content_length_n;
             r->headers_in.content_length_n = 0;
             return NGX_OK;
@@ -483,6 +494,7 @@ ngx_http_discard_request_body(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+	//	读取Body数据并丢弃
     if (ngx_http_read_discarded_request_body(r) == NGX_OK) {
         r->lingering_close = 0;
 
@@ -571,6 +583,8 @@ ngx_http_read_discarded_request_body(ngx_http_request_t *r)
                    "http read discarded body");
 
     for ( ;; ) {
+
+		//	
         if (r->headers_in.content_length_n == 0) {
             r->read_event_handler = ngx_http_block_reading;
             return NGX_OK;
@@ -580,6 +594,8 @@ ngx_http_read_discarded_request_body(ngx_http_request_t *r)
             return NGX_AGAIN;
         }
 
+
+		//	读取的Buffer长度最大是 “NGX_HTTP_DISCARD_BUFFER_SIZE”
         size = (r->headers_in.content_length_n > NGX_HTTP_DISCARD_BUFFER_SIZE) ?
                    NGX_HTTP_DISCARD_BUFFER_SIZE:
                    (size_t) r->headers_in.content_length_n;

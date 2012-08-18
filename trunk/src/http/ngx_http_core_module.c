@@ -1000,6 +1000,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
                    "http cl:%O max:%O",
                    r->headers_in.content_length_n, clcf->client_max_body_size);
 
+	//	当client的请求中包含Body部分，当请求Body的长度大于指令"client_max_body_size"指定的大小时，将丢弃request_body
     if (r->headers_in.content_length_n != -1
         && !r->discard_body
         && clcf->client_max_body_size
