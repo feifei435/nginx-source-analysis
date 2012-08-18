@@ -344,7 +344,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_hash_t    types_hash;
     ngx_str_t     default_type;
 
-    off_t         client_max_body_size;    /* client_max_body_size */
+    off_t         client_max_body_size;    /* client_max_body_size 指令指定允许客户端连接的最大请求实体大小，它出现在请求头部的Content-Length字段 */
     off_t         directio;                /* directio */
     off_t         directio_alignment;      /* directio_alignment */
 

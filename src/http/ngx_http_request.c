@@ -714,7 +714,9 @@ ngx_http_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
 
 #endif
 
-
+/*
+ *	[analy]	处理请求行
+ */
 static void
 ngx_http_process_request_line(ngx_event_t *rev)
 {
@@ -1125,7 +1127,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
 
-            rc = ngx_http_process_request_header(r);								//	这里做一些检查操作
+            rc = ngx_http_process_request_header(r);								//	请求头解析完后在这里做一些检查操作
 
             if (rc != NGX_OK) {
                 return;
@@ -1542,7 +1544,9 @@ ngx_http_process_cookie(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_ERROR;
 }
 
-
+/*
+ *	[analy]	请求头解析完后，将做一些检查
+ */
 static ngx_int_t
 ngx_http_process_request_header(ngx_http_request_t *r)
 {

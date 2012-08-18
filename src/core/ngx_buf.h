@@ -18,8 +18,8 @@ typedef void *            ngx_buf_tag_t;
 typedef struct ngx_buf_s  ngx_buf_t;
 
 struct ngx_buf_s {
-    u_char          *pos;
-    u_char          *last;
+    u_char          *pos;			//	暂时理解为 已经解析完数据的末尾指针
+    u_char          *last;			//	暂时理解为 读到的数据末尾指针
     off_t            file_pos;
     off_t            file_last;
 
