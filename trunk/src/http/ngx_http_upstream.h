@@ -84,14 +84,14 @@ typedef struct {
 
 
 typedef struct {
-    ngx_addr_t                      *addrs;
-    ngx_uint_t                       naddrs;
-    ngx_uint_t                       weight;
-    ngx_uint_t                       max_fails;
-    time_t                           fail_timeout;
+    ngx_addr_t                      *addrs;				//	host信息
+    ngx_uint_t                       naddrs;			//	???
+    ngx_uint_t                       weight;			//	server 指令指定了 weight
+    ngx_uint_t                       max_fails;			//	server 指令指定了 max_fails
+    time_t                           fail_timeout;		//	server 指令指定了 fail_timeout
 
-    unsigned                         down:1;
-    unsigned                         backup:1;
+    unsigned                         down:1;			//	server 指令指定了 down
+    unsigned                         backup:1;			//	server 指令指定了 backup
 } ngx_http_upstream_server_t;
 
 

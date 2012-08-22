@@ -38,7 +38,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         return NGX_ERROR;
     }
 
-
+	//	在连接池中获取空闲连接
     c = ngx_get_connection(s, pc->log);
 
     if (c == NULL) {

@@ -418,7 +418,11 @@ ngx_http_upstream_create(ngx_http_request_t *r)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy] 1. 检查读事件是否在定时器中 
+ *			2. 事件模型使用边缘触发时（edge-triggered）, 如果此连接的写事件未添加到epoll监控队列中，将添加写事件到事件处理队列中
+ *			3. ngx_http_upstream_init_request()
+ */
 void
 ngx_http_upstream_init(ngx_http_request_t *r)
 {
@@ -429,13 +433,15 @@ ngx_http_upstream_init(ngx_http_request_t *r)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http init upstream, client timer: %d", c->read->timer_set);
 
+	//	??????
     if (c->read->timer_set) {
         ngx_del_timer(c->read);
     }
 
-    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {			//	事件模型使用边缘触发时（edge-triggered）
+	//	事件模型使用边缘触发时（edge-triggered）, 如果此连接的写事件未添加到epoll监控队列中，将添加写事件到事件处理队列中
+    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {			
 
-        if (!c->write->active) {							//	如果此连接的写事件未在活跃状态，将添加写事件到事件处理队列中
+        if (!c->write->active) {			
             if (ngx_add_event(c->write, NGX_WRITE_EVENT, NGX_CLEAR_EVENT)
                 == NGX_ERROR)
             {
@@ -504,6 +510,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         u->request_bufs = r->request_body->bufs;
     }
 
+	//	ngx_http_upstream_t->create_request的handler，此处调用 ngx_http_proxy_create_request()
     if (u->create_request(r) != NGX_OK) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
@@ -638,7 +645,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
 found:
 
-    if (uscf->peer.init(r, uscf) != NGX_OK) {
+    if (uscf->peer.init(r, uscf) != NGX_OK) {			//	将调用 ngx_http_upstream_init_round_robin_peer（），在函数 ngx_http_upstream_init_main_conf（）中设置
         ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
@@ -1120,6 +1127,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
     u->state->response_sec = tp->sec;
     u->state->response_msec = tp->msec;
 
+	//	发起物理连接后端
     rc = ngx_event_connect_peer(&u->peer);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1313,6 +1321,13 @@ ngx_http_upstream_reinit(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
     ngx_chain_t  *cl;
 
+	/*
+		u->reinit_request = ngx_http_fastcgi_reinit_request;
+		u->reinit_request = ngx_http_memcached_reinit_request;
+		u->reinit_request = ngx_http_proxy_reinit_request;
+		u->reinit_request = ngx_http_scgi_reinit_request;
+		u->reinit_request = ngx_http_uwsgi_reinit_request;
+	*/
     if (u->reinit_request(r) != NGX_OK) {
         return NGX_ERROR;
     }
@@ -4073,7 +4088,12 @@ ngx_http_upstream_cache_status(ngx_http_request_t *r,
 
 #endif
 
-
+/*
+ *	[analy]	解析upstream指令
+ *			ngx_http_conf_ctx_t -> main_conf	指向http层
+ *			ngx_http_conf_ctx_t -> srv_conf		指向自身本层
+ *			ngx_http_conf_ctx_t -> loc_conf		指向自身本层
+ */
 static char *
 ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -4183,7 +4203,9 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     return rv;
 }
 
-
+/*
+ *	[analy]	解析到upstream中的server指令
+ */
 static char *
 ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -4229,15 +4251,16 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    weight = 1;
-    max_fails = 1;
-    fail_timeout = 10;
+    weight = 1;					//	设置默认权重值，默认为1
+    max_fails = 1;				//	设置默认请求最大失败次数，默认1次
+    fail_timeout = 10;			//	设置默认请求失败后等待的时间，默认10S
 
     for (i = 2; i < cf->args->nelts; i++) {
 
+		//	有权重时
         if (ngx_strncmp(value[i].data, "weight=", 7) == 0) {
 
-            if (!(uscf->flags & NGX_HTTP_UPSTREAM_WEIGHT)) {
+            if (!(uscf->flags & NGX_HTTP_UPSTREAM_WEIGHT)) {		
                 goto invalid;
             }
 
@@ -4669,7 +4692,8 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 
     uscfp = umcf->upstreams.elts;
 
-	//	循环检查 是否有upstream server
+	//	循环检查 ngx_http_upstream_main_conf_t 中的upstreams是否有 ngx_http_upstream_srv_conf_t
+	//	ngx_http_upstream_add()函数可以向 ngx_http_upstream_main_conf_t的upstreams中添加 ngx_http_upstream_srv_conf_t
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
 		//	检查 init_upstream 是否被赋值，未赋值时给它添加一个

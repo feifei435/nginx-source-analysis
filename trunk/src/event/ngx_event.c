@@ -373,27 +373,35 @@ ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	将写事件添加到事件处理队列中
+ *			参数 lowat: 如果大于0，将设置发送缓冲区的低潮阀值
+ */
 ngx_int_t
 ngx_handle_write_event(ngx_event_t *wev, size_t lowat)
 {
     ngx_connection_t  *c;
 
+	
     if (lowat) {
+			
+		//	设置发送缓冲区的低潮阀值
+
         c = wev->data;
 
         if (ngx_send_lowat(c, lowat) == NGX_ERROR) {
             return NGX_ERROR;
         }
     }
-
-    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {
+	
+    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {				//	使用edge triggered 模式
 
         /* kqueue, epoll */
-
+		
+		//	此事件未加入epoll事件队列中时，将添加写事件。
         if (!wev->active && !wev->ready) {
             if (ngx_add_event(wev, NGX_WRITE_EVENT,
-                              NGX_CLEAR_EVENT | (lowat ? NGX_LOWAT_EVENT : 0))
+                              NGX_CLEAR_EVENT | (lowat ? NGX_LOWAT_EVENT : 0))			//	NGX_CLEAR_EVENT = EPOLLET
                 == NGX_ERROR)
             {
                 return NGX_ERROR;
@@ -402,7 +410,7 @@ ngx_handle_write_event(ngx_event_t *wev, size_t lowat)
 
         return NGX_OK;
 
-    } else if (ngx_event_flags & NGX_USE_LEVEL_EVENT) {
+    } else if (ngx_event_flags & NGX_USE_LEVEL_EVENT) {			//	使用level triggerred模式
 
         /* select, poll, /dev/poll */
 
@@ -909,7 +917,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 }
 
 /*
- *	[analy]	设置socket发送缓冲区大小
+ *	[analy]	设置socket发送缓冲区低潮下限
  */
 ngx_int_t
 ngx_send_lowat(ngx_connection_t *c, size_t lowat)

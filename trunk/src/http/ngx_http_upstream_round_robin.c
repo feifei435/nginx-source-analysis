@@ -24,7 +24,10 @@ static void ngx_http_upstream_empty_save_session(ngx_peer_connection_t *pc,
 
 #endif
 
-
+/*
+ *	[analy]	 
+ *			参数2: us -> ngx_http_upstream_main_conf_t 的 upstreams数组中的元素
+ */
 ngx_int_t
 ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_http_upstream_srv_conf_t *us)
@@ -36,7 +39,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
     us->peer.init = ngx_http_upstream_init_round_robin_peer;
 
-    if (us->servers) {
+    if (us->servers) {		//	us->servers ==> array of ngx_http_upstream_server_t
         server = us->servers->elts;
 
         n = 0;

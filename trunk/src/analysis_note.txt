@@ -490,9 +490,68 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)			结束请求
 	|-- ngx_http_close_request()
 	|--	ngx_http_finalize_connection()
 		
+	
+
+-----------------	 proxy_upstream	 --------------------	
+	
+ngx_http_proxy_pass() 解析proxy_pass指令
+	|-- 设置 content phase 阶段的handler ngx_http_proxy_handler()
+	|-- ngx_http_upstream_add() 函数将增加 ngx_http_upstream_srv_conf_t 到 ngx_http_upstream_main_conf_t 中upstreams数组中
+		ngx_http_upstream_main_conf_t 结构的创建在函数 ngx_http_upstream_create_main_conf() 中进行的. 
+		ngx_http_proxy_loc_conf_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t 是指向 ngx_http_upstream_main_conf_t 
+		的upstreams数组中，ngx_http_upstream_srv_conf_t 元素地址的指针
+	|-- 
+	
+ngx_http_upstream_init_main_conf() 后续会被调用
+	1. 检查 ngx_http_upstream_main_conf_t 中upstreams数组中所有的 uscfp[i]->peer.init_upstream （ngx_http_upstream_srv_conf_t ）
+		是否被赋值，如果未被赋值将使用默认 ngx_http_upstream_init_round_robin()，并且调用此函数。
+		
+		ngx_http_upstream_init_round_robin(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
+			|-- us->peer.init = ngx_http_upstream_init_round_robin_peer;
 		
 		
-		
+	2. 并对静态数组中的 ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] 所有变量进行hash计算，
+		创建好的hash表，将存放在 ngx_http_upstream_main_conf_t->headers_in_hash 字段中。
+	
+ngx_http_proxy_handler() 被调用时
+	|-- ngx_http_upstream_create() 在 r->upstream 上创建 ngx_http_upstream_t
+	|-- 申请 ngx_http_proxy_ctx_t 的空间
+	|-- ngx_http_set_ctx(r, ctx, ngx_http_proxy_module)
+	|-- u->conf = &plcf->upstream; (ngx_http_upstream_t.ngx_http_upstream_conf_t --> ngx_http_proxy_loc_conf_t.ngx_http_upstream_conf_t)
+	|-- 设置 r->upstream 结构, 各种回调将再次处被设置
+	|-- ngx_http_read_client_request_body(r, ngx_http_upstream_init)
+		|-- ngx_http_upstream_init() 某种条件满足的情况下，会调用
+			|-- ngx_http_upstream_init_request()
+				|-- u->create_request(r); 		//	ngx_http_proxy_create_request()
+				|-- uscf->peer.init(r, uscf); 	//  ngx_http_upstream_init_round_robin_peer()
+				|-- ngx_http_upstream_connect();	
+					|-- ngx_event_connect_peer()
+					|-- ngx_http_upstream_send_request()
+	
+ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 		
 		
 		

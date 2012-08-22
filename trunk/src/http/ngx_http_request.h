@@ -351,7 +351,7 @@ struct ngx_http_request_s {
 
     ngx_connection_t                 *connection;
 
-    void                            **ctx;										//	各个模块的ctx
+    void                            **ctx;										//	http中各个模块使用的ctx，在 ngx_http_init_request（）函数中申请
     void                            **main_conf;
     void                            **srv_conf;
     void                            **loc_conf;
