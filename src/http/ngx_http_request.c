@@ -479,7 +479,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-    r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);				//	申请后做什么？？
+    r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);				//	存放http的各个模块使用的个性化ctx
     if (r->ctx == NULL) {
         ngx_destroy_pool(r->pool);
         ngx_http_close_connection(c);

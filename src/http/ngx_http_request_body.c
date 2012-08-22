@@ -56,6 +56,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
     r->request_body = rb;
 
+	//	为什么在这里调用，不在函数入口处进行检查
     if (r->headers_in.content_length_n < 0) {			//	判断请求是否包含正文部分，如果没有将调用 post_handler() 函数后返回
         post_handler(r);
         return NGX_OK;

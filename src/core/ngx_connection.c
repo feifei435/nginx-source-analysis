@@ -800,7 +800,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
     rev = c->read;
     wev = c->write;
 
-    ngx_memzero(c, sizeof(ngx_connection_t));
+    ngx_memzero(c, sizeof(ngx_connection_t));		//	重新获取connection结构体时，将重新初始化结构体
 
     c->read = rev;
     c->write = wev;
