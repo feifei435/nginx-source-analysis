@@ -504,7 +504,7 @@ ngx_http_proxy_pass() 解析proxy_pass指令
 	
 ngx_http_upstream_init_main_conf() 后续会被调用
 	1. 检查 ngx_http_upstream_main_conf_t 中upstreams数组中所有的 uscfp[i]->peer.init_upstream （ngx_http_upstream_srv_conf_t ）
-		是否被赋值，如果未被赋值将使用默认 ngx_http_upstream_init_round_robin()，并且调用此函数。
+		是否被赋值，未被赋值将使用默认 ngx_http_upstream_init_round_robin()，并且调用此函数。
 		
 		ngx_http_upstream_init_round_robin(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
 			|-- us->peer.init = ngx_http_upstream_init_round_robin_peer;
@@ -531,6 +531,10 @@ ngx_http_proxy_handler() 被调用时
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
 	
 	
+	
+	
+// ------------------- upstream FAQ --------------------
+1. ngx_http_upstream_init_round_robin_peer() 和 ngx_http_upstream_create_round_robin_peer()区别？
 	
 	
 	

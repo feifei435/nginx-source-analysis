@@ -77,7 +77,7 @@ typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r,
 
 
 typedef struct {
-    ngx_http_upstream_init_pt        init_upstream;
+    ngx_http_upstream_init_pt        init_upstream;			//	使用负载均衡的类型，默认采用 ngx_http_upstream_init_round_robin（）
     ngx_http_upstream_init_peer_pt   init;
     void                            *data;
 } ngx_http_upstream_peer_t;

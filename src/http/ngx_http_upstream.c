@@ -646,7 +646,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 found:
 
     if (uscf->peer.init(r, uscf) != NGX_OK) {			//	将调用 ngx_http_upstream_init_round_robin_peer（），在函数 ngx_http_upstream_init_main_conf（）中设置
-        ngx_http_upstream_finalize_request(r, u,
+		ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
     }
@@ -4696,11 +4696,13 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 	//	ngx_http_upstream_add()函数可以向 ngx_http_upstream_main_conf_t的upstreams中添加 ngx_http_upstream_srv_conf_t
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
-		//	检查 init_upstream 是否被赋值，未赋值时给它添加一个
+		//	检查 init_upstream 是否被赋值，未赋值时将采用 round_robin 方式处理。如果采用其他的负载均衡，
+		//	将会ngx_http_upstream_ip_hash_module.c 和 ngx_http_upstream_keepalive_module.c这两个模块里
+		//	进行赋值
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 
-		//	调用 init_upstream 函数指针
+		//	调用 init_upstream 
         if (init(cf, uscfp[i]) != NGX_OK) {
             return NGX_CONF_ERROR;
         }

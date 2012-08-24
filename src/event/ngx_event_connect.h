@@ -43,7 +43,7 @@ struct ngx_peer_connection_s {
 
     ngx_uint_t                       tries;
 
-    ngx_event_get_peer_pt            get;
+    ngx_event_get_peer_pt            get;					//	不同模块采用不同的方式 ngx_http_upstream_get_ip_hash_peer() 和 ngx_http_upstream_get_round_robin_peer()
     ngx_event_free_peer_pt           free;
     void                            *data;
 
