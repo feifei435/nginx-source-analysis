@@ -493,11 +493,15 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)			结束请求
 	
 
 -----------------	 proxy_upstream	 --------------------	
+ngx_http_upstream_create_main_conf() 函数中创建	 ngx_http_upstream_main_conf_t 结构
+ngx_http_proxy_create_loc_conf() 函数中创建 ngx_http_proxy_loc_conf_t 结构
+
+ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
+	|-- ngx_http_upstream_add()
 	
 ngx_http_proxy_pass() 解析proxy_pass指令
 	|-- 设置 content phase 阶段的handler ngx_http_proxy_handler()
-	|-- ngx_http_upstream_add() 函数将增加 ngx_http_upstream_srv_conf_t 到 ngx_http_upstream_main_conf_t 中upstreams数组中
-		ngx_http_upstream_main_conf_t 结构的创建在函数 ngx_http_upstream_create_main_conf() 中进行的. 
+	|-- ngx_http_upstream_add() 函数将增加 ngx_http_upstream_srv_conf_t 到 ngx_http_upstream_main_conf_t 中upstreams数组中。
 		ngx_http_proxy_loc_conf_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t 是指向 ngx_http_upstream_main_conf_t 
 		的upstreams数组中，ngx_http_upstream_srv_conf_t 元素地址的指针
 	|-- 
@@ -530,8 +534,20 @@ ngx_http_proxy_handler() 被调用时
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
 	
-	
-	
+// ------------------- upstream module --------------------	
+ngx_http_upstream_t
+ngx_http_upstream_main_conf_t	--	对应整个http block {...} 内的所有upstream block {...}, 主要是管理 ngx_http_upstream_srv_conf_t
+ngx_http_upstream_srv_conf_t	--	对应于单个 upstream block {...}
+ngx_http_upstream_server_t		--	对应于 upstream block {...} 中的单个 server 指令
+ngx_http_upstream_conf_t
+ngx_http_upstream_peer_t
+
+
+// ------------------- upstream round robin --------------------
+此模块使用了3个结构体:
+ngx_http_upstream_rr_peer_t
+ngx_http_upstream_rr_peers_t
+ngx_http_upstream_rr_peer_data_t	
 	
 // ------------------- upstream FAQ --------------------
 1. ngx_http_upstream_init_round_robin_peer() 和 ngx_http_upstream_create_round_robin_peer()区别？

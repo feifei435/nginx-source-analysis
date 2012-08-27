@@ -26,8 +26,8 @@ typedef struct {
 
 typedef struct {
     ngx_rbtree_t       *rbtree;
-    ngx_int_t           index;
-    ngx_str_t           var;
+    ngx_int_t           index;			//	变量在索引变量数组中的位置
+    ngx_str_t           var;			//	存放变量的字符串值
 } ngx_http_limit_conn_ctx_t;
 
 
@@ -83,7 +83,7 @@ static ngx_command_t  ngx_http_limit_conn_commands[] = {
       0,
       NULL },
 
-    { ngx_string("limit_zone"),
+    { ngx_string("limit_zone"),						//	此指令现在被弃用了
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE3,
       ngx_http_limit_zone,
       0,
@@ -504,10 +504,13 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     size = 0;
     name.len = 0;
 
-    for (i = 1; i < cf->args->nelts; i++) {
+	//	syntax: 	limit_conn_zone $variable zone=name:size;
 
+    for (i = 1; i < cf->args->nelts; i++) {
+		
         if (ngx_strncmp(value[i].data, "zone=", 5) == 0) {
 
+			//	提取 zong= 后的name 赋值给 ngx_str_t name;
             name.data = value[i].data + 5;
 
             p = (u_char *) ngx_strchr(name.data, ':');
@@ -520,6 +523,7 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
             name.len = p - name.data;
 
+			//	提取 name: 后的size 赋值给 ngx_str_t s;
             s.data = p + 1;
             s.len = value[i].data + value[i].len - s.data;
 
@@ -550,11 +554,13 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                 return NGX_CONF_ERROR;
             }
 
+			//	查找或添加一个索引变量到索引变量数组中，并返回变量的Index
             ctx->index = ngx_http_get_variable_index(cf, &value[i]);
             if (ctx->index == NGX_ERROR) {
                 return NGX_CONF_ERROR;
             }
 
+			//	设置变量的字符串值
             ctx->var = value[i];
 
             continue;

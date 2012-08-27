@@ -4697,8 +4697,7 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
 		//	检查 init_upstream 是否被赋值，未赋值时将采用 round_robin 方式处理。如果采用其他的负载均衡，
-		//	将会ngx_http_upstream_ip_hash_module.c 和 ngx_http_upstream_keepalive_module.c这两个模块里
-		//	进行赋值
+		//	将会在遇到 "ip_hash" 和 "keep_alive" 指令时设置 peer.init_upstream 此值
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 
