@@ -1447,7 +1447,7 @@ ngx_http_script_if_code(ngx_http_script_engine_t *e)
 		//	如果if条件表达式在server层，loc_conf=NULL
 		//	如果if条件表达式是嵌套的，loc_conf!=NULL
         if (code->loc_conf) {	
-            e->request->loc_conf = code->loc_conf;				//	这里的处理暂时还不清楚？
+            e->request->loc_conf = code->loc_conf;				//	因为把"if"也当做location来处理，所以在处理if block{...} 内的指令时，将把if 的 loc_conf赋值给 request->loc_conf
             ngx_http_update_location_config(e->request);
         }
 

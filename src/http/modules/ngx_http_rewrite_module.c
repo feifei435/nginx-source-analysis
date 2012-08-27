@@ -635,7 +635,7 @@ ngx_http_rewrite_if(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         cf->cmd_type = NGX_HTTP_SIF_CONF;			//	在 server {...} block 内解析
 
     } else {										//	在 location {...} block 内解析
-        if_code->loc_conf = ctx->loc_conf;			//	设置 ngx_http_script_if_code_t->loc_conf 为当前上层的loc_conf
+        if_code->loc_conf = ctx->loc_conf;			//	设置 ngx_http_script_if_code_t->loc_conf 为当前层的loc_conf
         cf->cmd_type = NGX_HTTP_LIF_CONF;
     }
 

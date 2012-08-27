@@ -185,7 +185,7 @@ typedef struct {
     ngx_flag_t                       ssl_session_reuse;
 #endif
 
-    ngx_str_t                        module;
+    ngx_str_t                        module;					//	使用的模块名字("fastcgi"、"proxy"、"scgi"、"uwsgi")
 } ngx_http_upstream_conf_t;
 
 
