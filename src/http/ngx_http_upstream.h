@@ -78,14 +78,14 @@ typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r,
 
 typedef struct {
     ngx_http_upstream_init_pt        init_upstream;			//	使用负载均衡的类型，默认采用 ngx_http_upstream_init_round_robin（）
-    ngx_http_upstream_init_peer_pt   init;
-    void                            *data;
+    ngx_http_upstream_init_peer_pt   init;					//	使用的负载均衡类型的初始化函数
+    void                            *data;					//	us->peer.data = peers; 指向的是 ngx_http_upstream_rr_peers_t（函数 ngx_http_upstream_init_round_robin()中设置）
 } ngx_http_upstream_peer_t;
 
 
 typedef struct {
-    ngx_addr_t                      *addrs;				//	host信息
-    ngx_uint_t                       naddrs;			//	???
+    ngx_addr_t                      *addrs;				//	host信息(对应的是 ngx_url_t->addrs )
+    ngx_uint_t                       naddrs;			//	(对应的是 ngx_url_t->naddrs )
     ngx_uint_t                       weight;			//	server 指令指定了 weight
     ngx_uint_t                       max_fails;			//	server 指令指定了 max_fails
     time_t                           fail_timeout;		//	server 指令指定了 fail_timeout
@@ -105,16 +105,16 @@ typedef struct {
 
 struct ngx_http_upstream_srv_conf_s {
     ngx_http_upstream_peer_t         peer;
-    void                           **srv_conf;	//	在 ngx_http_upstream()函数中被设置，指向的是本层的srv_conf
+    void                           **srv_conf;			//	在 ngx_http_upstream()函数中被设置，指向的是本层的srv_conf
 
-    ngx_array_t                     *servers;  /* ngx_http_upstream_server_t */
+    ngx_array_t                     *servers;			//	array of ngx_http_upstream_server_t
 
-    ngx_uint_t                       flags;
-    ngx_str_t                        host;
-    u_char                          *file_name;
-    ngx_uint_t                       line;
-    in_port_t                        port;
-    in_port_t                        default_port;
+    ngx_uint_t                       flags;				//	调用函数时ngx_http_upstream_add() 指定的标记
+    ngx_str_t                        host;				//	在函数 ngx_http_upstream_add() 中设置（e.g. upstream backend中的backend）
+    u_char                          *file_name;			//	"/usr/local/nginx/conf/nginx.conf"
+    ngx_uint_t                       line;				//	proxy在配置文件中的行号
+    in_port_t                        port;				//	使用的端口号（ngx_http_upstream_add()函数中添加, 指向ngx_url_t-->port，通常在函数ngx_parse_inet_url()中解析）
+    in_port_t                        default_port;		//	默认使用的端口号（ngx_http_upstream_add()函数中添加, 指向ngx_url_t-->default_port）
 };
 
 
@@ -270,6 +270,15 @@ struct ngx_http_upstream_s {
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
 
+	/*	
+		将各个upstream模块的 ngx_http_upstream_conf_t 结构体赋值给此字段，
+		在以下这几个模块中的loc结构体中均包含 ngx_http_upstream_conf_t 结构
+		u->conf = &flcf->upstream;
+		u->conf = &mlcf->upstream;
+		u->conf = &plcf->upstream;
+		u->conf = &scf->upstream;
+		u->conf = &uwcf->upstream;
+	*/
     ngx_http_upstream_conf_t        *conf;
 
     ngx_http_upstream_headers_in_t   headers_in;

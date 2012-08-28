@@ -498,21 +498,35 @@ ngx_http_proxy_create_loc_conf() 函数中创建 ngx_http_proxy_loc_conf_t 结构
 
 ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 	|-- ngx_http_upstream_add()
+		|-- uscf->host = u->host;
 	
 ngx_http_proxy_pass() 解析proxy_pass指令
 	|-- 设置 content phase 阶段的handler ngx_http_proxy_handler()
-	|-- ngx_http_upstream_add() 函数将增加 ngx_http_upstream_srv_conf_t 到 ngx_http_upstream_main_conf_t 中upstreams数组中。
-		ngx_http_proxy_loc_conf_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t 是指向 ngx_http_upstream_main_conf_t 
+	|-- ngx_http_upstream_add() 函数将增加 ngx_http_upstream_srv_conf_t 到 ngx_http_upstream_main_conf_t 中upstreams数组中，增加 
+	ngx_http_upstream_server_t 到 ngx_http_upstream_srv_conf_t-> servers(array of ngx_http_upstream_server_t中)
+	|--	ngx_http_proxy_loc_conf_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t 是指向 ngx_http_upstream_main_conf_t 
 		的upstreams数组中，ngx_http_upstream_srv_conf_t 元素地址的指针
-	|-- 
 	
 ngx_http_upstream_init_main_conf() 后续会被调用
-	1. 检查 ngx_http_upstream_main_conf_t 中upstreams数组中所有的 uscfp[i]->peer.init_upstream （ngx_http_upstream_srv_conf_t ）
+	1. 检查 ngx_http_upstream_main_conf_t 中upstreams数组中所有的 （ngx_http_upstream_srv_conf_t ）uscfp[i]->peer.init_upstream ，
 		是否被赋值，未被赋值将使用默认 ngx_http_upstream_init_round_robin()，并且调用此函数。
+		即upstream使用的负载均衡类型是哪种, 1.1.17中带有的类型为
+			uscf->peer.init_upstream = ngx_http_upstream_init_ip_hash;
+			uscf->peer.init_upstream = ngx_http_upstream_init_keepalive;
+			uscf->peer.init_upstream = ngx_http_upstream_init_round_robin;	默认采用的方式
 		
+		
+		ngx_http_upstream_init_ip_hash(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
+			|-- ngx_http_upstream_init_round_robin(cf, us)
+			|-- us->peer.init = ngx_http_upstream_init_ip_hash_peer
+		
+		ngx_http_upstream_init_keepalive(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
+			|-- us->peer.init = ngx_http_upstream_init_keepalive_peer
+			
 		ngx_http_upstream_init_round_robin(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
-			|-- us->peer.init = ngx_http_upstream_init_round_robin_peer;
-		
+			|-- us->peer.init = ngx_http_upstream_init_round_robin_peer
+			|-- 对us->servers中的所有后端服务器进行归类（backup和非backup类），归类后映射成对应的表存放于 ngx_http_upstream_rr_peers_t 和 
+				ngx_http_upstream_rr_peer_t 中.
 		
 	2. 并对静态数组中的 ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] 所有变量进行hash计算，
 		创建好的hash表，将存放在 ngx_http_upstream_main_conf_t->headers_in_hash 字段中。
@@ -524,7 +538,7 @@ ngx_http_proxy_handler() 被调用时
 	|-- u->conf = &plcf->upstream; (ngx_http_upstream_t.ngx_http_upstream_conf_t --> ngx_http_proxy_loc_conf_t.ngx_http_upstream_conf_t)
 	|-- 设置 r->upstream 结构, 各种回调将再次处被设置
 	|-- ngx_http_read_client_request_body(r, ngx_http_upstream_init)
-		|-- ngx_http_upstream_init() 某种条件满足的情况下，会调用
+		|-- ***************	ngx_http_upstream_init() 某种条件满足的情况下，会调用. 此函数是调用upstream模块运转的初始化函数
 			|-- ngx_http_upstream_init_request()
 				|-- u->create_request(r); 		//	ngx_http_proxy_create_request()
 				|-- uscf->peer.init(r, uscf); 	//  ngx_http_upstream_init_round_robin_peer()
@@ -535,18 +549,19 @@ ngx_http_proxy_handler() 被调用时
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
 	
 // ------------------- upstream module --------------------	
-ngx_http_upstream_t
+ngx_http_upstream_t				--	应该是整个upstream运转过程中使用的结构
 ngx_http_upstream_main_conf_t	--	对应整个http block {...} 内的所有upstream block {...}, 主要是管理 ngx_http_upstream_srv_conf_t
 ngx_http_upstream_srv_conf_t	--	对应于单个 upstream block {...}
 ngx_http_upstream_server_t		--	对应于 upstream block {...} 中的单个 server 指令
-ngx_http_upstream_conf_t
-ngx_http_upstream_peer_t
+ngx_http_upstream_conf_t		--	为了达到通用的目的而设计的一个结构体(strategy模式)。upstream在执行时使用此结构将不变的部分分离处理，
+									变化的内容通过此结构来提供给各个模块使用
+ngx_http_upstream_peer_t		--	用于管理upstream block {...} 中的使用的负载均衡类型, 
 
 
 // ------------------- upstream round robin --------------------
 此模块使用了3个结构体:
-ngx_http_upstream_rr_peer_t
-ngx_http_upstream_rr_peers_t
+ngx_http_upstream_rr_peer_t				--		后端服务器的每个IP对应于此结构
+ngx_http_upstream_rr_peers_t			-- 		对应于一个upstream block 块 (ngx_http_upstream_srv_conf_t 结构)
 ngx_http_upstream_rr_peer_data_t	
 	
 // ------------------- upstream FAQ --------------------

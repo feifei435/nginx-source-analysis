@@ -664,7 +664,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->output.tag = (ngx_buf_tag_t) &ngx_http_proxy_module;
 
-    u->conf = &plcf->upstream;
+    u->conf = &plcf->upstream;										//	将proxy模块的 ngx_http_upstream_conf_t 赋值给运转结构 ngx_http_upstream_t
 
 #if (NGX_HTTP_CACHE)
     u->create_key = ngx_http_proxy_create_key;
@@ -3342,7 +3342,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_core_loc_conf_t   *clcf;
     ngx_http_script_compile_t   sc;
 
-    if (plcf->upstream.upstream || plcf->proxy_lengths) {			//	????????
+    if (plcf->upstream.upstream || plcf->proxy_lengths) {			//	检查在location中是否已经声明指令 "proxy_pass", 此指令不允许重复声明在同一个Location中
         return "is duplicate";
     }
 
@@ -3417,7 +3417,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u.url.data = url->data + add;
     u.default_port = port;					//	http://的端口是80，https;//端口是443
     u.uri_part = 1;
-    u.no_resolve = 1;
+    u.no_resolve = 1;						//	设置不解析域名
 
     plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
     if (plcf->upstream.upstream == NULL) {

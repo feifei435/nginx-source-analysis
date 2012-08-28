@@ -45,7 +45,7 @@ struct ngx_peer_connection_s {
 
     ngx_event_get_peer_pt            get;					//	不同模块采用不同的方式 ngx_http_upstream_get_ip_hash_peer() 和 ngx_http_upstream_get_round_robin_peer()
     ngx_event_free_peer_pt           free;
-    void                            *data;
+	void                            *data;					//	存放多个模块 ngx_http_upstream_rr_peer_data_t 、ngx_http_upstream_keepalive_peer_data_t、ngx_http_upstream_rr_peer_data_t
 
 #if (NGX_SSL)
     ngx_event_set_peer_session_pt    set_session;

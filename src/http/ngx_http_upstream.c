@@ -419,7 +419,7 @@ ngx_http_upstream_create(ngx_http_request_t *r)
 }
 
 /* 
- *	[analy] 1. 检查读事件是否在定时器中 
+ *	[analy] 1. 检查读事件是否在定时器中， 在就删除
  *			2. 事件模型使用边缘触发时（edge-triggered）, 如果此连接的写事件未添加到epoll监控队列中，将添加写事件到事件处理队列中
  *			3. ngx_http_upstream_init_request()
  */
@@ -433,12 +433,13 @@ ngx_http_upstream_init(ngx_http_request_t *r)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http init upstream, client timer: %d", c->read->timer_set);
 
-	//	??????
+	//	检查读事件是否在定时器中， 在就删除（为什么要删除？？？）
     if (c->read->timer_set) {
         ngx_del_timer(c->read);
     }
 
 	//	事件模型使用边缘触发时（edge-triggered）, 如果此连接的写事件未添加到epoll监控队列中，将添加写事件到事件处理队列中
+	//	（为什么在这里添加写事件，什么时候使用呢？？？）
     if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {			
 
         if (!c->write->active) {			
@@ -510,6 +511,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         u->request_bufs = r->request_body->bufs;
     }
 
+	//	拼装向后端发起请求的请求包
 	//	ngx_http_upstream_t->create_request的handler，此处调用 ngx_http_proxy_create_request()
     if (u->create_request(r) != NGX_OK) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -562,7 +564,14 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
     if (u->resolved == NULL) {
 
-        uscf = u->conf->upstream;
+		/*	这时的uscf仅指向这些模块中的一个 ngx_http_upstream_srv_conf_t
+			ngx_http_fastcgi_module.c(2838):    flcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+			ngx_http_memcached_module.c(620):    mlcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+			ngx_http_proxy_module.c(3422):    plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+			ngx_http_scgi_module.c(1654):    scf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+			ngx_http_uwsgi_module.c(1695):    uwcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+		*/
+        uscf = u->conf->upstream;			
 
     } else {
 
@@ -4111,7 +4120,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     value = cf->args->elts;
     u.host = value[1];				//	设置upstream host name
-    u.no_resolve = 1;
+    u.no_resolve = 1;				//	不解析域名
 
     uscf = ngx_http_upstream_add(cf, &u, NGX_HTTP_UPSTREAM_CREATE
                                          |NGX_HTTP_UPSTREAM_WEIGHT

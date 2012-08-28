@@ -15,21 +15,21 @@
 
 
 typedef struct {
-    struct sockaddr                *sockaddr;
-    socklen_t                       socklen;
-    ngx_str_t                       name;
+    struct sockaddr                *sockaddr;					//	指向 ngx_http_upstream_server_t --> addrs.sockaddr
+    socklen_t                       socklen;					//	指向 ngx_http_upstream_server_t --> addrs.socklen
+    ngx_str_t                       name;						//	指向 ngx_http_upstream_server_t --> addrs.name
 
-    ngx_int_t                       current_weight;
-    ngx_int_t                       weight;
+    ngx_int_t                       current_weight;				//	指向字段 weight
+    ngx_int_t                       weight;						//	将根据ngx_http_upstream_server_t的down值决定为0还是取ngx_http_upstream_server_t --> weight的值
 
     ngx_uint_t                      fails;
     time_t                          accessed;
     time_t                          checked;
 
-    ngx_uint_t                      max_fails;
-    time_t                          fail_timeout;
+    ngx_uint_t                      max_fails;					//	指向 ngx_http_upstream_server_t --> max_fails
+    time_t                          fail_timeout;				//	指向 ngx_http_upstream_server_t --> fail_timeout
 
-    ngx_uint_t                      down;          /* unsigned  down:1; */
+    ngx_uint_t                      down;						//	指向 ngx_http_upstream_server_t --> down		/* unsigned  down:1; */
 
 #if (NGX_HTTP_SSL)
     ngx_ssl_session_t              *ssl_session;   /* local to a process */
@@ -40,14 +40,14 @@ typedef struct {
 typedef struct ngx_http_upstream_rr_peers_s  ngx_http_upstream_rr_peers_t;
 
 struct ngx_http_upstream_rr_peers_s {
-    ngx_uint_t                      single;        /* unsigned  single:1; */
-    ngx_uint_t                      number;
+    ngx_uint_t                      single;						/* unsigned  single:1; */
+    ngx_uint_t                      number;					//	所管理的后端服务器个数（多个IP的服务器将会被解析成多个 ngx_http_upstream_rr_peer_t ）
     ngx_uint_t                      last_cached;
 
  /* ngx_mutex_t                    *mutex; */
     ngx_connection_t              **cached;
 
-    ngx_str_t                      *name;
+    ngx_str_t                      *name;			//	指向 ngx_http_upstream_srv_conf_t 中的 host 字段，在函数ngx_http_upstream_init_round_robin()中有设置
 
     ngx_http_upstream_rr_peers_t   *next;
 
