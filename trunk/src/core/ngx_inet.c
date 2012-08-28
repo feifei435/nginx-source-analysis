@@ -176,7 +176,10 @@ ngx_inet6_addr(u_char *p, size_t len, u_char *addr)
 
 #endif
 
-
+/* 
+ *	[analy]	将参数 sockaddr *sa的 sa->sin_addr 指向的IP地址和参数port
+ *			拼装成字符串格式后存放于text参数中（e.g. 115.238.175.238:80）
+ */
 size_t
 ngx_sock_ntop(struct sockaddr *sa, u_char *text, size_t len, ngx_uint_t port)
 {
@@ -638,12 +641,13 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
     last = host + u->url.len;			//	url的尾地址
 
-    port = ngx_strlchr(host, last, ':');	//	在url字符串中查找":"端口
+    port = ngx_strlchr(host, last, ':');	//	是否有端口
 
-    uri = ngx_strlchr(host, last, '/');		//	查找uri
+    uri = ngx_strlchr(host, last, '/');		//	是否有uri
 	
-    args = ngx_strlchr(host, last, '?');	//	查找args
+    args = ngx_strlchr(host, last, '?');	//	是否有args
 
+	//	url中指定了args
     if (args) {
         if (uri == NULL) {
             uri = args;
@@ -653,7 +657,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         }
     }
 
-	//	uri???????/
+	//	url中指定了uri
     if (uri) {
         if (u->listen || !u->uri_part) {
             u->err = "invalid host";
@@ -670,7 +674,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         }
     }
 
-	//	端口设置
+	//	url中指定了端口
     if (port) {	
         port++;
 
@@ -697,9 +701,11 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         last = port - 1;				//	将last指针指向url中的ip地址尾端
 
     } else {
+
+		//	url中未指定uri时
         if (uri == NULL) {
 
-            if (u->listen) {
+            if (u->listen) {			//	标识是否为监听类的url
 
                 /* test value as port only */
 
@@ -739,17 +745,17 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         len = 0;
     }
 
-    u->host.len = len;					//	设置ip地址或域名
+    u->host.len = len;					//	设置ip地址或域名 （e.g. "money.163.com"）
     u->host.data = host;
 
     if (u->no_resolve) {				//	no_resolve被设置时，将会直接返回，不进行以下的解析
         return NGX_OK;
     }
 
-    if (len) {			//	ip地址正常格式时
+    if (len) {		//	使用了域名或ip地址使用标准格式
         sin->sin_addr.s_addr = ngx_inet_addr(host, len);
 
-        if (sin->sin_addr.s_addr == INADDR_NONE) {
+        if (sin->sin_addr.s_addr == INADDR_NONE) {		//	使用了域名或IP地址无法解析时
             p = ngx_alloc(++len, pool->log);
             if (p == NULL) {
                 return NGX_ERROR;
@@ -757,7 +763,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
             (void) ngx_cpystrn(p, host, len);
 
-            h = gethostbyname((const char *) p);
+            h = gethostbyname((const char *) p);		//	转换域名
 
             ngx_free(p);
 
@@ -783,7 +789,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         sin->sin_port = htons(u->default_port);
     }
 
-    if (u->listen) {		//	???????????猜测：是监听端口IP时，则直接返回
+    if (u->listen) {		//	猜测：是监听端口IP时，则直接返回
         return NGX_OK;
     }
 
@@ -922,7 +928,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
     in_addr = ngx_inet_addr(u->host.data, u->host.len);
 
-    if (in_addr == INADDR_NONE) {
+    if (in_addr == INADDR_NONE) {			//	u->host.data使用了域名时，将返回INADDR_NONE
         host = ngx_alloc(u->host.len + 1, pool->log);
         if (host == NULL) {
             return NGX_ERROR;
@@ -930,7 +936,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
         (void) ngx_cpystrn(host, u->host.data, u->host.len + 1);
 
-        h = gethostbyname((char *) host);
+        h = gethostbyname((char *) host);			//	解析域名
 
         ngx_free(host);
 
@@ -948,14 +954,14 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
         /* MP: ngx_shared_palloc() */
 
-        u->addrs = ngx_pcalloc(pool, i * sizeof(ngx_addr_t));
+        u->addrs = ngx_pcalloc(pool, i * sizeof(ngx_addr_t));			//	申请 ngx_addr_t 数组
         if (u->addrs == NULL) {
             return NGX_ERROR;
         }
 
-        u->naddrs = i;
+        u->naddrs = i;		//	域名对应的ip地址个数
 
-        for (i = 0; i < u->naddrs; i++) {
+        for (i = 0; i < u->naddrs; i++) {					//	循环对
 
             sin = ngx_pcalloc(pool, sizeof(struct sockaddr_in));
             if (sin == NULL) {

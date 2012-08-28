@@ -68,14 +68,14 @@ typedef struct {
 
 
 typedef struct {
-    struct sockaddr          *sockaddr;
-    socklen_t                 socklen;
-    ngx_str_t                 name;
+    struct sockaddr          *sockaddr;					//	指向 sockaddr_in 结构体
+    socklen_t                 socklen;					//	sizeof(struct sockaddr_in)
+    ngx_str_t                 name;						//	存放将域名解析成IP地址后的字符串格式(e.g. "115.238.175.238:80")
 } ngx_addr_t;
 
 
 typedef struct {
-    ngx_str_t                 url;						//	保存IP地址+端口信息（e.g. 192.168.124.129:8011）
+    ngx_str_t                 url;						//	保存IP地址+端口信息（e.g. 192.168.124.129:8011 或 money.163.com）
     ngx_str_t                 host;						//	保存IP地址信息
     ngx_str_t                 port_text;				//	保存port字符串
     ngx_str_t                 uri;
@@ -84,9 +84,9 @@ typedef struct {
     in_port_t                 default_port;				//	默认端口（当no_port字段为真时，将默认端口赋值给port字段， 默认端口通常是80）
     int                       family;					//	address family, AF_xxx
 
-    unsigned                  listen:1;					//	???是否为指监听类的设置
+    unsigned                  listen:1;					//	是否为指监听类的设置
     unsigned                  uri_part:1;
-    unsigned                  no_resolve:1;				//	????????????
+    unsigned                  no_resolve:1;				//	根据情况决定是否解析域名（将域名解析到IP地址）
     unsigned                  one_addr:1;
 
     unsigned                  no_port:1;				//	标识url中没有显示指定端口(为1时没有指定)
@@ -95,8 +95,8 @@ typedef struct {
     socklen_t                 socklen;						//	sizeof(struct sockaddr_in)
     u_char                    sockaddr[NGX_SOCKADDRLEN];	//	sockaddr_in结构指向它
 
-    ngx_addr_t               *addrs;
-    ngx_uint_t                naddrs;
+    ngx_addr_t               *addrs;					//	指向ngx_addr_t的数组，元素个数是字段naddrs。每个域名的IP对应的结构，函数中赋值（ngx_inet_resolve_host()）
+    ngx_uint_t                naddrs;					//	url对应的IP地址个数,IP格式的地址将默认为1
 
     char                     *err;						//	错误信息字符串
 } ngx_url_t;

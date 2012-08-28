@@ -39,11 +39,13 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
     us->peer.init = ngx_http_upstream_init_round_robin_peer;
 
+	//	检查当前的upstream块中是否有 ngx_http_upstream_server_t
     if (us->servers) {		//	us->servers ==> array of ngx_http_upstream_server_t
         server = us->servers->elts;
 
         n = 0;
 
+		//	遍历当前的upstream block {..} 中的server ，统计除backup服务器以外所有 server 使用的IP个数
         for (i = 0; i < us->servers->nelts; i++) {
             if (server[i].backup) {
                 continue;
@@ -52,14 +54,14 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             n += server[i].naddrs;
         }
 
-        peers = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_rr_peers_t)
+        peers = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_rr_peers_t)						//	这里仅申请n-1个ngx_http_upstream_rr_peer_t结构是因为ngx_http_upstream_rr_peers_t结构中已经包含此结构
                               + sizeof(ngx_http_upstream_rr_peer_t) * (n - 1));
         if (peers == NULL) {
             return NGX_ERROR;
         }
 
         peers->single = (n == 1);
-        peers->number = n;
+        peers->number = n;						//	设置非backup的后端服务器个数
         peers->name = &us->host;
 
         n = 0;
@@ -70,14 +72,14 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
                     continue;
                 }
 
-                peers->peer[n].sockaddr = server[i].addrs[j].sockaddr;
-                peers->peer[n].socklen = server[i].addrs[j].socklen;
-                peers->peer[n].name = server[i].addrs[j].name;
-                peers->peer[n].max_fails = server[i].max_fails;
-                peers->peer[n].fail_timeout = server[i].fail_timeout;
-                peers->peer[n].down = server[i].down;
-                peers->peer[n].weight = server[i].down ? 0 : server[i].weight;
-                peers->peer[n].current_weight = peers->peer[n].weight;
+                peers->peer[n].sockaddr = server[i].addrs[j].sockaddr;		//	指向 ngx_http_upstream_server_t --> addrs.sockaddr				
+                peers->peer[n].socklen = server[i].addrs[j].socklen;		//	指向 ngx_http_upstream_server_t --> addrs.socklen
+                peers->peer[n].name = server[i].addrs[j].name;				//	指向 ngx_http_upstream_server_t --> addrs.name
+                peers->peer[n].max_fails = server[i].max_fails;				//	指向 ngx_http_upstream_server_t --> max_fails
+                peers->peer[n].fail_timeout = server[i].fail_timeout;		//	指向 ngx_http_upstream_server_t --> fail_timeout
+                peers->peer[n].down = server[i].down;						//	指向 ngx_http_upstream_server_t --> down
+                peers->peer[n].weight = server[i].down ? 0 : server[i].weight;	//	如果此主机指定了down，将为0。否则指向  ngx_http_upstream_server_t --> weight
+                peers->peer[n].current_weight = peers->peer[n].weight;		//	指向 ngx_http_upstream_rr_peer_t  --> weight
                 n++;
             }
         }
@@ -92,6 +94,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
         n = 0;
 
+		//	统计backup后端服务器
         for (i = 0; i < us->servers->nelts; i++) {
             if (!server[i].backup) {
                 continue;
@@ -100,7 +103,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             n += server[i].naddrs;
         }
 
-        if (n == 0) {
+        if (n == 0) {				//	如果没有backup服务器将直接返回
             return NGX_OK;
         }
 
@@ -112,7 +115,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
         peers->single = 0;
         backup->single = 0;
-        backup->number = n;
+        backup->number = n;				//	设置backup的后端服务器个数
         backup->name = &us->host;
 
         n = 0;
@@ -126,8 +129,8 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
                 backup->peer[n].sockaddr = server[i].addrs[j].sockaddr;
                 backup->peer[n].socklen = server[i].addrs[j].socklen;
                 backup->peer[n].name = server[i].addrs[j].name;
-                backup->peer[n].weight = server[i].weight;
-                backup->peer[n].current_weight = server[i].weight;
+                backup->peer[n].weight = server[i].weight;						//	这里与上边有区别？？？
+                backup->peer[n].current_weight = server[i].weight;				//	这里与上边有区别？？？
                 backup->peer[n].max_fails = server[i].max_fails;
                 backup->peer[n].fail_timeout = server[i].fail_timeout;
                 backup->peer[n].down = server[i].down;
@@ -135,7 +138,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             }
         }
 
-        peers->next = backup;
+        peers->next = backup;				//	将backup服务器挂载到正常负载的服务器后边
 
         ngx_sort(&backup->peer[0], (size_t) n,
                  sizeof(ngx_http_upstream_rr_peer_t),
@@ -210,7 +213,9 @@ ngx_http_upstream_cmp_servers(const void *one, const void *two)
     return (first->weight < second->weight);
 }
 
-
+/*  
+ *	[analy]	负载均衡rr的初始化
+ */
 ngx_int_t
 ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     ngx_http_upstream_srv_conf_t *us)
@@ -226,14 +231,16 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
             return NGX_ERROR;
         }
 
-        r->upstream->peer.data = rrp;
+        r->upstream->peer.data = rrp;	//	设置 ngx_http_upstream_rr_peer_data_t
     }
 
-    rrp->peers = us->peer.data;
+    rrp->peers = us->peer.data;			//	获取后端服务器的管理表
     rrp->current = 0;
 
-    n = rrp->peers->number;
+    n = rrp->peers->number;			//	获取的后端服务器的正常列表个数
 
+	//	当存在backup后端服务器列表时，比较backup后端服务器列表个数是否大于正常后端服务器个数
+	//	大于时，将赋值给
     if (rrp->peers->next && rrp->peers->next->number > n) {
         n = rrp->peers->next->number;
     }
