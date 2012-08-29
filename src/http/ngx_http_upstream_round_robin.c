@@ -597,7 +597,7 @@ failed:
     return NGX_BUSY;
 }
 
-
+//	从所有的服务器中选出权值最高的服务器。如果所有server当前权重都为0，那么将所有server的当前权重恢复到设定权重值。
 static ngx_uint_t
 ngx_http_upstream_get_peer(ngx_http_upstream_rr_peers_t *peers)
 {
@@ -640,10 +640,12 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peers_t *peers)
             return n;
         }
 
+		//	是否已经reset权重，如果已经reset，将直接返回0
         if (reset++) {
             return 0;
         }
 
+		//	重新设置当前权重
         for (i = 0; i < peers->number; i++) {
             peer[i].current_weight = peer[i].weight;
         }

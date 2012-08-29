@@ -19,9 +19,11 @@ typedef struct {
     socklen_t                       socklen;					//	指向 ngx_http_upstream_server_t --> addrs.socklen
     ngx_str_t                       name;						//	指向 ngx_http_upstream_server_t --> addrs.name
 
+//	当前权重和设定权重
     ngx_int_t                       current_weight;				//	指向字段 weight
     ngx_int_t                       weight;						//	将根据ngx_http_upstream_server_t的down值决定为0还是取ngx_http_upstream_server_t --> weight的值
 
+//	失败次数和访问时间
     ngx_uint_t                      fails;
     time_t                          accessed;
     time_t                          checked;
@@ -29,6 +31,7 @@ typedef struct {
     ngx_uint_t                      max_fails;					//	指向 ngx_http_upstream_server_t --> max_fails
     time_t                          fail_timeout;				//	指向 ngx_http_upstream_server_t --> fail_timeout
 
+//	服务器是否参与策略  
     ngx_uint_t                      down;						//	指向 ngx_http_upstream_server_t --> down		/* unsigned  down:1; */
 
 #if (NGX_HTTP_SSL)
@@ -40,7 +43,7 @@ typedef struct {
 typedef struct ngx_http_upstream_rr_peers_s  ngx_http_upstream_rr_peers_t;
 
 struct ngx_http_upstream_rr_peers_s {
-    ngx_uint_t                      single;						/* unsigned  single:1; */
+    ngx_uint_t                      single;					//	是否只有单个服务器	/* unsigned  single:1; */
     ngx_uint_t                      number;					//	所管理的后端服务器个数（多个IP的服务器将会被解析成多个 ngx_http_upstream_rr_peer_t ）
     ngx_uint_t                      last_cached;
 
