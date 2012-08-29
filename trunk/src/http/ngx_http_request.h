@@ -364,8 +364,7 @@ struct ngx_http_request_s {
 #endif
 
     ngx_http_upstream_t              *upstream;
-    ngx_array_t                      *upstream_states;
-                                         /* of ngx_http_upstream_state_t */
+    ngx_array_t                      *upstream_states;                                        /* of ngx_http_upstream_state_t */
 
     ngx_pool_t                       *pool;
     ngx_buf_t                        *header_in;					/* [analy]	调用recv等函数读取到的header信息的缓存，通过这个缓存对header进行分析 */
