@@ -143,7 +143,7 @@ static void ngx_http_upstream_ssl_init_connection(ngx_http_request_t *,
 static void ngx_http_upstream_ssl_handshake(ngx_connection_t *c);
 #endif
 
-
+//	后端服务器发送来的请求头
 ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] = {
 
     { ngx_string("Status"),
@@ -507,6 +507,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         r->write_event_handler = ngx_http_upstream_wr_check_broken_connection;
     }
 
+	//	client是否有body数据
     if (r->request_body) {
         u->request_bufs = r->request_body->bufs;
     }
@@ -552,6 +553,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         ngx_memzero(u->state, sizeof(ngx_http_upstream_state_t));
     }
 
+	//	增加cleanup作用？？？？？？？？
     cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1417,6 +1419,7 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->log->action = "sending request to upstream";
 
+	//	向后端服务器发送数据
     rc = ngx_output_chain(&u->output, u->request_sent ? NULL : u->request_bufs);
 
     u->request_sent = 1;
@@ -1477,6 +1480,7 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     u->write_event_handler = ngx_http_upstream_dummy_handler;
 
+	//	添加写事件到epoll中
     if (ngx_handle_write_event(c->write, 0) != NGX_OK) {
         ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -2996,7 +3000,7 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
                    "finalize http upstream request: %i", rc);
 
     if (u->cleanup) {
-        *u->cleanup = NULL;
+        *u->cleanup = NULL;				//	??????????
         u->cleanup = NULL;
     }
 
@@ -3015,13 +3019,13 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
         }
     }
 
-    u->finalize_request(r, rc);
+    u->finalize_request(r, rc);				//	proxy模块将调用 ngx_http_proxy_finalize_request()
 
     if (u->peer.free) {
         u->peer.free(&u->peer, u->peer.data, 0);
     }
 
-    if (u->peer.connection) {
+    if (u->peer.connection) {				//	后端服务器连接存在时，销毁连接内存池，关闭连接
 
 #if (NGX_HTTP_SSL)
 
@@ -4560,12 +4564,13 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
     ngx_array_t      hide_headers;
     ngx_hash_key_t  *hk;
 
+	//	合并 hide_headers 和 pass_headers
     if (conf->hide_headers == NGX_CONF_UNSET_PTR
         && conf->pass_headers == NGX_CONF_UNSET_PTR)
     {
         conf->hide_headers_hash = prev->hide_headers_hash;
 
-        if (conf->hide_headers_hash.buckets
+        if (conf->hide_headers_hash.buckets					//	如果已经hash过将直接返回
 #if (NGX_HTTP_CACHE)
             && ((conf->cache == NULL) == (prev->cache == NULL))
 #endif
@@ -4587,12 +4592,14 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
         }
     }
 
+	//	1. 初始化 hide_headers 数组
     if (ngx_array_init(&hide_headers, cf->temp_pool, 4, sizeof(ngx_hash_key_t))
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
+	//	2. 对 hide_headers 数组中的字段进行赋值
     for (h = default_hide_headers; h->len; h++) {
         hk = ngx_array_push(&hide_headers);
         if (hk == NULL) {
@@ -4604,6 +4611,8 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
         hk->value = (void *) 1;
     }
 
+
+	//	3. 添加自定义的 conf->hide_headers 到  hide_headers 数组中
     if (conf->hide_headers != NGX_CONF_UNSET_PTR) {
 
         h = conf->hide_headers->elts;
@@ -4613,7 +4622,7 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
             hk = hide_headers.elts;
 
             for (j = 0; j < hide_headers.nelts; j++) {
-                if (ngx_strcasecmp(h[i].data, hk[j].key.data) == 0) {
+                if (ngx_strcasecmp(h[i].data, hk[j].key.data) == 0) {				
                     goto exist;
                 }
             }
@@ -4633,6 +4642,8 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
         }
     }
 
+
+	//	4. 如果 conf->pass_headers 中指定了 hide_headers 数组中有的header，将此header置为空
     if (conf->pass_headers != NGX_CONF_UNSET_PTR) {
 
         h = conf->pass_headers->elts;
@@ -4653,6 +4664,7 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
         }
     }
 
+	// 5. 创建hide_headers数组的hash表
     hash->hash = &conf->hide_headers_hash;
     hash->key = ngx_hash_key_lc;
     hash->pool = cf->pool;

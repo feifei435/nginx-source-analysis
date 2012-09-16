@@ -60,15 +60,18 @@ ngx_open_file_cache_init(ngx_pool_t *pool, ngx_uint_t max, time_t inactive)
         return NULL;
     }
 
+	//	红黑树初始化
     ngx_rbtree_init(&cache->rbtree, &cache->sentinel,
                     ngx_open_file_cache_rbtree_insert_value);
 
+	//	队列初始化
     ngx_queue_init(&cache->expire_queue);
 
     cache->current = 0;
     cache->max = max;
     cache->inactive = inactive;
 
+	//	增加一个内存池清理函数
     cln = ngx_pool_cleanup_add(pool, 0);
     if (cln == NULL) {
         return NULL;
@@ -80,7 +83,9 @@ ngx_open_file_cache_init(ngx_pool_t *pool, ngx_uint_t max, time_t inactive)
     return cache;
 }
 
-
+/* 
+ *	[analy]	清理所有cache文件
+ */
 static void
 ngx_open_file_cache_cleanup(void *data)
 {
@@ -94,29 +99,38 @@ ngx_open_file_cache_cleanup(void *data)
 
     for ( ;; ) {
 
+		//	队列为空直接返回
         if (ngx_queue_empty(&cache->expire_queue)) {
             break;
         }
 
-        q = ngx_queue_last(&cache->expire_queue);
+		//	获取队列中的尾节点，最后一个节点是最长时间没有使用的
+        q = ngx_queue_last(&cache->expire_queue);							
 
-        file = ngx_queue_data(q, ngx_cached_open_file_t, queue);
+		//	获取该节点附属的缓存文件结构地址
+        file = ngx_queue_data(q, ngx_cached_open_file_t, queue);			
 
-        ngx_queue_remove(q);
+		//	将该节点在队列中删除
+        ngx_queue_remove(q);												
 
-        ngx_rbtree_delete(&cache->rbtree, &file->node);
+		//	在红黑树中删除掉
+        ngx_rbtree_delete(&cache->rbtree, &file->node);						
 
-        cache->current--;
+		//	缓存个数减一
+        cache->current--;													
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
                        "delete cached open file: %s", file->name);
 
-        if (!file->err && !file->is_dir) {
+		//	缓存文件没有错误发生，并且缓存文件不是目录；
+		//	关闭缓存文件(强制设置缓存文件不被请求占用)
+        if (!file->err && !file->is_dir) {						
             file->close = 1;
-            file->count = 0;
+            file->count = 0;												
             ngx_close_cached_file(cache, file, 0, ngx_cycle->log);
 
         } else {
+			//	不是目录将删除申请的cache文件结构和cache文件名称所占用的内存
             ngx_free(file->name);
             ngx_free(file);
         }
@@ -149,9 +163,11 @@ ngx_open_cached_file(ngx_open_file_cache_t *cache, ngx_str_t *name,
     ngx_pool_cleanup_file_t        *clnf;
     ngx_open_file_cache_cleanup_t  *ofcln;
 
-    of->fd = NGX_INVALID_FILE;
-    of->err = 0;
+    of->fd = NGX_INVALID_FILE;				//	文件描述符初始化
+    of->err = 0;							//	错误代码清0
 
+
+	//	系统没有开启缓存功能
     if (cache == NULL) {
 
         if (of->test_only) {
@@ -193,23 +209,30 @@ ngx_open_cached_file(ngx_open_file_cache_t *cache, ngx_str_t *name,
         return rc;
     }
 
+	//	注册cleaup清理函数到request的pool上，具体的清理函数将在下边根据条件决定，此清理函数什么时候执行？？？？？？？
     cln = ngx_pool_cleanup_add(pool, sizeof(ngx_open_file_cache_cleanup_t));
     if (cln == NULL) {
         return NGX_ERROR;
     }
 
+	//	获取当前时间
     now = ngx_time();
 
+	//	根据名字计算CRC
     hash = ngx_crc32_long(name->data, name->len);
 
+	//	在静态文件缓存表上查找此文件
     file = ngx_open_file_lookup(cache, name, hash);
 
+	//	在cache中找到文件
     if (file) {
 
-        file->uses++;
+        file->uses++;							//	将此cache文件的使用次数加一
 
-        ngx_queue_remove(&file->queue);
+        ngx_queue_remove(&file->queue);			//	将此cache文件从expire_queue队列中删除，为什么删除？？
 
+
+		//	???????
         if (file->fd == NGX_INVALID_FILE && file->err == 0 && !file->is_dir) {
 
             /* file was not used often enough to keep open */
@@ -336,17 +359,18 @@ ngx_open_cached_file(ngx_open_file_cache_t *cache, ngx_str_t *name,
             goto add_event;
         }
 
-        ngx_rbtree_delete(&cache->rbtree, &file->node);
+		//	由于文件被改变，需要重新cache文件所有将此cache文件节点从红黑树中删除
+        ngx_rbtree_delete(&cache->rbtree, &file->node);					
 
-        cache->current--;
+        cache->current--;												
 
-        file->close = 1;
+        file->close = 1;				//	为什么在这赋值？？？
 
-        goto create;
+        goto create;					//	这里跳到create的原因是上边已经调用ngx_open_and_stat_file()函数了
     }
 
     /* not found */
-
+	//	如果没有在cache中找到，将重新打开文件并获取文件信息
     rc = ngx_open_and_stat_file(name, of, pool->log);
 
     if (rc != NGX_OK && (of->err == 0 || !of->errors)) {
@@ -355,17 +379,20 @@ ngx_open_cached_file(ngx_open_file_cache_t *cache, ngx_str_t *name,
 
 create:
 
-    if (cache->current >= cache->max) {
+	//	a. 当前缓存的文件个数大于缓存上限，将强制expire几个cache
+    if (cache->current >= cache->max) {				//	open_file_cache命令中定义的那个max指令cache的最大个数
         ngx_expire_old_cached_files(cache, 0, pool->log);
     }
 
+	//	b. 申请一个cache文件结构
     file = ngx_alloc(sizeof(ngx_cached_open_file_t), pool->log);
 
     if (file == NULL) {
         goto failed;
     }
 
-    file->name = ngx_alloc(name->len + 1, pool->log);
+	//	c. 为cache的文件结构初值
+    file->name = ngx_alloc(name->len + 1, pool->log);			//	e.g. name = "/usr/local/nginx/html/index.html"
 
     if (file->name == NULL) {
         ngx_free(file);
@@ -375,31 +402,31 @@ create:
 
     ngx_cpystrn(file->name, name->data, name->len + 1);
 
-    file->node.key = hash;
+    file->node.key = hash;										//	设置缓存文件节点的key
 
-    ngx_rbtree_insert(&cache->rbtree, &file->node);
+    ngx_rbtree_insert(&cache->rbtree, &file->node);				//	将当前的缓存文件节点插入红黑树
 
-    cache->current++;
+    cache->current++;											//	增加缓存的个数
 
-    file->uses = 1;
-    file->count = 0;
-    file->use_event = 0;
+    file->uses = 1;												//	填写缓存使用次数
+    file->count = 0;											//	文件被请求使用次数
+    file->use_event = 0;										//	
     file->event = NULL;
 
 add_event:
 
-    ngx_open_file_add_event(cache, file, of, pool->log);
+    ngx_open_file_add_event(cache, file, of, pool->log);		//	如果没有使用kqueue，此函数将不被执行
 
 update:
 
-    file->fd = of->fd;
+    file->fd = of->fd;					
     file->err = of->err;
 #if (NGX_HAVE_OPENAT)
     file->disable_symlinks = of->disable_symlinks;
     file->disable_symlinks_from = of->disable_symlinks_from;
 #endif
 
-    if (of->err == 0) {
+    if (of->err == 0) {											//	如果没有错误发生，将为cache文件赋值
         file->uniq = of->uniq;
         file->mtime = of->mtime;
         file->size = of->size;
@@ -412,33 +439,33 @@ update:
         file->is_exec = of->is_exec;
         file->is_directio = of->is_directio;
 
-        if (!of->is_dir) {
+        if (!of->is_dir) {										//	不是目录将增加文件引用计数
             file->count++;
         }
     }
 
-    file->created = now;
+    file->created = now;										//	更新创建时间
 
 found:
 
-    file->accessed = now;
+    file->accessed = now;											//	设置访问时间
 
-    ngx_queue_insert_head(&cache->expire_queue, &file->queue);
+    ngx_queue_insert_head(&cache->expire_queue, &file->queue);		//	将cache文件插入过期队列中的首部(尾部是最长时间没有使用的)
 
     ngx_log_debug5(NGX_LOG_DEBUG_CORE, pool->log, 0,
                    "cached open file: %s, fd:%d, c:%d, e:%d, u:%d",
                    file->name, file->fd, file->count, file->err, file->uses);
 
-    if (of->err == 0) {
+    if (of->err == 0) {				//	没有产生错误，设置清理cache文件的清理函数，然后直接返回
 
-        if (!of->is_dir) {
-            cln->handler = ngx_open_file_cleanup;
-            ofcln = cln->data;
+        if (!of->is_dir) {					
+            cln->handler = ngx_open_file_cleanup;		//	注册清理函数，什么时候执行呢？？？？？？？？？？
+            ofcln = cln->data;							//	获取在 ngx_pool_cleanup_add() 函数中申请的清理cache结构指针
 
-            ofcln->cache = cache;
-            ofcln->file = file;
-            ofcln->min_uses = of->min_uses;
-            ofcln->log = pool->log;
+            ofcln->cache = cache;						//	使用的cache
+            ofcln->file = file;							//	对应的cache文件
+            ofcln->min_uses = of->min_uses;				//	设置cache最小使用次数
+            ofcln->log = pool->log;						//	使用的日志
         }
 
         return NGX_OK;
@@ -543,7 +570,9 @@ failed:
 
 #endif
 
-
+/* 
+ *	[analy]	打开文件的封装函数
+ */
 static ngx_fd_t
 ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
     ngx_int_t mode, ngx_int_t create, ngx_int_t access, ngx_log_t *log)
@@ -569,7 +598,9 @@ ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
     ngx_str_t         at_name;
 
     if (of->disable_symlinks == NGX_DISABLE_SYMLINKS_OFF) {
-        fd = ngx_open_file(name->data, mode, create, access);
+
+		//	name->data = "/usr/local/nginx/html/index.html"
+        fd = ngx_open_file(name->data, mode, create, access);			//	open()
 
         if (fd == NGX_INVALID_FILE) {
             of->err = ngx_errno;
@@ -580,8 +611,8 @@ ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
         return fd;
     }
 
-    p = name->data;
-    end = p + name->len;
+    p = name->data;					//	指向文件路径字符串的开始处
+    end = p + name->len;			//	指向文件路径字符串的结束处
 
     at_name = *name;
 
@@ -607,7 +638,7 @@ ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
 
     } else if (*p == '/') {
 
-        at_fd = ngx_open_file("/",
+        at_fd = ngx_open_file("/",												//	打开目录
                               NGX_FILE_SEARCH|NGX_FILE_NONBLOCK,
                               NGX_FILE_OPEN, 0);
 
@@ -624,6 +655,7 @@ ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
         at_fd = NGX_AT_FDCWD;
     }
 
+	//	指行前 p指针已经指向了文件路径字符串的"usr/local/nginx/html/index.html"部分
     for ( ;; ) {
         cp = ngx_strlchr(p, end, '/');
         if (cp == NULL) {
@@ -635,7 +667,7 @@ ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
             continue;
         }
 
-        *cp = '\0';
+        *cp = '\0';				//	此时p指向的是usr字符串
 
         if (of->disable_symlinks == NGX_DISABLE_SYMLINKS_NOTOWNER) {
             fd = ngx_openat_file_owner(at_fd, p,
@@ -643,12 +675,12 @@ ngx_open_file_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
                                        NGX_FILE_OPEN, 0, log);
 
         } else {
-            fd = ngx_openat_file(at_fd, p,
+            fd = ngx_openat_file(at_fd, p,												//	openat(),
                            NGX_FILE_SEARCH|NGX_FILE_NONBLOCK|NGX_FILE_NOFOLLOW,
                            NGX_FILE_OPEN, 0);
         }
 
-        *cp = '/';
+        *cp = '/';				//	换回'/'
 
         if (fd == NGX_INVALID_FILE) {
             of->err = ngx_errno;
@@ -710,7 +742,9 @@ failed:
 #endif
 }
 
-
+/* 
+ *	[analy]	获取文件信息的函数
+ */
 static ngx_int_t
 ngx_file_info_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
     ngx_file_info_t *fi, ngx_log_t *log)
@@ -719,7 +753,8 @@ ngx_file_info_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
 
 #if !(NGX_HAVE_OPENAT)
 
-    rc = ngx_file_info(name->data, fi);
+	//	获取文件信息
+    rc = ngx_file_info(name->data, fi);				//	stat()
 
     if (rc == NGX_FILE_ERROR) {
         of->err = ngx_errno;
@@ -735,7 +770,7 @@ ngx_file_info_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
 
     if (of->disable_symlinks == NGX_DISABLE_SYMLINKS_OFF) {
 
-        rc = ngx_file_info(name->data, fi);
+        rc = ngx_file_info(name->data, fi);			//	stat()
 
         if (rc == NGX_FILE_ERROR) {
             of->err = ngx_errno;
@@ -753,14 +788,14 @@ ngx_file_info_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
         return NGX_FILE_ERROR;
     }
 
-    rc = ngx_fd_info(fd, fi);
+    rc = ngx_fd_info(fd, fi);								//	fstat()
 
     if (rc == NGX_FILE_ERROR) {
         of->err = ngx_errno;
         of->failed = ngx_fd_info_n;
     }
 
-    if (ngx_close_file(fd) == NGX_FILE_ERROR) {
+    if (ngx_close_file(fd) == NGX_FILE_ERROR) {				//	close
         ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
                       ngx_close_file_n " \"%V\" failed", name);
     }
@@ -769,7 +804,9 @@ ngx_file_info_wrapper(ngx_str_t *name, ngx_open_file_info_t *of,
 #endif
 }
 
-
+/* 
+ *	[analy]	开打文件并获取文件信息
+ */
 static ngx_int_t
 ngx_open_and_stat_file(ngx_str_t *name, ngx_open_file_info_t *of,
     ngx_log_t *log)
@@ -777,8 +814,10 @@ ngx_open_and_stat_file(ngx_str_t *name, ngx_open_file_info_t *of,
     ngx_fd_t         fd;
     ngx_file_info_t  fi;
 
-    if (of->fd != NGX_INVALID_FILE) {
-
+    if (of->fd != NGX_INVALID_FILE) {			
+		
+		//	如果文件已经打开，直接获取文件信息，并比较inode节点是否发生变化，
+		//	如果发生变化说明文件被改变，需要重新打开加入cache
         if (ngx_file_info_wrapper(name, of, &fi, log) == NGX_FILE_ERROR) {
             of->fd = NGX_INVALID_FILE;
             return NGX_ERROR;
@@ -800,17 +839,18 @@ ngx_open_and_stat_file(ngx_str_t *name, ngx_open_file_info_t *of,
         }
     }
 
-    if (!of->log) {
+    if (!of->log) {		//	不是日志文件时
 
         /*
          * Use non-blocking open() not to hang on FIFO files, etc.
          * This flag has no effect on a regular files.
          */
 
-        fd = ngx_open_file_wrapper(name, of, NGX_FILE_RDONLY|NGX_FILE_NONBLOCK,
+        fd = ngx_open_file_wrapper(name, of, NGX_FILE_RDONLY|NGX_FILE_NONBLOCK,				//	打开文件
                                    NGX_FILE_OPEN, 0, log);
 
     } else {
+		//	是日志文件的处理，将追加文件末尾的方式打开
         fd = ngx_open_file_wrapper(name, of, NGX_FILE_APPEND,
                                    NGX_FILE_CREATE_OR_OPEN,
                                    NGX_FILE_DEFAULT_ACCESS, log);
@@ -821,10 +861,12 @@ ngx_open_and_stat_file(ngx_str_t *name, ngx_open_file_info_t *of,
         return NGX_ERROR;
     }
 
-    if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {
+	//	获取文件信息
+    if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {						//	fstat()
         ngx_log_error(NGX_LOG_CRIT, log, ngx_errno,
                       ngx_fd_info_n " \"%V\" failed", name);
 
+		//	如果fstat失败，见关闭文件
         if (ngx_close_file(fd) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
                           ngx_close_file_n " \"%V\" failed", name);
@@ -835,7 +877,7 @@ ngx_open_and_stat_file(ngx_str_t *name, ngx_open_file_info_t *of,
         return NGX_ERROR;
     }
 
-    if (ngx_is_dir(&fi)) {
+    if (ngx_is_dir(&fi)) {									//	目录时，关闭目录描述符
         if (ngx_close_file(fd) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
                           ngx_close_file_n " \"%V\" failed", name);
@@ -866,7 +908,7 @@ ngx_open_and_stat_file(ngx_str_t *name, ngx_open_file_info_t *of,
 
 done:
 
-    of->uniq = ngx_file_uniq(&fi);
+    of->uniq = ngx_file_uniq(&fi);					//	设置文件信息
     of->mtime = ngx_file_mtime(&fi);
     of->size = ngx_file_size(&fi);
     of->fs_size = ngx_file_fs_size(&fi);
@@ -890,7 +932,7 @@ ngx_open_file_add_event(ngx_open_file_cache_t *cache,
 {
     ngx_open_file_cache_event_t  *fev;
 
-    if (!(ngx_event_flags & NGX_USE_VNODE_EVENT)
+    if (!(ngx_event_flags & NGX_USE_VNODE_EVENT)				//	如果没有使用kqueue, 此函数将不被执行
         || !of->events
         || file->event
         || of->fd == NGX_INVALID_FILE
@@ -951,14 +993,14 @@ ngx_open_file_add_event(ngx_open_file_cache_t *cache,
 static void
 ngx_open_file_cleanup(void *data)
 {
-    ngx_open_file_cache_cleanup_t  *c = data;
+    ngx_open_file_cache_cleanup_t  *c = data;							//	获取在 ngx_pool_cleanup_add() 中申请的清理结构指针
 
-    c->file->count--;
+    c->file->count--;													//	将对应的cache文件引用计数减一
 
     ngx_close_cached_file(c->cache, c->file, c->min_uses, c->log);
 
     /* drop one or two expired open files */
-    ngx_expire_old_cached_files(c->cache, 1, c->log);
+    ngx_expire_old_cached_files(c->cache, 1, c->log);					//	删除过期的文件根据指令 "open_file_cache" 的inactive设置的时间，默认60s
 }
 
 
@@ -974,22 +1016,28 @@ ngx_close_cached_file(ngx_open_file_cache_t *cache,
 
         file->accessed = ngx_time();
 
+		//	将节点从所属队列中删除
         ngx_queue_remove(&file->queue);
-
+	
+		//	在将队列插入 expire_queue 队列的首部
         ngx_queue_insert_head(&cache->expire_queue, &file->queue);
 
+		//	检查cache文件的使用次数是否大于设置的cache文件最小使用次数，或cache文件被请求引用的次数是否大于0，
+		//	以上条件均符合，则不需要关系文件
         if (file->uses >= min_uses || file->count) {
             return;
         }
     }
 
-    ngx_open_file_del_event(file);
+    ngx_open_file_del_event(file);						//	epoll不使用此函数
 
-    if (file->count) {
+	//	cache文件被请求引用的次数大于0，将不关闭文件
+    if (file->count) {			
         return;
     }
 
-    if (file->fd != NGX_INVALID_FILE) {
+	//	文件被正常打开后将调用close关闭
+    if (file->fd != NGX_INVALID_FILE) {					
 
         if (ngx_close_file(file->fd) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
@@ -1003,11 +1051,13 @@ ngx_close_cached_file(ngx_open_file_cache_t *cache,
         return;
     }
 
-    ngx_free(file->name);
-    ngx_free(file);
+    ngx_free(file->name);			//	释放cache文件的名称占用的空间（ngx_open_cached_file()函数中申请空间，未在内存池中申请）
+    ngx_free(file);					//	释放cache文件占用的空间（ngx_open_cached_file()函数中申请空间，未在内存池中申请）
 }
 
-
+/* 
+ *	[analy]	epoll没有使用此函数
+ */
 static void
 ngx_open_file_del_event(ngx_cached_open_file_t *file)
 {
@@ -1024,7 +1074,9 @@ ngx_open_file_del_event(ngx_cached_open_file_t *file)
     file->use_event = 0;
 }
 
-
+/* 
+ *	[analy]	删除过期的cache文件
+ */
 static void
 ngx_expire_old_cached_files(ngx_open_file_cache_t *cache, ngx_uint_t n,
     ngx_log_t *log)
@@ -1043,30 +1095,38 @@ ngx_expire_old_cached_files(ngx_open_file_cache_t *cache, ngx_uint_t n,
 
     while (n < 3) {
 
-        if (ngx_queue_empty(&cache->expire_queue)) {
+		//	expire_queue队列是空，将直接返回
+        if (ngx_queue_empty(&cache->expire_queue)) {			
             return;
         }
 
+		//	取出expire_queue队列的最后一个节点，也就是可能需要被超时的文件(因为尾部是最长时间没有操作的文件)
         q = ngx_queue_last(&cache->expire_queue);
 
+		//	获取该节点所属的cache文件
         file = ngx_queue_data(q, ngx_cached_open_file_t, queue);
 
+		//	如果n被设置为0，将强制删除一个最近最少使用的文件，之后根据inactive时间决定是否删除文件（最多删除两个文件）
+		//	如果n被设置为1，将根据inactive时间决定是否删除文件，最多删除两个文件
         if (n++ != 0 && now - file->accessed <= cache->inactive) {
             return;
         }
 
+		//	将节点从所属队列中删除(即 expire_queue 队列)
         ngx_queue_remove(q);
 
+		//	并且将该cache文件从红黑树中也删除掉
         ngx_rbtree_delete(&cache->rbtree, &file->node);
 
+		//	当前cache的总个数减一
         cache->current--;
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, log, 0,
                        "expire cached open file: %s", file->name);
 
-        if (!file->err && !file->is_dir) {
+        if (!file->err && !file->is_dir) {						//	如果不是目录，将close()该文件
             file->close = 1;
-            ngx_close_cached_file(cache, file, 0, log);
+			ngx_close_cached_file(cache, file, 0, log);
 
         } else {
             ngx_free(file->name);
@@ -1156,7 +1216,7 @@ ngx_open_file_lookup(ngx_open_file_cache_t *cache, ngx_str_t *name,
     return NULL;
 }
 
-
+//	epoll中不使用此函数
 static void
 ngx_open_file_cache_remove(ngx_event_t *ev)
 {

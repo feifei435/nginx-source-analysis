@@ -63,7 +63,7 @@ ngx_http_static_handler(ngx_http_request_t *r)
         return NGX_HTTP_NOT_ALLOWED;
     }
 
-    if (r->uri.data[r->uri.len - 1] == '/') {
+    if (r->uri.data[r->uri.len - 1] == '/') {					//	static模块处理uri以文件结尾的请求
         return NGX_DECLINED;
     }
 
@@ -90,16 +90,17 @@ ngx_http_static_handler(ngx_http_request_t *r)
 
     of.read_ahead = clcf->read_ahead;
     of.directio = clcf->directio;
-    of.valid = clcf->open_file_cache_valid;
-    of.min_uses = clcf->open_file_cache_min_uses;
-    of.errors = clcf->open_file_cache_errors;
-    of.events = clcf->open_file_cache_events;
+    of.valid = clcf->open_file_cache_valid;						//	设置检查cache有效信息的时间
+    of.min_uses = clcf->open_file_cache_min_uses;				//	设置cache最小使用的次数
+    of.errors = clcf->open_file_cache_errors;					//	设置是否在搜索文件时记录cache错误
+    of.events = clcf->open_file_cache_events;					//	默认是0；???????????
 
     if (ngx_http_set_disable_symlinks(r, clcf, &path, &of) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    if (ngx_open_cached_file(clcf->open_file_cache, &path, &of, r->pool)
+
+    if (ngx_open_cached_file(clcf->open_file_cache, &path, &of, r->pool)				//	path="/usr/local/nginx/html/index.html"
         != NGX_OK)
     {
         switch (of.err) {

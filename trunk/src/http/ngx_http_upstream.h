@@ -64,7 +64,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_hash_t                       headers_in_hash;
+    ngx_hash_t                       headers_in_hash;			//	ngx_http_upstream_headers_in 静态数组的hash表
     ngx_array_t                      upstreams;                 /* ngx_http_upstream_srv_conf_t */
 } ngx_http_upstream_main_conf_t;
 
@@ -121,62 +121,62 @@ struct ngx_http_upstream_srv_conf_s {
 typedef struct {
     ngx_http_upstream_srv_conf_t    *upstream;
 
-    ngx_msec_t                       connect_timeout;
-    ngx_msec_t                       send_timeout;
-    ngx_msec_t                       read_timeout;
-    ngx_msec_t                       timeout;
+    ngx_msec_t                       connect_timeout;					//	指令"proxy_connect_timeout"指定的超时时间
+    ngx_msec_t                       send_timeout;						//	指令"proxy_send_timeout"
+    ngx_msec_t                       read_timeout;						//	指令"proxy_read_timeout"
+    ngx_msec_t                       timeout;		
 
-    size_t                           send_lowat;
-    size_t                           buffer_size;
+    size_t                           send_lowat;						//	指令"proxy_send_lowat" 设置
+    size_t                           buffer_size;						//	指令"proxy_buffer_size" 设置
 
     size_t                           busy_buffers_size;
     size_t                           max_temp_file_size;
     size_t                           temp_file_write_size;
 
-    size_t                           busy_buffers_size_conf;
-    size_t                           max_temp_file_size_conf;
-    size_t                           temp_file_write_size_conf;
+    size_t                           busy_buffers_size_conf;			//	指令 "proxy_busy_buffers_size" 设置
+    size_t                           max_temp_file_size_conf;			//  指令 "proxy_max_temp_file_size" 设置 
+    size_t                           temp_file_write_size_conf;			//	指令 "proxy_temp_file_write_size" 设置 
 
-    ngx_bufs_t                       bufs;
+    ngx_bufs_t                       bufs;								//	指令 "proxy_buffers" 设置
 
     ngx_uint_t                       ignore_headers;
     ngx_uint_t                       next_upstream;
-    ngx_uint_t                       store_access;
-    ngx_flag_t                       buffering;
-    ngx_flag_t                       pass_request_headers;
-    ngx_flag_t                       pass_request_body;
+    ngx_uint_t                       store_access;						//	指令 "proxy_store_access" 指定创建文件和目录的相关权限
+    ngx_flag_t                       buffering;							//	指令 "proxy_buffering" 设置
+    ngx_flag_t                       pass_request_headers;				//	指令 "proxy_pass_request_headers " 设置. 初始为on
+    ngx_flag_t                       pass_request_body;					//	指令 "proxy_pass_request_body" 设置
 
-    ngx_flag_t                       ignore_client_abort;
-    ngx_flag_t                       intercept_errors;
+    ngx_flag_t                       ignore_client_abort;				//	指令 "proxy_ignore_client_abort" 设置
+    ngx_flag_t                       intercept_errors;					//	指令 "proxy_intercept_errors" 设置
     ngx_flag_t                       cyclic_temp_file;
 
-    ngx_path_t                      *temp_path;
+    ngx_path_t                      *temp_path;							//	指令 "proxy_temp_path" 设置
 
-    ngx_hash_t                       hide_headers_hash;
-    ngx_array_t                     *hide_headers;
-    ngx_array_t                     *pass_headers;
+    ngx_hash_t                       hide_headers_hash;					//	对从被代理服务器传来的不进行转发的一些特殊头做的hash表
+    ngx_array_t                     *hide_headers;						//	指令 "proxy_hide_header" 设置(nginx不对从被代理服务器传来的”Date”, “Server”, “X-Pad”和”X-Accel-…“应答进行转发，这个参数允许隐藏一些其他的头部字段)	
+    ngx_array_t                     *pass_headers;						//	指令 "proxy_pass_header" 设置(但是如果上述提到的头部字段必须被转发，可以使用proxy_pass_header指令)
 
-    ngx_addr_t                      *local;
+    ngx_addr_t                      *local;								//	指令 "proxy_bind" 设置
 
 #if (NGX_HTTP_CACHE)
     ngx_shm_zone_t                  *cache;
 
-    ngx_uint_t                       cache_min_uses;
-    ngx_uint_t                       cache_use_stale;
-    ngx_uint_t                       cache_methods;
+    ngx_uint_t                       cache_min_uses;					//	指令 "proxy_cache_min_uses" 设置
+    ngx_uint_t                       cache_use_stale;					//	指令 "proxy_cache_use_stale" 设置
+    ngx_uint_t                       cache_methods;						//	指令 "proxy_cache_methods" 设置
 
-    ngx_flag_t                       cache_lock;
-    ngx_msec_t                       cache_lock_timeout;
+    ngx_flag_t                       cache_lock;						//	指令 "proxy_cache_lock" 设置
+    ngx_msec_t                       cache_lock_timeout;				//	指令 "proxy_cache_lock_timeout" 设置
 
-    ngx_array_t                     *cache_valid;
-    ngx_array_t                     *cache_bypass;
-    ngx_array_t                     *no_cache;
+    ngx_array_t                     *cache_valid;						//	指令 "proxy_cache_valid" 设置
+    ngx_array_t                     *cache_bypass;						//	指令 "proxy_cache_bypass" 设置
+    ngx_array_t                     *no_cache;							//	指令 "proxy_no_cache" 设置
 #endif
 
     ngx_array_t                     *store_lengths;
     ngx_array_t                     *store_values;
 
-    signed                           store:2;
+    signed                           store:2;					//	指令"proxy_store"是否开启了
     unsigned                         intercept_404:1;
     unsigned                         change_buffering:1;
 
@@ -200,9 +200,9 @@ typedef struct {
 
 
 typedef struct {
-    ngx_list_t                       headers;
+    ngx_list_t                       headers;						//	存放后端服务器响应的header
 
-    ngx_uint_t                       status_n;
+    ngx_uint_t                       status_n;						//	相应状态码(e.g. 200、301、302、304）
     ngx_str_t                        status_line;
 
     ngx_table_elt_t                 *status;
@@ -233,7 +233,7 @@ typedef struct {
 
     ngx_array_t                      cache_control;
 
-    unsigned                         connection_close:1;
+    unsigned                         connection_close:1;			//	?????
     unsigned                         chunked:1;
 } ngx_http_upstream_headers_in_t;
 
@@ -265,7 +265,7 @@ struct ngx_http_upstream_s {
 
     ngx_event_pipe_t                *pipe;
 
-    ngx_chain_t                     *request_bufs;
+    ngx_chain_t                     *request_bufs;				//	create_request 中进行拼装的请求chain
 
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
@@ -316,9 +316,9 @@ struct ngx_http_upstream_s {
 
     ngx_str_t                        method;
     ngx_str_t                        schema;
-    ngx_str_t                        uri;
+    ngx_str_t                        uri;							//	在create_request中填充
 
-    ngx_http_cleanup_pt             *cleanup;
+    ngx_http_cleanup_pt             *cleanup;						//	指向r->cleanup循环单链表中申请的处理upstream模块用的， ngx_http_upstream_init_request（）在函数中申请
 
     unsigned                         store:1;
     unsigned                         cacheable:1;
@@ -331,7 +331,7 @@ struct ngx_http_upstream_s {
     unsigned                         buffering:1;
     unsigned                         keepalive:1;
 
-    unsigned                         request_sent:1;
+    unsigned                         request_sent:1;				//	是否已经发送过，在 ngx_http_upstream_send_request()函数中设置
     unsigned                         header_sent:1;
 };
 

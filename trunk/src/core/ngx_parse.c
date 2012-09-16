@@ -8,7 +8,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* 
+ *	[analy] 
+ */
 ssize_t
 ngx_parse_size(ngx_str_t *line)
 {
@@ -47,7 +49,9 @@ ngx_parse_size(ngx_str_t *line)
     return size;
 }
 
-
+/* 
+ *	[analy] 解析自定义容量大小，最终转换后返回byte
+ */
 off_t
 ngx_parse_offset(ngx_str_t *line)
 {

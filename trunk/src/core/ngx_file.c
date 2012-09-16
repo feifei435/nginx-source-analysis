@@ -260,10 +260,11 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     path->name = value[1];
 
-    if (path->name.data[path->name.len - 1] == '/') {
+    if (path->name.data[path->name.len - 1] == '/') {			//	如果目录以 '/' 结尾，则不将 '/'包括在路径文件名中
         path->name.len--;
     }
 
+	//	检查是否为完整路径
     if (ngx_conf_full_name(cf->cycle, &path->name, 0) != NGX_OK) {
         return NULL;
     }
@@ -274,6 +275,7 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     path->conf_file = cf->conf_file->file.name.data;
     path->line = cf->conf_file->line;
 
+	//	检查是否有后续参数， 后续参数均都是level
     for (i = 0, n = 2; n < cf->args->nelts; i++, n++) {
         level = ngx_atoi(value[n].data, value[n].len);
         if (level == NGX_ERROR || level == 0) {
@@ -281,15 +283,16 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 
         path->level[i] = level;
-        path->len += level + 1;
+        path->len += level + 1;			//	???
     }
 
-    while (i < 3) {
+    while (i < 3) {						//	默认的路径级别为0
         path->level[i++] = 0;
     }
 
     *slot = path;
 
+	//	增加 slot 到 cf->cycle->pathes 数组中
     if (ngx_add_path(cf, slot) == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }
@@ -403,7 +406,9 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
+/* 
+ *	[analy]   增加 ngx_path_t 到 cf->cycle->pathes 数组中
+ */
 ngx_int_t
 ngx_add_path(ngx_conf_t *cf, ngx_path_t **slot)
 {
@@ -414,7 +419,7 @@ ngx_add_path(ngx_conf_t *cf, ngx_path_t **slot)
 
     p = cf->cycle->pathes.elts;
     for (i = 0; i < cf->cycle->pathes.nelts; i++) {
-        if (p[i]->name.len == path->name.len
+        if (p[i]->name.len == path->name.len							//	检查path->name是否相等
             && ngx_strcmp(p[i]->name.data, path->name.data) == 0)
         {
             for (n = 0; n < 3; n++) {
@@ -457,6 +462,7 @@ ngx_add_path(ngx_conf_t *cf, ngx_path_t **slot)
         }
     }
 
+	//	增加参数 *slot 到 cf->cycle->pathes 数组中
     p = ngx_array_push(&cf->cycle->pathes);
     if (p == NULL) {
         return NGX_ERROR;

@@ -1396,7 +1396,9 @@ args:
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	解析后端服务器响应的状态行
+ */
 ngx_int_t
 ngx_http_parse_status_line(ngx_http_request_t *r, ngx_buf_t *b,
     ngx_http_status_t *status)

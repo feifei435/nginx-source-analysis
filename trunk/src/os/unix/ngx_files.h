@@ -15,7 +15,7 @@
 
 typedef int                      ngx_fd_t;
 typedef struct stat              ngx_file_info_t;
-typedef ino_t                    ngx_file_uniq_t;
+typedef ino_t                    ngx_file_uniq_t;				//	节点编号
 
 
 typedef struct {
@@ -174,15 +174,15 @@ ngx_int_t ngx_set_file_time(u_char *name, ngx_fd_t fd, time_t s);
 #define ngx_link_info(file, sb)  lstat((const char *) file, sb)
 #define ngx_link_info_n          "lstat()"
 
-#define ngx_is_dir(sb)           (S_ISDIR((sb)->st_mode))
-#define ngx_is_file(sb)          (S_ISREG((sb)->st_mode))
-#define ngx_is_link(sb)          (S_ISLNK((sb)->st_mode))
-#define ngx_is_exec(sb)          (((sb)->st_mode & S_IXUSR) == S_IXUSR)
-#define ngx_file_access(sb)      ((sb)->st_mode & 0777)
-#define ngx_file_size(sb)        (sb)->st_size
-#define ngx_file_fs_size(sb)     ngx_max((sb)->st_size, (sb)->st_blocks * 512)
-#define ngx_file_mtime(sb)       (sb)->st_mtime
-#define ngx_file_uniq(sb)        (sb)->st_ino
+#define ngx_is_dir(sb)           (S_ISDIR((sb)->st_mode))						//	是否为目录
+#define ngx_is_file(sb)          (S_ISREG((sb)->st_mode))						//	是否为普通文件
+#define ngx_is_link(sb)          (S_ISLNK((sb)->st_mode))						//	是否为链接
+#define ngx_is_exec(sb)          (((sb)->st_mode & S_IXUSR) == S_IXUSR)			//	是否可执行
+#define ngx_file_access(sb)      ((sb)->st_mode & 0777)							//	
+#define ngx_file_size(sb)        (sb)->st_size									//	文件大小
+#define ngx_file_fs_size(sb)     ngx_max((sb)->st_size, (sb)->st_blocks * 512)	//	占用文件系统的大小
+#define ngx_file_mtime(sb)       (sb)->st_mtime									//	最后修改时间
+#define ngx_file_uniq(sb)        (sb)->st_ino									//	文件节点号
 
 
 ngx_int_t ngx_create_file_mapping(ngx_file_mapping_t *fm);
@@ -296,14 +296,14 @@ ngx_err_t ngx_unlock_fd(ngx_fd_t fd);
 #define ngx_unlock_fd_n          "fcntl(F_SETLK, F_UNLCK)"
 
 
-#if (NGX_HAVE_F_READAHEAD)
+#if (NGX_HAVE_F_READAHEAD)						//	BSD下使用此种方法
 
 #define NGX_HAVE_READ_AHEAD      1
 
 #define ngx_read_ahead(fd, n)    fcntl(fd, F_READAHEAD, (int) n)
 #define ngx_read_ahead_n         "fcntl(fd, F_READAHEAD)"
 
-#elif (NGX_HAVE_POSIX_FADVISE)
+#elif (NGX_HAVE_POSIX_FADVISE)					//	LINUX下使用此种方法
 
 #define NGX_HAVE_READ_AHEAD      1
 

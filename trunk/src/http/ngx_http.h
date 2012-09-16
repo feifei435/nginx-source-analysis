@@ -53,11 +53,11 @@ struct ngx_http_log_ctx_s {
 
 
 typedef struct {
-    ngx_uint_t           http_version;
-    ngx_uint_t           code;
-    ngx_uint_t           count;
-    u_char              *start;
-    u_char              *end;
+    ngx_uint_t           http_version;			//	http版本(e.g. 1001、1000)
+    ngx_uint_t           code;					//	状态码的整数
+    ngx_uint_t           count;					//	对状态码字符串的字符个数的统计
+    u_char              *start;					//	指向相应的状态行中的状态码字符串(e.g. http/1.1 200 OK中的"OK"开始处)
+    u_char              *end;					//	指向相应的状态行中的状态码字符串(e.g. http/1.1 200 OK中的"OK"结束处)
 } ngx_http_status_t;
 
 

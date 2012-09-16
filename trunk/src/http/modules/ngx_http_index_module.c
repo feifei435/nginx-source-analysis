@@ -18,8 +18,8 @@ typedef struct {
 
 
 typedef struct {
-    ngx_array_t             *indices;    /* array of ngx_http_index_t */
-    size_t                   max_index_len;
+    ngx_array_t             *indices;				//	如果server和location block都未配置index指令，将会默认添加一个到数组中				/* array of ngx_http_index_t */
+    size_t                   max_index_len;			//	保存index指令指定参数的最大字符个数(在无变量的情况时使用；默认使用 NGX_HTTP_DEFAULT_INDEX)
 } ngx_http_index_loc_conf_t;
 
 
@@ -109,7 +109,7 @@ ngx_http_index_handler(ngx_http_request_t *r)
     ngx_http_index_loc_conf_t    *ilcf;
     ngx_http_script_len_code_pt   lcode;
 
-    if (r->uri.data[r->uri.len - 1] != '/') {		//	uri不是“/”结尾时，说明uri中最后指定了文件
+    if (r->uri.data[r->uri.len - 1] != '/') {		//	uri不是“/”结尾时，说明uri中最后指定了文件，index和autoindex模块将不处理，交由static模块处理
         return NGX_DECLINED;
     }
 
@@ -129,18 +129,20 @@ ngx_http_index_handler(ngx_http_request_t *r)
     path.data = NULL;
 
     index = ilcf->indices->elts;
-    for (i = 0; i < ilcf->indices->nelts; i++) {
+    for (i = 0; i < ilcf->indices->nelts; i++) {	//	遍历index指令指定的每个参数
 
-        if (index[i].lengths == NULL) {
+        if (index[i].lengths == NULL) {				//	index指令参数中没有使用变量时
 
-            if (index[i].name.data[0] == '/') {
+            if (index[i].name.data[0] == '/') {		//	index指定的参数以"/"结尾的
                 return ngx_http_internal_redirect(r, &index[i].name, &r->args);
             }
 
             reserve = ilcf->max_index_len;
             len = index[i].name.len;
 
-        } else {
+        } else {									//	index指令参数使用了变量
+
+			//	计算index指令参数指定的变量+常量字符串的长度
             ngx_memzero(&e, sizeof(ngx_http_script_engine_t));
 
             e.ip = index[i].lengths->elts;
@@ -167,14 +169,14 @@ ngx_http_index_handler(ngx_http_request_t *r)
                 return NGX_ERROR;
             }
 
-            allocated = path.data + path.len - name;
+            allocated = path.data + path.len - name;			//	???
         }
 
         if (index[i].values == NULL) {
 
             /* index[i].name.len includes the terminating '\0' */
 
-            ngx_memcpy(name, index[i].name.data, index[i].name.len);
+            ngx_memcpy(name, index[i].name.data, index[i].name.len);			//	拷贝index指令指定的参数（e.g. "/usr/local/nginx/html/index1/index.html"）
 
             path.len = (name + index[i].name.len - 1) - path.data;
 
@@ -401,7 +403,11 @@ ngx_http_index_create_loc_conf(ngx_conf_t *cf)
     return conf;
 }
 
-
+/*
+ *	[analy]	此函数合并http{...}、server{...}和loc_{...}中内容，会被调用两次
+ *			在解析server{...}块中的指令时会调用此函数， 如果server{...}中没有使用index指令，将会继承http{...}中index指令。
+ *			同理， loc{...}也会继承server{...}中的index指令
+ */
 static char *
 ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
@@ -410,6 +416,7 @@ ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_http_index_t  *index;
 
+	//	此函数会被调用两次，每次 conf->indices 的语义都不同。
     if (conf->indices == NULL) {
         conf->indices = prev->indices;
         conf->max_index_len = prev->max_index_len;
@@ -429,11 +436,11 @@ ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         }
 
         index->name.len = sizeof(NGX_HTTP_DEFAULT_INDEX);
-        index->name.data = (u_char *) NGX_HTTP_DEFAULT_INDEX;
+        index->name.data = (u_char *) NGX_HTTP_DEFAULT_INDEX;					//	index指令默认使用 "index.html"
         index->lengths = NULL;
         index->values = NULL;
 
-        conf->max_index_len = sizeof(NGX_HTTP_DEFAULT_INDEX);				//	使用默认值
+        conf->max_index_len = sizeof(NGX_HTTP_DEFAULT_INDEX);					//	使用默认值
 
         return NGX_CONF_OK;
     }
@@ -484,7 +491,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     for (i = 1; i < cf->args->nelts; i++) {
 
-        if (value[i].data[0] == '/' && i != cf->args->nelts - 1) {
+        if (value[i].data[0] == '/' && i != cf->args->nelts - 1) {		//	index指令可以允许多个参数，但是最后一个参数是完整路径
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "only the last index in \"index\" directive "
                                "should be absolute");
@@ -511,11 +518,11 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 		//	index指令使用的是字符串常量
         if (n == 0) {
-            if (ilcf->max_index_len < index->name.len) {
+            if (ilcf->max_index_len < index->name.len) {			//	保存指令index参数的字符最大长度
                 ilcf->max_index_len = index->name.len;
             }
 
-            if (index->name.data[0] == '/') {
+            if (index->name.data[0] == '/') {						//	???为什么直接返回???
                 continue;
             }
 

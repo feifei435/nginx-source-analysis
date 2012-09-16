@@ -369,6 +369,8 @@ ngx_http_core_variables静态数组中的所有变量加入到 ngx_http_core_main_conf_t的 ng
 	
 	
 ---------------------  变量 ---------------------
+脚本引擎中指定的变量，才会在处理时将变量的值存放到 r->variables 中
+
 hash过的变量数组添加到 cmcf->variables_keys.keys 数组中
 索引变量被添加到 cmcf->variables 数组中
 1)	索引变量，我们通过ngx_http_get_variable_index来获得一个索引变量的索引号。然后可以通过
@@ -548,6 +550,29 @@ ngx_http_proxy_handler() 被调用时
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
 	
+ngx_http_finalize_request
+	|-- ngx_http_finalize_connection
+	
+ngx_http_finalize_connection
+	|-- ngx_http_close_request
+	
+ngx_http_close_request
+	|--	ngx_http_free_request
+	|--	ngx_http_close_connection	
+
+ngx_http_free_request	
+	|-- 调用所有请求上的清理函数
+	|-- r->connection->destroyed = 1;
+	|-- ngx_destroy_pool(r->pool);			//	释放请求request的内存池
+	
+ngx_http_close_connection
+	|-- c->destroyed = 1;
+	|-- ngx_close_connection				//	关闭socket	
+	|-- ngx_destroy_pool					//	释放连接的内存池
+	
+ngx_http_terminate_request	
+	
+	
 // ------------------- upstream module --------------------	
 ngx_http_upstream_t				--	应该是整个upstream运转过程中使用的结构
 ngx_http_upstream_main_conf_t	--	对应整个http block {...} 内的所有upstream block {...}, 主要是管理 ngx_http_upstream_srv_conf_t
@@ -570,9 +595,28 @@ ngx_http_upstream_rr_peer_data_t
 	
 	
 	
+// ------------------- 静态文件缓存 --------------------
+打开文件和获取文件信息失败都会设置errno
+
+文件被关闭，但是没有在rbtree中删除，fd=NGX_INVALID_FILE
+打开文件和获取文件信息失败，fd=NGX_INVALID_FILE
+文件被close()，fd=NGX_INVALID_FILE
+
+
+一、	开启了缓存功能
+1. 注册cleaup清理函数到request的pool上
+2. 获取当前时间
+3. 根据打开文件的文字计算CRC32
+4. 在静态文件缓存表上查找此文件，将有两种情况:
+	第一种情况找到此文件：
+	1. 将此cache文件的使用次数加一
+	2. 将此cache文件从expire_queue队列中删除，为什么删除？？
 	
+			
+		
+		
 	
-	
+二、	未开启缓存功能
 	
 	
 	

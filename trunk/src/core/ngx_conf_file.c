@@ -802,7 +802,8 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 /* 
- *	[analy]	参数-name是完整路径直接返回，不是完整路径时根据参数conf_prefix对参数name添加完整路径前缀	
+ *	[analy]	参数-name是完整路径直接返回，不是完整路径时根据参数conf_prefix对参数name添加完整路径前缀
+ *			指定了conf_prefix，则将添加"/usr/local/nginx/conf/";否则添加"/usr/local/nginx/"
  */
 ngx_int_t
 ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)

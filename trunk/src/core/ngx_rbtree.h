@@ -24,7 +24,7 @@ struct ngx_rbtree_node_s {
     ngx_rbtree_node_t     *left;
     ngx_rbtree_node_t     *right;
     ngx_rbtree_node_t     *parent;
-    u_char                 color;
+	u_char                 color;		//	0黑,1红
     u_char                 data;
 };
 
@@ -40,7 +40,7 @@ struct ngx_rbtree_s {
     ngx_rbtree_insert_pt   insert;
 };
 
-
+//	初始化时将根节点指针和哨兵节点指针都指向哨兵节点
 #define ngx_rbtree_init(tree, s, i)                                           \
     ngx_rbtree_sentinel_init(s);                                              \
     (tree)->root = s;                                                         \
@@ -57,17 +57,19 @@ void ngx_rbtree_insert_value(ngx_rbtree_node_t *root, ngx_rbtree_node_t *node,
 void ngx_rbtree_insert_timer_value(ngx_rbtree_node_t *root,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel);
 
-
-#define ngx_rbt_red(node)               ((node)->color = 1)
-#define ngx_rbt_black(node)             ((node)->color = 0)
-#define ngx_rbt_is_red(node)            ((node)->color)
-#define ngx_rbt_is_black(node)          (!ngx_rbt_is_red(node))
-#define ngx_rbt_copy_color(n1, n2)      (n1->color = n2->color)
-
+/*
+ *	基本功能宏
+ */
+#define ngx_rbt_red(node)               ((node)->color = 1)				//	染红色
+#define ngx_rbt_black(node)             ((node)->color = 0)				//	染黑色
+#define ngx_rbt_is_red(node)            ((node)->color)					//	判断是否为红色
+#define ngx_rbt_is_black(node)          (!ngx_rbt_is_red(node))			//	判断是否为黑色
+#define ngx_rbt_copy_color(n1, n2)      (n1->color = n2->color)			//	将参数1的颜色改变为参数2的颜色
+	
 
 /* a sentinel must be black */
-
-#define ngx_rbtree_sentinel_init(node)  ngx_rbt_black(node)
+//	哨兵节点必须为黑色，在操作中使用哨兵节点仅使用它的颜色
+#define ngx_rbtree_sentinel_init(node)  ngx_rbt_black(node)				//	设置为黑色
 
 
 static ngx_inline ngx_rbtree_node_t *

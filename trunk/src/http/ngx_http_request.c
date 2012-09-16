@@ -203,7 +203,7 @@ ngx_http_init_connection(ngx_connection_t *c)
     c->log_error = NGX_ERROR_INFO;
 
     rev = c->read;
-    rev->handler = ngx_http_init_request;			/* [analy] 当有数据可读时，调用的handler (ngx_process_events_and_timers --> ngx_process_events(ngx_epoll_process_events)) */	
+    rev->handler = ngx_http_init_request;			//	当有数据可读时，调用的handler (ngx_process_events_and_timers --> ngx_process_events(ngx_epoll_process_events))
 
     c->write->handler = ngx_http_empty_handler;
 
@@ -211,7 +211,7 @@ ngx_http_init_connection(ngx_connection_t *c)
     (void) ngx_atomic_fetch_add(ngx_stat_reading, 1);
 #endif
 
-	/* [analy] 如果接收准备好了，则直接调用ngx_http_init_request */
+	//	如果接收准备好了，则直接调用ngx_http_init_request
     if (rev->ready) {
         /* the deferred accept(), rtsig, aio, iocp */
 
@@ -224,11 +224,11 @@ ngx_http_init_connection(ngx_connection_t *c)
         return;
     }
 
-	/* [analy]	添加定时器	*/
+	//	添加定时器
     ngx_add_timer(rev, c->listening->post_accept_timeout);
 
 
-	/* [analy]	加入读事件到epoll事件监控队列中	*/
+	//	加入读事件到epoll事件监控队列中
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
 #if (NGX_STAT_STUB)
         (void) ngx_atomic_fetch_add(ngx_stat_reading, -1);
@@ -1674,7 +1674,7 @@ ngx_http_process_request(ngx_http_request_t *r)
 
 #endif
 
-    if (c->read->timer_set) {
+    if (c->read->timer_set) {						//	如果已经开始处理请求头了，则将定时器删除掉
         ngx_del_timer(c->read);
     }
 
@@ -3027,6 +3027,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
+	//	调用所有清理函数
     for (cln = r->cleanup; cln; cln = cln->next) {
         if (cln->handler) {
             cln->handler(cln->data);
@@ -3051,6 +3052,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
     log->action = "logging request";
 
+	//	运行所有 "NGX_HTTP_LOG_PHASE" 阶段注册的handler
     ngx_http_log_request(r);
 
     log->action = "closing request";
@@ -3130,9 +3132,9 @@ ngx_http_close_connection(ngx_connection_t *c)
 
     pool = c->pool;
 
-    ngx_close_connection(c);
-
-    ngx_destroy_pool(pool);
+    ngx_close_connection(c);			//	关闭连接
+	
+    ngx_destroy_pool(pool);				//	释放连接的内存池
 }
 
 

@@ -48,7 +48,7 @@ struct ngx_cycle_s {
     ngx_queue_t               reusable_connections_queue;
 
     ngx_array_t               listening;
-    ngx_array_t               pathes;								/* [analy]   路径数组	   */					
+    ngx_array_t               pathes;								/* [analy]   路径数组 （array of (ngx_path_t *)）*/					
     ngx_list_t                open_files;							/* [analy]   打开文件列表   */	
     ngx_list_t                shared_memory;						/* [analy]   共享内存列表   */		
 
@@ -63,8 +63,8 @@ struct ngx_cycle_s {
 
     ngx_str_t                 conf_file;							/* [analy]	配置文件 */
     ngx_str_t                 conf_param;							/* [analy]	配置指令 */
-    ngx_str_t                 conf_prefix;							/* [analy]	配置文件前缀(工作目录) */
-    ngx_str_t                 prefix;								/* [analy]	工作目录前缀，或命令行前缀"-p"设置 */
+    ngx_str_t                 conf_prefix;							//	配置文件前缀(工作目录)				"/usr/local/nginx/conf/"
+    ngx_str_t                 prefix;								//	工作目录前缀，或命令行前缀"-p"设置	"/usr/local/nginx/"
     ngx_str_t                 lock_file;							/* [analy]	在init_conf时设置。使用连接互斥锁进行顺序的accept()系统调用默认是“logs/nginx.lock.accept” */
     ngx_str_t                 hostname;								/* [analy]	主机名 */
 };
@@ -72,14 +72,14 @@ struct ngx_cycle_s {
 
 typedef struct {
      ngx_flag_t               daemon;
-     ngx_flag_t               master;								/* [analy]	指令master_process指定此字段，on = 1、off = 0  */
+     ngx_flag_t               master;								//	指令master_process指定此字段，on = 1、off = 0 
 
-     ngx_msec_t               timer_resolution;
+     ngx_msec_t               timer_resolution;						//	指令"timer_resolution"设置的时间
 
      ngx_int_t                worker_processes;
      ngx_int_t                debug_points;
 
-     ngx_int_t                rlimit_nofile;						/* [analy]	此字段在worker进程初始化时设置到内核。指令worker_rlimit_nofile 进程能够打开的最多文件描述符数 */
+     ngx_int_t                rlimit_nofile;						//	此字段在worker进程初始化时设置到内核。指令worker_rlimit_nofile 进程能够打开的最多文件描述符数
      ngx_int_t                rlimit_sigpending;
      off_t                    rlimit_core;
 

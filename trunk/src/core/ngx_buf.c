@@ -61,7 +61,7 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
 
 	//	如果chain已经存在，则直接返回这个chain，然后从pool的chain中删除这个chain
     if (cl) {
-        pool->chain = cl->next;			//	?????????????不明白
+        pool->chain = cl->next;			//	pool->chain将指向下一个闲置的chain
         return cl;
     }
 
@@ -163,7 +163,10 @@ ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	当参数 **free 指向的链表中有空闲的chain时，将在此链表中取出一个
+ *			否则将检查 pool->chain 是否有空闲的chain，有空闲的将取出空闲的chain。否则重新申请一个chain
+ */
 ngx_chain_t *
 ngx_chain_get_free_buf(ngx_pool_t *p, ngx_chain_t **free)
 {

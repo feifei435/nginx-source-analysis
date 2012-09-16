@@ -42,25 +42,25 @@ typedef struct {
 typedef struct {
     ngx_http_upstream_conf_t       upstream;
 
-    ngx_array_t                   *flushes;
-    ngx_array_t                   *body_set_len;
-    ngx_array_t                   *body_set;
-    ngx_array_t                   *headers_set_len;
-    ngx_array_t                   *headers_set;
-    ngx_hash_t                     headers_set_hash;
+    ngx_array_t                   *flushes;					//	存放指令 "proxy_set_body" 和 "proxy_set_header" 中使用的变量在索引变量数组中的index
+    ngx_array_t                   *body_set_len;			//	指令 "proxy_set_body" 使用变量时，将处理变量和常量字符串长度的函数加入到此列表里
+    ngx_array_t                   *body_set;				//	指令 "proxy_set_body" 使用变量时，将处理变量和常量字符串函数加入到此列表里
+    ngx_array_t                   *headers_set_len;			//	存放 proxy_header 的脚本解析长度数组
+    ngx_array_t                   *headers_set;				//	存放 proxy_header 的脚本解析常量字符串或变量处理数组
+    ngx_hash_t                     headers_set_hash;		//	存放 proxy_header 的hash表(包括 "proxy_set_header" 和 系统自定义的)
 
-    ngx_array_t                   *headers_source;
+    ngx_array_t                   *headers_source;			//	指令"proxy_set_header"	array of ngx_keyval_t
 
-    ngx_array_t                   *proxy_lengths;
-    ngx_array_t                   *proxy_values;
+    ngx_array_t                   *proxy_lengths;			//	指令 "proxy_pass" 使用变量时，将处理变量和常量字符串长度的函数加入到此列表里
+    ngx_array_t                   *proxy_values;			//	指令 "proxy_pass" 使用变量时，将处理变量和常量字符串函数加入到此列表里
 
     ngx_array_t                   *redirects;
     ngx_array_t                   *cookie_domains;
     ngx_array_t                   *cookie_paths;
 
-    ngx_str_t                      body_source;
+    ngx_str_t                      body_source;			//	指令 "proxy_set_body " 设定
 
-    ngx_str_t                      method;
+    ngx_str_t                      method;				//	指令 "proxy_method" 指定发送到后端服务器的发送方式
     ngx_str_t                      location;			//	所属location层的name字段的值 /hellobaidu
     ngx_str_t                      url;					//	指向proxy_pass参数部分例如："http://www.baidu.com"
 
@@ -72,10 +72,10 @@ typedef struct {
 
     ngx_flag_t                     redirect;
 
-    ngx_uint_t                     http_version;
+    ngx_uint_t                     http_version;						//	指令"proxy_http_version "设置，默认1.0
 
-    ngx_uint_t                     headers_hash_max_size;
-    ngx_uint_t                     headers_hash_bucket_size;
+    ngx_uint_t                     headers_hash_max_size;				//	指令"proxy_headers_hash_max_size"设置
+    ngx_uint_t                     headers_hash_bucket_size;			//	指令"proxy_headers_hash_bucket_size"设置
 } ngx_http_proxy_loc_conf_t;
 
 
@@ -88,7 +88,7 @@ typedef struct {
     off_t                          size;
     off_t                          length;
 
-    ngx_uint_t                     head;  /* unsigned  head:1 */
+    ngx_uint_t                     head;					//	使用的method为HEAD, 在ngx_http_proxy_create_request()中设置					/* unsigned  head:1 */
 } ngx_http_proxy_ctx_t;
 
 
@@ -643,7 +643,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    ngx_http_set_ctx(r, ctx, ngx_http_proxy_module);
+    ngx_http_set_ctx(r, ctx, ngx_http_proxy_module);				//	设置proxy的个性
 
     plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);
 
@@ -670,9 +670,9 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     u->create_key = ngx_http_proxy_create_key;
 #endif
 
-    u->create_request = ngx_http_proxy_create_request;
+    u->create_request = ngx_http_proxy_create_request;				//	注册-拼装到后端服务器请求的处理函数
     u->reinit_request = ngx_http_proxy_reinit_request;
-    u->process_header = ngx_http_proxy_process_status_line;
+    u->process_header = ngx_http_proxy_process_status_line;			//	注册-解析响应行处理函数
     u->abort_request = ngx_http_proxy_abort_request;
     u->finalize_request = ngx_http_proxy_finalize_request;
     r->state = 0;
@@ -935,7 +935,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
     u = r->upstream;
 
-    plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);
+    plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);				
 
     if (u->method.len) {
         /* HEAD was changed to GET to cache response */
@@ -946,24 +946,27 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         method = plcf->method;
 
     } else {
-        method = r->method_name;
-        method.len++;
+        method = r->method_name;		//	获取请求中的method字符串
+        method.len++;					//	长度包含空格的大小
     }
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_module);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_module);							//	这里获取在ngx_http_proxy_handler()中设置的ctx
 
+	//	是否使用了"HEAD "请求方法
     if (method.len == 5
         && ngx_strncasecmp(method.data, (u_char *) "HEAD ", 5) == 0)
     {
         ctx->head = 1;
     }
 
-    len = method.len + sizeof(ngx_http_proxy_version) - 1 + sizeof(CRLF) - 1;
+    len = method.len + sizeof(ngx_http_proxy_version) - 1 + sizeof(CRLF) - 1;			//	计算请求行的长度（method + http_version + CRLF）。没有URL的长度
 
     escape = 0;
     loc_len = 0;
     unparsed_uri = 0;
 
+
+	//	处理URI????????
     if (plcf->proxy_lengths && ctx->vars.uri.len) {
         uri_len = ctx->vars.uri.len;
 
@@ -991,10 +994,11 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    len += uri_len;
+    len += uri_len;				//	请求行的长度加上 uri 的长度
 
     ngx_http_script_flush_no_cacheable_variables(r, plcf->flushes);
 
+	//	如果指令"proxy_set_body"使用了变量，将运行此
     if (plcf->body_set_len) {
         le.ip = plcf->body_set_len->elts;
         le.request = r;
@@ -1006,8 +1010,8 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
             body_len += lcode(&le);
         }
 
-        ctx->internal_body_length = body_len;
-        len += body_len;
+        ctx->internal_body_length = body_len;				//	计算展开后的"proxy_set_body"指令指定的body长度
+        len += body_len;									//	加上 body 的长度
     }
 
     le.ip = plcf->headers_set_len->elts;
@@ -1017,15 +1021,18 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     while (*(uintptr_t *) le.ip) {
         while (*(uintptr_t *) le.ip) {
             lcode = *(ngx_http_script_len_code_pt *) le.ip;
-            len += lcode(&le);
+            len += lcode(&le);								//	加上proxy header 的长度
         }
         le.ip += sizeof(uintptr_t);
     }
 
 
+	//	指令 "proxy_pass_request_headers" 定义client端的request是否可以通过proxy
+	//	这里将client端的request-header与指令"proxy_set_header"和系统自定义的header比较
+	//	如果没有在"proxy_set_header"和系统自定义中将向后端发送服务器直接发送此头
     if (plcf->upstream.pass_request_headers) {
-        part = &r->headers_in.headers.part;
-        header = part->elts;
+        part = &r->headers_in.headers.part;				//	获取client的请求头
+        header = part->elts;	
 
         for (i = 0; /* void */; i++) {
 
@@ -1045,17 +1052,20 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
                 continue;
             }
 
-            len += header[i].key.len + sizeof(": ") - 1
+            len += header[i].key.len + sizeof(": ") - 1					//	加上client端发送的请求头中的header和value长度
                 + header[i].value.len + sizeof(CRLF) - 1;
         }
     }
 
 
+	//	创建buf
     b = ngx_create_temp_buf(r->pool, len);
     if (b == NULL) {
         return NGX_ERROR;
     }
 
+
+	//	创建chain
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
         return NGX_ERROR;
@@ -1064,12 +1074,15 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     cl->buf = b;
 
 
-    /* the request line */
+	//	向刚申请的buf中填充请求数据
 
+    /* the request line */
+	//	method
     b->last = ngx_copy(b->last, method.data, method.len);
 
     u->uri.data = b->last;
 
+	//	uri
     if (plcf->proxy_lengths && ctx->vars.uri.len) {
         b->last = ngx_copy(b->last, ctx->vars.uri.data, ctx->vars.uri.len);
 
@@ -1097,8 +1110,9 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         }
     }
 
-    u->uri.len = b->last - u->uri.data;
+    u->uri.len = b->last - u->uri.data;			//	设置 ngx_http_upstream_t 的uri字段
 
+	//	设置http版本
     if (plcf->http_version == NGX_HTTP_VERSION_11) {
         b->last = ngx_cpymem(b->last, ngx_http_proxy_version_11,
                              sizeof(ngx_http_proxy_version_11) - 1);
@@ -1111,7 +1125,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     ngx_memzero(&e, sizeof(ngx_http_script_engine_t));
 
     e.ip = plcf->headers_set->elts;
-    e.pos = b->last;
+    e.pos = b->last;						//	此处将 e.pos 指向上边申请的 buf 缓冲区
     e.request = r;
     e.flushed = 1;
 
@@ -1125,7 +1139,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
         if (*(ngx_http_script_len_code_pt *) le.ip) {
 
-            for (len = 0; *(uintptr_t *) le.ip; len += lcode(&le)) {
+            for (len = 0; *(uintptr_t *) le.ip; len += lcode(&le)) {				//	计算len长度
                 lcode = *(ngx_http_script_len_code_pt *) le.ip;
             }
 
@@ -1144,9 +1158,10 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         e.ip += sizeof(uintptr_t);
     }
 
-    b->last = e.pos;
+    b->last = e.pos;			//	设置buf的last指针
 
 
+	//	检查是否允许client端的request header是否可以通过proxy,如果允许将拷贝个别的header
     if (plcf->upstream.pass_request_headers) {
         part = &r->headers_in.headers.part;
         header = part->elts;
@@ -1188,6 +1203,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     /* add "\r\n" at the header end */
     *b->last++ = CR; *b->last++ = LF;
 
+	//	拷贝body
     if (plcf->body_set) {
         e.ip = plcf->body_set->elts;
         e.pos = b->last;
@@ -1204,10 +1220,12 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
                    "http proxy header:\n\"%*s\"",
                    (size_t) (b->last - b->pos), b->pos);
 
+	//	如果没有配置中没有指定发送到后端数据的Body，并且"proxy_pass_request_body"指令开启状态
+	//	则client端的body数据将通过proxy转发到后端服务器
     if (plcf->body_set == NULL && plcf->upstream.pass_request_body) {
 
-        body = u->request_bufs;
-        u->request_bufs = cl;
+        body = u->request_bufs;			//	此时body指向了client的body部分， ngx_http_upstream_init_request()函数中设置了u->request_bufs，根据client是否有Body数据到来设置
+        u->request_bufs = cl;			//	此时 u->request_bufs 指向了在本函数中拼装的buf数据
 
         while (body) {
             b = ngx_alloc_buf(r->pool);
@@ -1215,7 +1233,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
                 return NGX_ERROR;
             }
 
-            ngx_memcpy(b, body->buf, sizeof(ngx_buf_t));
+            ngx_memcpy(b, body->buf, sizeof(ngx_buf_t));				//	
 
             cl->next = ngx_alloc_chain_link(r->pool);
             if (cl->next == NULL) {
@@ -1264,7 +1282,9 @@ ngx_http_proxy_reinit_request(ngx_http_request_t *r)
     return NGX_OK;
 }
 
-
+/* 
+ *	[analy]	解析proxy返回的响应状态行，解析完状态行后解析响应头
+ */
 static ngx_int_t
 ngx_http_proxy_process_status_line(ngx_http_request_t *r)
 {
@@ -1281,6 +1301,7 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
 
     u = r->upstream;
 
+	//	解析相应的状态行
     rc = ngx_http_parse_status_line(r, &u->buffer, &ctx->status);
 
     if (rc == NGX_AGAIN) {
@@ -1318,9 +1339,9 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
         u->state->status = ctx->status.code;
     }
 
-    u->headers_in.status_n = ctx->status.code;
+    u->headers_in.status_n = ctx->status.code;									//	设置响应状态码
 
-    len = ctx->status.end - ctx->status.start;
+    len = ctx->status.end - ctx->status.start;									//	以下拷贝响应状态码的字符串
     u->headers_in.status_line.len = len;
 
     u->headers_in.status_line.data = ngx_pnalloc(r->pool, len);
@@ -1334,16 +1355,18 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
                    "http proxy status %ui \"%V\"",
                    u->headers_in.status_n, &u->headers_in.status_line);
 
-    if (ctx->status.http_version < NGX_HTTP_VERSION_11) {
+    if (ctx->status.http_version < NGX_HTTP_VERSION_11) {						//	后端服务器的响应http版本低于1.1，将关系连接
         u->headers_in.connection_close = 1;
     }
 
     u->process_header = ngx_http_proxy_process_header;
 
-    return ngx_http_proxy_process_header(r);
+    return ngx_http_proxy_process_header(r);									//	处理相应头
 }
 
-
+/* 
+ *	[analy]	解析proxy返回的响应header
+ */
 static ngx_int_t
 ngx_http_proxy_process_header(ngx_http_request_t *r)
 {
@@ -1360,7 +1383,7 @@ ngx_http_proxy_process_header(ngx_http_request_t *r)
 
         rc = ngx_http_parse_header_line(r, &r->upstream->buffer, 1);
 
-        if (rc == NGX_OK) {
+        if (rc == NGX_OK) {				//	响应头中一行解析完毕
 
             /* a header line has been parsed successfully */
 
@@ -1383,7 +1406,7 @@ ngx_http_proxy_process_header(ngx_http_request_t *r)
             h->value.data = h->key.data + h->key.len + 1;
             h->lowcase_key = h->key.data + h->key.len + 1 + h->value.len + 1;
 
-            ngx_memcpy(h->key.data, r->header_name_start, h->key.len);
+            ngx_memcpy(h->key.data, r->header_name_start, h->key.len);						//	增加结束符
             h->key.data[h->key.len] = '\0';
             ngx_memcpy(h->value.data, r->header_start, h->value.len);
             h->value.data[h->value.len] = '\0';
@@ -1395,7 +1418,7 @@ ngx_http_proxy_process_header(ngx_http_request_t *r)
                 ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
             }
 
-            hh = ngx_hash_find(&umcf->headers_in_hash, h->hash,
+            hh = ngx_hash_find(&umcf->headers_in_hash, h->hash,			//	在 ngx_http_upstream_headers_in 静态数组的hash表中查找，找到后调用对应的handler
                                h->lowcase_key, h->key.len);
 
             if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {
@@ -1409,7 +1432,7 @@ ngx_http_proxy_process_header(ngx_http_request_t *r)
             continue;
         }
 
-        if (rc == NGX_HTTP_PARSE_HEADER_DONE) {
+        if (rc == NGX_HTTP_PARSE_HEADER_DONE) {			//	响应头解析完毕
 
             /* a whole header has been parsed successfully */
 
@@ -1485,7 +1508,7 @@ ngx_http_proxy_process_header(ngx_http_request_t *r)
                       "upstream sent invalid header");
 
         return NGX_HTTP_UPSTREAM_INVALID_HEADER;
-    }
+    }	//	end for
 }
 
 
@@ -2990,6 +3013,7 @@ ngx_http_proxy_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     hash.bucket_size = conf->headers_hash_bucket_size;
     hash.name = "proxy_headers_hash";
 
+	//	生成 conf->hide_headers_hash
     if (ngx_http_upstream_hide_headers_hash(cf, &conf->upstream,
             &prev->upstream, ngx_http_proxy_hide_headers, &hash)
         != NGX_OK)
@@ -3021,6 +3045,7 @@ ngx_http_proxy_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->body_set = prev->body_set;
     }
 
+	//	使用 "proxy_set_body" 指令
     if (conf->body_source.data && conf->body_set_len == NULL) {
 
         ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
@@ -3081,18 +3106,21 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
     }
 
 
+	//	1. 初始化headers_names数组为4个元素的ngx_hash_key_t， 用于初始化hash表headers_set_hash
     if (ngx_array_init(&headers_names, cf->temp_pool, 4, sizeof(ngx_hash_key_t))
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
+	//	2. 初始化headers_merged数组为4个元素的ngx_keyval_t，用于存放proxy_header的
     if (ngx_array_init(&headers_merged, cf->temp_pool, 4, sizeof(ngx_keyval_t))
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
+	//	headers_source未申请空间时，申请4个ngx_keyval_t
     if (conf->headers_source == NULL) {
         conf->headers_source = ngx_array_create(cf->pool, 4,
                                                 sizeof(ngx_keyval_t));
@@ -3101,6 +3129,7 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
         }
     }
 
+	//	
     conf->headers_set_len = ngx_array_create(cf->pool, 64, 1);
     if (conf->headers_set_len == NULL) {
         return NGX_ERROR;
@@ -3122,6 +3151,8 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
 
 #endif
 
+	//	指令"proxy_set_header" - "这个指令允许将发送到被代理服务器的请求头重新定义或者增加一些字段"
+	//	如果指令"proxy_set_header"设置了相应的头，则将这些头存放在 headers_merged 数组中
     src = conf->headers_source->elts;
     for (i = 0; i < conf->headers_source->nelts; i++) {
 
@@ -3133,6 +3164,8 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
         *s = src[i];
     }
 
+	//	检查系统预定义的proxy_header是否与指令"proxy_set_header"设置的头部域相同，
+	//	如果相同将增加系统定义的proxy_header到 headers_merged 数组中
     while (h->key.len) {
 
         src = headers_merged.elts;
@@ -3154,6 +3187,7 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
         h++;
     }
 
+	//	指令 "proxy_set_body " 设置了proxy_body，将在headers_merged中加入"Content-Length"字段
     if (conf->body_source.data) {
         s = ngx_array_push(&headers_merged);
         if (s == NULL) {
@@ -3181,7 +3215,10 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
             continue;
         }
 
+		//	检查header的value使用了变量
         if (ngx_http_script_variables_count(&src[i].value) == 0) {
+			
+			//	用于设置常量字符串
             copy = ngx_array_push_n(conf->headers_set_len,
                                     sizeof(ngx_http_script_copy_code_t));
             if (copy == NULL) {
@@ -3194,10 +3231,10 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
                         + src[i].value.len + sizeof(CRLF) - 1;
 
 
-            size = (sizeof(ngx_http_script_copy_code_t)
-                       + src[i].key.len + sizeof(": ") - 1
-                       + src[i].value.len + sizeof(CRLF) - 1
-                       + sizeof(uintptr_t) - 1)
+            size = (sizeof(ngx_http_script_copy_code_t)					//	ngx_http_script_copy_code_t结构体
+                       + src[i].key.len + sizeof(": ") - 1				//	key
+                       + src[i].value.len + sizeof(CRLF) - 1			//	value
+                       + sizeof(uintptr_t) - 1)							//	按4字节对齐
                     & ~(sizeof(uintptr_t) - 1);
 
             copy = ngx_array_push_n(conf->headers_set, size);
@@ -3217,6 +3254,8 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
             *p++ = CR; *p = LF;
 
         } else {
+
+			//	value使用了变量情况下，先将key部分压入脚本引擎队列中
             copy = ngx_array_push_n(conf->headers_set_len,
                                     sizeof(ngx_http_script_copy_code_t));
             if (copy == NULL) {
@@ -3257,7 +3296,7 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
                 return NGX_ERROR;
             }
 
-
+			//	以下设置CRLF
             copy = ngx_array_push_n(conf->headers_set_len,
                                     sizeof(ngx_http_script_copy_code_t));
             if (copy == NULL) {

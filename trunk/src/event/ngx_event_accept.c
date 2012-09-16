@@ -306,19 +306,21 @@ ngx_int_t
 ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 {
 
-    if (ngx_shmtx_trylock(&ngx_accept_mutex)) {							/* [analy]	尝试对accpet文件进行上锁，上锁成功后进行 */
+	//	尝试对accpet文件进行上锁，上锁成功后进行
+    if (ngx_shmtx_trylock(&ngx_accept_mutex)) {							
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                        "accept mutex locked");
 
-        if (ngx_accept_mutex_held										/* [analy]	????????????不知道什么情况下会发生 */
+        if (ngx_accept_mutex_held										//	如果已经开始监听，则直接返回
             && ngx_accept_events == 0
             && !(ngx_event_flags & NGX_USE_RTSIG_EVENT))
         {
             return NGX_OK;
         }
 
-        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {				/* [analy]	加入所有的listen->fd的读事件加入到事件队列中；此时如果有读事件产生， 将调用accept处理；这样只有该进程能监听到accept操作 */
+		//	加入所有的listen->fd的读事件加入到事件队列中；此时如果有读事件产生， 将调用accept处理；这样只有该进程能监听到accept操作
+        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {				
             ngx_shmtx_unlock(&ngx_accept_mutex);
             return NGX_ERROR;
         }
@@ -332,8 +334,8 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "accept mutex lock failed: %ui", ngx_accept_mutex_held);
 
-	/* [analy]	如果获得锁失败，而且有锁标志， 则将listen->fd从事件队列中删除。 
-				此处为什么将listen->fd事件删除掉，猜测：删除掉的目的是为了让别的进程有机会获取此listen->fd
+	/*  如果获得锁失败，而且有锁标志， 则将listen->fd从事件队列中删除
+		此处为什么将listen->fd事件删除掉，猜测：删除掉的目的是为了不在处理任何进程的连接请求
 	*/
     if (ngx_accept_mutex_held) {										
         if (ngx_disable_accept_events(cycle) == NGX_ERROR) {

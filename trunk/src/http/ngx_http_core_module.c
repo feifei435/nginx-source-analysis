@@ -826,7 +826,8 @@ ngx_http_handler(ngx_http_request_t *r)
 
     r->connection->unexpected_eof = 0;
 
-    if (!r->internal) {								//	当前请求不是内部跳转时，phase_handler从0开始运行,是内部请求时，将从server_rewrite开始执行
+	//	当前请求不是内部跳转时，phase_handler从0开始运行,是内部请求时，将从server_rewrite开始执行
+    if (!r->internal) {								
 
 		//	r->headers_in.connection_type == 0, 说明client发起的请求未指明 "Connection: close(1.0)/Keep-Alive(1.1)" 域
 		//	将会根据http协议版本确定连接类型
@@ -1950,7 +1951,7 @@ ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 }
 
 /*
- *	[analy]	根据request->uri和root或alias指令拼装path
+ *	[analy]	根据request->uri和root或alias指令拼装参数path同时计算root和alias指令指定的参数长度
  */
 u_char *
 ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
@@ -1972,20 +1973,21 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
         return NULL;
     }
 
+	//	root 和 alias 指令没有使用变量
     if (clcf->root_lengths == NULL) {
 
-        *root_length = clcf->root.len;			//	root或alias指令指定的目录长度
+        *root_length = clcf->root.len;			//	root或alias指令指定的参数长度
 
 		/*
 			location  /i/ {
 				alias  /spool/w3/images/;
 				root   /spool/w3/images/;	
 			}
-			request uri:	/i/top.gif  --> /spool/w3/images/top.gif
-			request uri:	/i/top.gif  --> /spool/w3/images/i/top.gif
+			alias - request uri:	/i/  --> /spool/w3/images/
+			root  - request uri:	/i/  --> /spool/w3/images/i/
 		
-			root指令时： strlen("/spool/w3/images") + sizeof("index.html") + strlen("/i/top.gif") - 0 + 1;
-			alias指令时： strlen("/spool/w3/images/") + sizeof("index.html") + strlen("/i/top.gif") - strlen("/i/") + 1;
+			root指令时： strlen("/spool/w3/images") + sizeof("index.html") + strlen("/i/") - 0 + 1;
+			alias指令时： strlen("/spool/w3/images/") + sizeof("index.html") + strlen("/i/") - strlen("/i/") + 1;
 		*/
         path->len = clcf->root.len + reserved + r->uri.len - alias + 1;
 
@@ -2001,7 +2003,7 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
 		*/		
         last = ngx_copy(path->data, clcf->root.data, clcf->root.len);
 
-    } else {
+    } else {		//	root 和 alias 指令使用了变量
 
 #if (NGX_PCRE)
         ngx_uint_t  captures;
@@ -2040,9 +2042,9 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
 #endif
     }
 
-	/*
-		root  -> /spool/w3/images/i/top.gif
-		alias -> /spool/w3/images/top.gif
+	/*	再拷贝requeset的uri
+		root  -> /spool/w3/images/i/
+		alias -> /spool/w3/images/
 	*/
     last = ngx_cpystrn(last, r->uri.data + alias, r->uri.len - alias + 1);
 
@@ -2545,7 +2547,9 @@ ngx_http_subrequest(ngx_http_request_t *r,
     return ngx_http_post_request(sr, NULL);
 }
 
-
+/* 
+ *	[analy] 内部重定向(index指令模块中会使用到)
+ */
 ngx_int_t
 ngx_http_internal_redirect(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args)
@@ -2702,7 +2706,7 @@ ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
     return cln;
 }
 
-
+//	如果 "disable_symlinks" 指令没有指定from参数，直接返回OK
 ngx_int_t
 ngx_http_set_disable_symlinks(ngx_http_request_t *r,
     ngx_http_core_loc_conf_t *clcf, ngx_str_t *path, ngx_open_file_info_t *of)
@@ -2713,10 +2717,12 @@ ngx_http_set_disable_symlinks(ngx_http_request_t *r,
 
     of->disable_symlinks = clcf->disable_symlinks;
 
+	//	如果 "disable_symlinks" 指令没有指定from参数，直接返回OK
     if (clcf->disable_symlinks_from == NULL) {
         return NGX_OK;
     }
 
+	//	指令 "disable_symlinks" 指定了from参数，将from选项指定的value解析后的值存放在from中
     if (ngx_http_complex_value(r, clcf->disable_symlinks_from, &from)
         != NGX_OK)
     {
@@ -3547,7 +3553,7 @@ ngx_http_core_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         if (prev->root.data == NULL) {
             ngx_str_set(&conf->root, "html");
 
-            if (ngx_conf_full_name(cf->cycle, &conf->root, 0) != NGX_OK) {
+            if (ngx_conf_full_name(cf->cycle, &conf->root, 0) != NGX_OK) {				//	合并后"/usr/local/nginx/html"
                 return NGX_CONF_ERROR;
             }
         }
@@ -4210,6 +4216,7 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 /*  
  *	[analy]	解析root和alias指令
+ *			1. 
  */
 static char *
 ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
@@ -4277,11 +4284,14 @@ ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     clcf->alias = alias ? clcf->name.len : 0;					//	是"alias"指令时，等于location名字长度."root"指令时，等于0
     clcf->root = value[1];										//	root和alias指令共用
 
-    if (!alias && clcf->root.data[clcf->root.len - 1] == '/') {	//	是"root"指令时，如果root指定的是目录，将root将去掉最后的"/"
+	//	是"root"指令时，如果root指定的是目录，将root参数最后的"/"去掉，root指令是将uri拼接到指定参数的后端
+	//	在ngx_http_map_uri_to_path()函数中计算长度时需要用到
+    if (!alias && clcf->root.data[clcf->root.len - 1] == '/') {	
         clcf->root.len--;
     }
 
-    if (clcf->root.data[0] != '$') {							//	"root"和alias指令配置不以变量开始
+	//	"root"和alias指令配置不以变量开始，检查指定的参数是否为完整路径格式
+    if (clcf->root.data[0] != '$') {							
         if (ngx_conf_full_name(cf->cycle, &clcf->root, 0) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
@@ -4660,7 +4670,12 @@ ngx_http_core_try_files(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*	指令"open_file_cache"没有设定参数off时，将必须指定max参数，如果没有指定inactive参数，将使用默认值60s
+	并调用 ngx_open_file_cache_init 进行初始化
+	max			- 指定缓存的最大数目，如果缓存溢出，最近最少使用的文件（LRU）将被移除。
+	inactive	- 指定缓存文件被移除的时间，如果在这段时间内文件没被下载，默认为60秒。
+	off			- 禁止缓存。
+*/
 static char *
 ngx_http_core_open_file_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -4678,7 +4693,7 @@ ngx_http_core_open_file_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value = cf->args->elts;
 
     max = 0;
-    inactive = 60;
+    inactive = 60;			//	设置非活跃默认的时间为60s
 
     for (i = 1; i < cf->args->nelts; i++) {
 
@@ -4940,7 +4955,9 @@ ngx_http_gzip_disable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #endif
 
-
+/* 
+ *	解析disable_symlinks指令
+ */
 #if (NGX_HAVE_OPENAT)
 
 static char *

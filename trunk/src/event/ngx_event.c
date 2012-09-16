@@ -35,9 +35,10 @@ static void *ngx_event_create_conf(ngx_cycle_t *cycle);
 static char *ngx_event_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
-static ngx_uint_t     ngx_timer_resolution;					/* [analy]	timer_resolution指令指定的时间	*/
-sig_atomic_t          ngx_event_timer_alarm;
-
+static ngx_uint_t     ngx_timer_resolution;					//	timer_resolution指令指定的时间; 这个参数允许缩短gettimeofday()系统调用的时间，默认情况下gettimeofday()在下列都调用完成后才会被调用：kevent(), epoll, /dev/poll, select(), poll()。
+															//	如果你需要一个比较准确的时间来记录$upstream_response_time或者$msec变量，你可能会用到timer_resolution
+sig_atomic_t          ngx_event_timer_alarm;				//	指令"timer_resolution"设置后，每隔ngx_timer_resolution毫秒会产生一个SIGALRM信号
+	
 static ngx_uint_t     ngx_event_max_module;
 
 ngx_uint_t            ngx_event_flags;
@@ -49,11 +50,11 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
-ngx_shmtx_t           ngx_accept_mutex;
-ngx_uint_t            ngx_use_accept_mutex;				/* [analy]	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开 */
-ngx_uint_t            ngx_accept_events;
-ngx_uint_t            ngx_accept_mutex_held;			/* [analy]	是否获得了锁, 持有锁时=1，否则相反 */
-ngx_msec_t            ngx_accept_mutex_delay;
+ngx_shmtx_t           ngx_accept_mutex;					//	"nginx.lock.accept"的文件锁
+ngx_uint_t            ngx_use_accept_mutex;				//	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开 (ngx_event_process_init()函数中设置)
+ngx_uint_t            ngx_accept_events;				//	貌似没什么用
+ngx_uint_t            ngx_accept_mutex_held;			//	是否获得了锁, 持有锁时=1，否则相反(ngx_trylock_accept_mutex()函数中设置)
+ngx_msec_t            ngx_accept_mutex_delay;			//	指令 "accept_mutex_delay" 设置
 ngx_int_t             ngx_accept_disabled;
 ngx_file_t            ngx_accept_mutex_lock_file;
 
@@ -205,7 +206,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     ngx_uint_t  flags;
     ngx_msec_t  timer, delta;
 
-    if (ngx_timer_resolution) {
+    if (ngx_timer_resolution) {						//	使用了 timer_resolution 指令，epoll_wait将阻塞等待
         timer = NGX_TIMER_INFINITE;
         flags = 0;
 
@@ -237,7 +238,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         } else {
 
 			/* 
-			 *	[analy] 拿到accept锁后将flags=NGX_POST_EVENTS， 这个使标记epoll在接收到事件的时候， accept事件暂时不处理，
+			 *	拿到accept锁后将flags=NGX_POST_EVENTS， 这个使标记epoll在接收到事件的时候， accept事件暂时不处理，
 			 *			而是放到一个队列中暂时保存起来(ngx_posted_accept_events链表中)，等到释放了accept锁之后才处理这些事件，提高效率	
 			 *			epollin|epollout事件都放到ngx_posted_events链表中  
 			 */
@@ -245,14 +246,14 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
                 return;
             }
 
-            if (ngx_accept_mutex_held) {					/*	[analy] 持有锁，设置标记NGX_POST_EVENTS */
+            if (ngx_accept_mutex_held) {					//	持有锁，设置标记NGX_POST_EVENTS
                 flags |= NGX_POST_EVENTS;
 
             } else {										
 				
 				/* 
-				 *	[analy] 拿不到锁，也就不会处理监听的句柄，这个timer实际是传给epoll_wait的超时时间，
-				 *			修改为最大ngx_accept_mutex_delay意味着epoll_wait更短的超时返回，以免新连接长时间没有得到处理   
+				 *	拿不到锁，也就不会处理监听的句柄，这个timer实际是传给epoll_wait的超时时间，
+				 *	修改为最大ngx_accept_mutex_delay意味着epoll_wait更短的超时返回，以免新连接长时间没有得到处理
 				 */
                 if (timer == NGX_TIMER_INFINITE
                     || timer > ngx_accept_mutex_delay)
@@ -265,25 +266,28 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
     delta = ngx_current_msec;
 
-    (void) ngx_process_events(cycle, timer, flags);						/* [analy]	此时调用ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags) */	
+    (void) ngx_process_events(cycle, timer, flags);				//	此时调用ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
-    delta = ngx_current_msec - delta;
+    delta = ngx_current_msec - delta;							//	计算ngx_epoll_process_events()函数处理经过的毫秒数
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "timer delta: %M", delta);
 
 
-	/* [analy] 如果ngx_posted_accept_events链表有数据，就开始accept建立新连接 */
+	//	如果ngx_posted_accept_events链表有数据，就开始accept建立新连接
     if (ngx_posted_accept_events) {
         ngx_event_process_posted(cycle, &ngx_posted_accept_events);
     }
 
-	/* [analy] 如果持有accept锁，将此锁释放（问题：为什么此时释放锁，而不再处理accept之前释放呢？） */
+	/*	如果持有accept锁，将此锁释放	
+		问题：为什么此时释放锁，而不再处理accept之前释放呢？
+		猜测：如果在accept之前释放，其他进程获得了accpet锁将进行fd的事件监听，此时延迟处理的accept事件将被其他进程抢走
+	*/
     if (ngx_accept_mutex_held) {
         ngx_shmtx_unlock(&ngx_accept_mutex);
     }
 
-	/* [analy] ???????????? */
+	/* 超找超时的事件将其删除后在调用注册的handler */
     if (delta) {
         ngx_event_expire_timers();
     }
@@ -292,7 +296,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
                    "posted events %p", ngx_posted_events);
 
 
-	/* [analy] 如果ngx_posted_events链表有数据，开始处理所有正常读写事件 */
+	//	如果ngx_posted_events链表有数据，开始处理所有正常读写事件
     if (ngx_posted_events) {
         if (ngx_threaded) {
             ngx_wakeup_worker_thread(cycle);
@@ -564,7 +568,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_accept_mutex_ptr = (ngx_atomic_t *) shared;
     ngx_accept_mutex.spin = (ngx_uint_t) -1;
 
-	/* [analy]	设置ngx_accept_mutex="nginx.lock.accept", cycle->lock_file被unlink后在目录下已经被移除，
+	/* 设置ngx_accept_mutex="nginx.lock.accept", cycle->lock_file被unlink后在目录下已经被移除，
 				但还存在磁盘中当调用close()时才会被真正删掉 
 	*/
     if (ngx_shmtx_create(&ngx_accept_mutex, (ngx_shmtx_sh_t *) shared,
@@ -688,7 +692,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #if !(NGX_WIN32)
 
 	/* 
-	 *	[analy]	timer_resolution指令指定了时间，并且未指定NGX_USE_TIMER_EVENT标记时， 
+	 *	timer_resolution指令指定了时间，并且未指定NGX_USE_TIMER_EVENT标记时， 
 	 *			根据 timer_resolution 指令指定的时间设置一个定时器
 	 */
     if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
@@ -828,7 +832,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         rev = c->read;
 
         rev->log = c->log;
-        rev->accept = 1;						/* [analysis???] accpet=1 why?*/
+        rev->accept = 1;						//	设置监听套接字标识
 
 #if (NGX_HAVE_DEFERRED_ACCEPT)
         rev->deferred_accept = ls[i].deferred_accept;

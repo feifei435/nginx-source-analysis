@@ -44,6 +44,7 @@ typedef struct {
     size_t                     len;
     size_t                     level[3];
 
+//	对应的回调，以及回调数据
     ngx_path_manager_pt        manager;
     ngx_path_loader_pt         loader;
     void                      *data;

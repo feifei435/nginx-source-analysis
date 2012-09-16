@@ -151,7 +151,7 @@ ngx_chain_t *ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs);
 ngx_chain_t *ngx_alloc_chain_link(ngx_pool_t *pool);
 
 /* 
- *	[analy] 挂载cl到pool->chain的链表上，顺序是按照后释放在前的原则
+ *	[analy] 挂载cl到pool->chain的单向循环链表上，顺序是按照后释放在前的原则
  */
 #define ngx_free_chain(pool, cl)                                             \
     cl->next = pool->chain;                                                  \

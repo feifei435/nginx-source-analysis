@@ -311,6 +311,12 @@ ngx_pcalloc(ngx_pool_t *pool, size_t size)
 }
 
 
+/*
+ *	[analy]	注册一个内存池清理函数
+ *			在内存池上申请一个 ngx_pool_cleanup_t 结构。如果参数size不等于0，将在内存池上申请一个size大小的内存，并且
+ *			使用 ngx_pool_cleanup_t 结构的data字段指向它。同时将刚申请的 ngx_pool_cleanup_t 结构加入到内存池的 cleanup 
+ *			链表中；链表的 handler 将在函数外赋值，添加的清理函数作用是针对当前刚申请的size结构维护的相关内存进行清理
+ */
 ngx_pool_cleanup_t *
 ngx_pool_cleanup_add(ngx_pool_t *p, size_t size)
 {

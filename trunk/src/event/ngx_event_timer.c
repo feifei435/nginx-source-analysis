@@ -47,7 +47,7 @@ ngx_event_timer_init(ngx_log_t *log)
     return NGX_OK;
 }
 
-
+//	从rbtree中找出最小时间，并计算与当前时间之差。查找timer，返回距离最近超时事件的时间，若有事件超时则返回0。
 ngx_msec_t
 ngx_event_find_timer(void)
 {
@@ -67,12 +67,14 @@ ngx_event_find_timer(void)
 
     ngx_mutex_unlock(ngx_event_timer_mutex);
 
-    timer = (ngx_msec_int_t) node->key - (ngx_msec_int_t) ngx_current_msec;
+    timer = (ngx_msec_int_t) node->key - (ngx_msec_int_t) ngx_current_msec;	//	最小值-当前时间，当该值大于0即表明没有需要处理的超时事件
 
     return (ngx_msec_t) (timer > 0 ? timer : 0);
 }
 
-
+/* 
+ *	[analy]  查找超时事件
+ */
 void
 ngx_event_expire_timers(void)
 {
@@ -95,7 +97,7 @@ ngx_event_expire_timers(void)
 
         /* node->key <= ngx_current_time */
 
-        if ((ngx_msec_int_t) node->key - (ngx_msec_int_t) ngx_current_msec <= 0)
+        if ((ngx_msec_int_t) node->key - (ngx_msec_int_t) ngx_current_msec <= 0)				//	事件已经超时
         {
             ev = (ngx_event_t *) ((char *) node - offsetof(ngx_event_t, timer));
 
@@ -121,7 +123,7 @@ ngx_event_expire_timers(void)
                            "event timer del: %d: %M",
                            ngx_event_ident(ev->data), ev->timer.key);
 
-            ngx_rbtree_delete(&ngx_event_timer_rbtree, &ev->timer);
+            ngx_rbtree_delete(&ngx_event_timer_rbtree, &ev->timer);				//	在定时树的删除此事件
 
             ngx_mutex_unlock(ngx_event_timer_mutex);
 
@@ -145,7 +147,7 @@ ngx_event_expire_timers(void)
             }
 #endif
 
-            ev->timedout = 1;
+            ev->timedout = 1;					//	事件超时后将调用它的handler
 
             ev->handler(ev);
 

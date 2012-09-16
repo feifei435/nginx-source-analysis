@@ -166,7 +166,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_list_t                        headers;						//	存放请求头中的header name, 在函数 ngx_http_process_request_headers（）中设置
+    ngx_list_t                        headers;						//	存放client请求头中的所有header name, 在函数 ngx_http_process_request_headers（）中设置
 
     ngx_table_elt_t                  *host;							//	如果请求头中有host字段，首先添加到headers列表里，然后将使host指针指向数组中的位置
     ngx_table_elt_t                  *connection;
@@ -385,14 +385,14 @@ struct ngx_http_request_s {
     ngx_str_t                         uri;							//	请求行中uri部分(e.g. "/", 就一个字节)
     ngx_str_t                         args;
     ngx_str_t                         exten;
-    ngx_str_t                         unparsed_uri;					//	备份请求行中原始的uri（uri有复合类型的）
+    ngx_str_t                         unparsed_uri;					//	备份请求行中原始的uri，即未被解析过的（uri有复合类型的）
 
     ngx_str_t                         method_name;					//	请求行中的method字符串值（GET、PUT、POST）
     ngx_str_t                         http_protocol;				//	请求行中的http协议版本字符串(e.g. "HTTP/1.1")
 
 	ngx_chain_t                      *out;							//	这个chain保存的是上一次还没有被发完的buf，这样每次我们接收到新的chain的话，
 																	//	就需要将新的chain连接到老的out chain上，然后再发出去。 
-    ngx_http_request_t               *main;
+    ngx_http_request_t               *main;							//	在ngx_http_init_request()函数中将设置为当前的request
     ngx_http_request_t               *parent;
     ngx_http_postponed_request_t     *postponed;
     ngx_http_post_subrequest_t       *post_subrequest;
@@ -433,7 +433,7 @@ struct ngx_http_request_s {
 
     unsigned                          subrequests:8;				//	subrequests的最大次数（ngx_http_init_request()函数中初始化）
     unsigned                          count:8;						//	????????//
-    unsigned                          blocked:8;
+    unsigned                          blocked:8;					//	???????
 
     unsigned                          aio:1;
 
