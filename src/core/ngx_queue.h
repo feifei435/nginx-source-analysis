@@ -85,7 +85,7 @@ struct ngx_queue_s {
     (q)->prev
 
 /* 
- *	[analy]	删除节点 
+ *	[analy]	将节点从所属队列中删除
  */
 #if (NGX_DEBUG)
 
@@ -97,7 +97,9 @@ struct ngx_queue_s {
 
 #else
 
-
+/* 
+ *	[analy]	将节点从所属队列中删除
+ */
 #define ngx_queue_remove(x)                                                   \
     (x)->next->prev = (x)->prev;                                              \
     (x)->prev->next = (x)->next
@@ -130,7 +132,7 @@ struct ngx_queue_s {
     (h)->prev->next = h;
 
 /* 
- *	[analy]	获取节点的数据指针 
+ *	[analy]	获取节点的数据指针(通过此函数可以找到节点在内存中的地址)
  */
 #define ngx_queue_data(q, type, link)                                         \
     (type *) ((u_char *) q - offsetof(type, link))

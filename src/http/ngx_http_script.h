@@ -22,13 +22,13 @@ typedef struct {
 	//	在函数 ngx_http_script_value_code（）中进行赋值
     ngx_http_variable_value_t  *sp;					
 
-    ngx_str_t                   buf;
+    ngx_str_t                   buf;				//	存放复合变量中变量value和常量字符串的值
     ngx_str_t                   line;
 
     /* the start of the rewritten arguments */
     u_char                     *args;
 
-    unsigned                    flushed:1;
+    unsigned                    flushed:1;			//	是否在缓冲区获取变量的值
     unsigned                    skip:1;				//	？？？？在拷贝的时候会跳过拷贝
     unsigned                    quote:1;
     unsigned                    is_args:1;
@@ -43,9 +43,9 @@ typedef struct {
     ngx_conf_t                 *cf;
     ngx_str_t                  *source;					// 需要compile的字符串
 
-    ngx_array_t               **flushes;				//	array of ngx_uint_t's point
-    ngx_array_t               **lengths;
-    ngx_array_t               **values;
+    ngx_array_t               **flushes;				// 存放变量的index	array of ngx_uint_t's point
+    ngx_array_t               **lengths;				//	存放变量的value和常量字符串的长度
+    ngx_array_t               **values;					//	存放变量的value值和常量字符串的值
 
     ngx_uint_t                  variables;				// 普通变量的个数，而非其他三种(args变量，$n变量以及常量字符串)  
     ngx_uint_t                  ncaptures;				// 当前处理时，出现的$n变量的最大值，如配置的最大为$3，那么ncaptures就等于3
@@ -57,14 +57,14 @@ typedef struct {
     ngx_uint_t                  captures_mask;
     ngx_uint_t                  size;					// 待compile的字符串中，"常量字符串"的总长度
 
-    void                       *main;
+    void                       *main;					//	??????????
 
     unsigned                    compile_args:1;			// 是否需要处理请求参数
     unsigned                    complete_lengths:1;		// 是否设置lengths数组的终止符，即NULL
     unsigned                    complete_values:1;		// 是否设置values数组的终止符
     unsigned                    zero:1;					// values数组运行时，得到的字符串是否追加'\0'结尾
-    unsigned                    conf_prefix:1;			// 是否在生成的文件名前，追加路径前缀
-    unsigned                    root_prefix:1;			// 同conf_prefix
+    unsigned                    conf_prefix:1;			// 是否在生成的文件名前，追加配置文件的路径前缀（e.g. "/usr/local/nginx/conf/"）
+    unsigned                    root_prefix:1;			// 是否在生成的文件名前，追加系统运行的路径前缀（e.g. "/usr/local/nginx/"）
 	
 	/*
 	 * 这个标记位主要在rewrite模块里使用，在ngx_http_rewrite中，
@@ -82,17 +82,17 @@ typedef struct {
 
 
 typedef struct {
-    ngx_str_t                   value;
-    ngx_uint_t                 *flushes;
-    void                       *lengths;
-    void                       *values;
+    ngx_str_t                   value;				//	需要处理的字符串
+    ngx_uint_t                 *flushes;			//	处理完的变量index
+    void                       *lengths;			//	存放处理value的长度处理函数指针
+    void                       *values;				//	存放处理value的处理函数指针
 } ngx_http_complex_value_t;
 
 
 typedef struct {
     ngx_conf_t                 *cf;
     ngx_str_t                  *value;
-    ngx_http_complex_value_t   *complex_value;
+    ngx_http_complex_value_t   *complex_value;		
 
     unsigned                    zero:1;
     unsigned                    conf_prefix:1;

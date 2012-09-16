@@ -18,7 +18,7 @@
 extern ngx_mutex_t  *ngx_posted_events_mutex;
 #endif
 
-
+//	将ev加入到queue队列中
 #define ngx_locked_post_event(ev, queue)                                      \
                                                                               \
     if (ev->prev == NULL) {                                                   \
@@ -44,7 +44,7 @@ extern ngx_mutex_t  *ngx_posted_events_mutex;
     ngx_locked_post_event(ev, queue);                                         \
     ngx_mutex_unlock(ngx_posted_events_mutex);
 
-
+//	将ev加入到queue队列中
 #define ngx_delete_posted_event(ev)                                           \
                                                                               \
     *(ev->prev) = ev->next;                                                   \

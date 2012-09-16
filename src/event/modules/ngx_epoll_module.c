@@ -554,7 +554,7 @@ ngx_epoll_del_connection(ngx_connection_t *c, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    c->read->active = 0;				/* [analy] 将读写事件active标志都置为非活跃状态 */
+    c->read->active = 0;				//	将读写事件active标志都置为非活跃状态
     c->write->active = 0;
 
     return NGX_OK;
@@ -583,16 +583,18 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
 
-    events = epoll_wait(ep, event_list, (int) nevents, timer);			/* [analy]	等待事件发生 */
+    events = epoll_wait(ep, event_list, (int) nevents, timer);			//	等待事件发生，超时或被信号中断
 
-    err = (events == -1) ? ngx_errno : 0;
+    err = (events == -1) ? ngx_errno : 0;								//	epoll_wait返回-1说明发生错误，相应的errno将被设置
 
-    if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {				/* [analy]	？？？？ */
+	//	epoll_wait()返回后会更新系统缓存时间，如果timer_resolution指令设置后会周期性的来更新缓存时间
+    if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {				
         ngx_time_update();
     }
 
+	//	出错
     if (err) {
-        if (err == NGX_EINTR) {						/* [analy]	epoll_wait被信号中断时，检查是否被定时器中断，如果是返回OK */
+        if (err == NGX_EINTR) {						//	epoll_wait被信号中断时，检查是否被定时器中断，如果是返回OK
 
             if (ngx_event_timer_alarm) {
                 ngx_event_timer_alarm = 0;
@@ -609,7 +611,8 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    if (events == 0) {							/* [analy]	超时， 返回 */	
+	//	超时， 返回
+    if (events == 0) {							
         if (timer != NGX_TIMER_INFINITE) {
             return NGX_OK;
         }
@@ -621,7 +624,8 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     ngx_mutex_lock(ngx_posted_events_mutex);
 
-    for (i = 0; i < events; i++) {							/* [analy]	循环处理所有发生的事件 */
+	//	循环处理所有发生的事件
+    for (i = 0; i < events; i++) {					
         c = event_list[i].data.ptr;
 
         instance = (uintptr_t) c & 1;
@@ -673,23 +677,25 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
             revents |= EPOLLIN|EPOLLOUT;
         }
 
+		//	读事件触发并且此事件的read已经加入到epoll事件监控队列中
         if ((revents & EPOLLIN) && rev->active) {
 
             if ((flags & NGX_POST_THREAD_EVENTS) && !rev->accept) {
                 rev->posted_ready = 1;
 
             } else {
-                rev->ready = 1;
+                rev->ready = 1;							//	epoll走这里
             }
 
-            if (flags & NGX_POST_EVENTS) {
+			//	如果进程持有accept锁， 对accpet事件和正常读写事件均采用延迟处理；只有获得了accpet锁后才能有NGX_POST_EVENTS标记
+            if (flags & NGX_POST_EVENTS) {				
                 queue = (ngx_event_t **) (rev->accept ?
                                &ngx_posted_accept_events : &ngx_posted_events);
 
-                ngx_locked_post_event(rev, queue);
+                ngx_locked_post_event(rev, queue);			//	加入事件到延迟处理事件队列中
 
             } else {
-                rev->handler(rev);							/* [analy]	此时调用事件注册函数。 i.e. ngx_event_accept， ngx_http_init_request */
+                rev->handler(rev);							//	此时调用事件注册函数。 i.e. ngx_event_accept， ngx_http_init_request
             }
         }
 
@@ -713,7 +719,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 wev->posted_ready = 1;
 
             } else {
-                wev->ready = 1;
+                wev->ready = 1;					//	epoll走这里
             }
 
             if (flags & NGX_POST_EVENTS) {

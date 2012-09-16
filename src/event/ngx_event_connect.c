@@ -22,6 +22,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     ngx_event_t       *rev, *wev;
     ngx_connection_t  *c;
 
+	//	这里将处理负载均衡
     rc = pc->get(pc, pc->data);				//	ngx_http_upstream_get_round_robin_peer()
     if (rc != NGX_OK) {
         return rc;

@@ -40,7 +40,7 @@ struct ngx_event_s {
 
     unsigned         write:1;							//	为1时, 标识当前事件是写事件
 
-    unsigned         accept:1;							/* [analy]   标识当前事件类型是否为监听套接字， 如果是=1(在ngx_event_process_init设置) */
+    unsigned         accept:1;							//	标识当前事件类型是否为监听套接字， 等于1是监听套接字(在ngx_event_process_init设置) */
 
     /* used to detect the stale events in kqueue, rtsig, and epoll */
     unsigned         instance:1;
@@ -64,8 +64,8 @@ struct ngx_event_s {
     unsigned         eof:1;
     unsigned         error:1;
 
-    unsigned         timedout:1;
-    unsigned         timer_set:1;
+    unsigned         timedout:1;						//	说明此事件超时(ngx_event_add_timer()函数中设置)
+    unsigned         timer_set:1;						//	说明此事件已经加入到定时器中(ngx_event_add_timer()函数中设置)
 
     unsigned         delayed:1;							//	延迟发送， c->write->delayed,这个表示当前的连接的写必须要被delay了，
 														//	也就是说现在不能发送了，得等另外的地方取消了delayed才能发送，此时我们修改连接的buffered的标记
@@ -486,7 +486,7 @@ typedef struct {
     ngx_flag_t    multi_accept;
     ngx_flag_t    accept_mutex;
 
-    ngx_msec_t    accept_mutex_delay;
+    ngx_msec_t    accept_mutex_delay;				//	默认值为500ms
 
     u_char       *name;
 

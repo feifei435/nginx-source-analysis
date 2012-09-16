@@ -46,10 +46,10 @@ struct ngx_listening_s {
     /* should be here because of the AcceptEx() preread */
     size_t              post_accept_buffer_size;
     /* should be here because of the deferred accept */
-    ngx_msec_t          post_accept_timeout;
+    ngx_msec_t          post_accept_timeout;					//	指令"client_header_timeout"设置；在函数ngx_http_add_listening()中被赋值
 
     ngx_listening_t    *previous;
-    ngx_connection_t   *connection;								/* [analy]   监听也是一个连接，要分配给监听一个连接资源 */	
+    ngx_connection_t   *connection;								//	监听也是一个连接，要分配给监听一个连接资源
 
     unsigned            open:1;
     unsigned            remain:1;

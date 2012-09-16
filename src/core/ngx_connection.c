@@ -851,11 +851,13 @@ ngx_close_connection(ngx_connection_t *c)
     ngx_uint_t    log_error, level;
     ngx_socket_t  fd;
 
+	//	检查是否已经关闭，如果已经关系，将c->fd设置为-1
     if (c->fd == -1) {
         ngx_log_error(NGX_LOG_ALERT, c->log, 0, "connection already closed");
         return;
     }
 
+	//	分别删除读写事件的计时器
     if (c->read->timer_set) {
         ngx_del_timer(c->read);
     }
@@ -864,6 +866,7 @@ ngx_close_connection(ngx_connection_t *c)
         ngx_del_timer(c->write);
     }
 
+	//	在epoll队列中删除掉此连接fd
     if (ngx_del_conn) {
         ngx_del_conn(c, NGX_CLOSE_EVENT);
 
@@ -908,6 +911,7 @@ ngx_close_connection(ngx_connection_t *c)
 
 #else
 
+	//	????????
     if (c->read->prev) {
         ngx_delete_posted_event(c->read);
     }
@@ -930,6 +934,7 @@ ngx_close_connection(ngx_connection_t *c)
     fd = c->fd;
     c->fd = (ngx_socket_t) -1;
 
+	//	关闭socket
     if (ngx_close_socket(fd) == -1) {
 
         err = ngx_socket_errno;
