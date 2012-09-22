@@ -145,7 +145,7 @@ ngx_http_static_handler(ngx_http_request_t *r)
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0, "http static fd: %d", of.fd);
 
-    if (of.is_dir) {
+    if (of.is_dir) {			//	访问的是个目录，将返回301
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0, "http dir");
 
@@ -196,6 +196,7 @@ ngx_http_static_handler(ngx_http_request_t *r)
 
 #if !(NGX_WIN32) /* the not regular files are probably Unix specific */
 
+	//	不是普通文件返回404
     if (!of.is_file) {
         ngx_log_error(NGX_LOG_CRIT, log, 0,
                       "\"%s\" is not a regular file", path.data);
@@ -205,11 +206,11 @@ ngx_http_static_handler(ngx_http_request_t *r)
 
 #endif
 
-    if (r->method & NGX_HTTP_POST) {
+    if (r->method & NGX_HTTP_POST) {						//	如果请求的method是post，将返回405
         return NGX_HTTP_NOT_ALLOWED;
     }
 
-    rc = ngx_http_discard_request_body(r);
+    rc = ngx_http_discard_request_body(r);					//	检查是否需要丢弃请求body
 
     if (rc != NGX_OK) {
         return rc;
@@ -217,11 +218,11 @@ ngx_http_static_handler(ngx_http_request_t *r)
 
     log->action = "sending response to client";
 
-    r->headers_out.status = NGX_HTTP_OK;
-    r->headers_out.content_length_n = of.size;
-    r->headers_out.last_modified_time = of.mtime;
+    r->headers_out.status = NGX_HTTP_OK;					//	status code
+    r->headers_out.content_length_n = of.size;				//	reponse body length
+    r->headers_out.last_modified_time = of.mtime;			//	最后修改时间
 
-    if (ngx_http_set_content_type(r) != NGX_OK) {
+    if (ngx_http_set_content_type(r) != NGX_OK) {			//	设置响应头的content_type字段
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -243,20 +244,20 @@ ngx_http_static_handler(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rc = ngx_http_send_header(r);
+    rc = ngx_http_send_header(r);							//	发送响应头
 
     if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
         return rc;
     }
 
-    b->file_pos = 0;
-    b->file_last = of.size;
+    b->file_pos = 0;						//	文件中起始位置
+    b->file_last = of.size;					//	文件中结束位置
 
-    b->in_file = b->file_last ? 1: 0;
-    b->last_buf = (r == r->main) ? 1: 0;
-    b->last_in_chain = 1;
+    b->in_file = b->file_last ? 1: 0;		//	标识要发送的数据在文件中
+    b->last_buf = (r == r->main) ? 1: 0;	//	?????
+    b->last_in_chain = 1;					//	设置为最后一个chain
 
-    b->file->fd = of.fd;
+    b->file->fd = of.fd;					//	设置文件结构
     b->file->name = path;
     b->file->log = log;
     b->file->directio = of.is_directio;

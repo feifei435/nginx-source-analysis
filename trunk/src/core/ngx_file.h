@@ -14,9 +14,9 @@
 
 
 struct ngx_file_s {
-    ngx_fd_t                   fd;
-    ngx_str_t                  name;
-    ngx_file_info_t            info;
+    ngx_fd_t                   fd;					//	文件描述符
+    ngx_str_t                  name;				//	文件名称
+    ngx_file_info_t            info;				//	文件信息
 
     off_t                      offset;
     off_t                      sys_offset;
@@ -28,7 +28,7 @@ struct ngx_file_s {
 #endif
 
     unsigned                   valid_info:1;
-    unsigned                   directio:1;
+    unsigned                   directio:1;			//	是否开启了directio
 };
 
 

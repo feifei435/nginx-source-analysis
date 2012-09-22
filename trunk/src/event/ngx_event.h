@@ -64,7 +64,7 @@ struct ngx_event_s {
     unsigned         eof:1;
     unsigned         error:1;
 
-    unsigned         timedout:1;						//	说明此事件超时(ngx_event_add_timer()函数中设置)
+    unsigned         timedout:1;						//	说明此事件超时(ngx_event_find_timer()函数中设置)
     unsigned         timer_set:1;						//	说明此事件已经加入到定时器中(ngx_event_add_timer()函数中设置)
 
     unsigned         delayed:1;							//	延迟发送， c->write->delayed,这个表示当前的连接的写必须要被delay了，

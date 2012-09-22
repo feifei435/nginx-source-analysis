@@ -224,7 +224,7 @@ ngx_http_init_connection(ngx_connection_t *c)
         return;
     }
 
-	//	添加定时器
+	//	添加定时器，如果client在这个时间内还没有发送请求行和请求头，将直接关闭连接
     ngx_add_timer(rev, c->listening->post_accept_timeout);
 
 
@@ -269,6 +269,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     c = rev->data;					//	1. 在event中获取 ngx_connection_t
 
+	//	因为此函数不是马上执行，所以需要判断是否超时！如果超时，将直接关闭连接
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
 
@@ -810,14 +811,14 @@ ngx_http_process_request_line(ngx_event_t *rev)
             }
 
 
-            if (r->uri_ext) {														//	??????
+            if (r->uri_ext) {														//	设置exten字段 （e.g. index.html中的html）
                 if (r->args_start) {
                     r->exten.len = r->args_start - 1 - r->uri_ext;
                 } else {
                     r->exten.len = r->uri_end - r->uri_ext;
                 }
 
-                r->exten.data = r->uri_ext;
+                r->exten.data = r->uri_ext;		//	（e.g. index.html中的html）
             }
 
 

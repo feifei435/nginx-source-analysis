@@ -48,7 +48,9 @@ ngx_module_t  ngx_http_not_modified_filter_module = {
 
 static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
 
-
+/*
+ *	[analy]	对请求头中 "if_unmodified_since" 和 "if_modified_since" 字段的检查
+ */
 static ngx_int_t
 ngx_http_not_modified_header_filter(ngx_http_request_t *r)
 {
@@ -59,18 +61,20 @@ ngx_http_not_modified_header_filter(ngx_http_request_t *r)
         return ngx_http_next_header_filter(r);
     }
 
-    if (r->headers_in.if_unmodified_since) {
+    if (r->headers_in.if_unmodified_since) {					//	请求头中包含 "If-Unmodified-Since"
         return ngx_http_test_precondition(r);
     }
 
-    if (r->headers_in.if_modified_since) {
-        return ngx_http_test_not_modified(r);
+    if (r->headers_in.if_modified_since) {						//	请求头中包含 "if_modified_since"
+        return ngx_http_test_not_modified(r);	
     }
 
     return ngx_http_next_header_filter(r);
 }
 
-
+/*
+ *	[analy]	检查请求头中"if_unmodified_since"字段时间与文件的最后修改时间
+ */
 static ngx_int_t
 ngx_http_test_precondition(ngx_http_request_t *r)
 {
@@ -90,7 +94,9 @@ ngx_http_test_precondition(ngx_http_request_t *r)
                                             NGX_HTTP_PRECONDITION_FAILED);
 }
 
-
+/*
+ *	[analy]	检查请求头中"if_modified_since"字段时间与文件的最后修改时间
+ */
 static ngx_int_t
 ngx_http_test_not_modified(ngx_http_request_t *r)
 {
@@ -99,16 +105,19 @@ ngx_http_test_not_modified(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    if (clcf->if_modified_since == NGX_HTTP_IMS_OFF) {
+	//	如果指令 "if_modified_since" 指定为off， 将不检查请求头 "if_modified_since" 的时间，直接执行下一个filter
+    if (clcf->if_modified_since == NGX_HTTP_IMS_OFF) {					
         return ngx_http_next_header_filter(r);
     }
 
-    ims = ngx_http_parse_time(r->headers_in.if_modified_since->value.data,
+	//	转换if_modified_since的时间
+    ims = ngx_http_parse_time(r->headers_in.if_modified_since->value.data,					//	e.g. "Wed, 04 Apr 2012 21:23:20 GMT"
                               r->headers_in.if_modified_since->value.len);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http ims:%d lm:%d", ims, r->headers_out.last_modified_time);
 
+	//	请求中"if_modified_since"时间与文件的最后修改时间不一致，将根据指令 "if_modified_since" 来决定返回的状态码
     if (ims != r->headers_out.last_modified_time) {
 
         if (clcf->if_modified_since == NGX_HTTP_IMS_EXACT
@@ -118,7 +127,8 @@ ngx_http_test_not_modified(ngx_http_request_t *r)
         }
     }
 
-    r->headers_out.status = NGX_HTTP_NOT_MODIFIED;
+	//	返回304
+    r->headers_out.status = NGX_HTTP_NOT_MODIFIED;				//	304
     r->headers_out.status_line.len = 0;
     r->headers_out.content_type.len = 0;
     ngx_http_clear_content_length(r);

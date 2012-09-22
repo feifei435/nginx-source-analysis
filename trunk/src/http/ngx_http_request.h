@@ -171,7 +171,7 @@ typedef struct {
     ngx_table_elt_t                  *host;							//	如果请求头中有host字段，首先添加到headers列表里，然后将使host指针指向数组中的位置
     ngx_table_elt_t                  *connection;
     ngx_table_elt_t                  *if_modified_since;
-    ngx_table_elt_t                  *if_unmodified_since;
+    ngx_table_elt_t                  *if_unmodified_since;			//	请求头中包含if_unmodified_since总段(自特定时间内，未做任何修改时)
     ngx_table_elt_t                  *user_agent;
     ngx_table_elt_t                  *referer;
     ngx_table_elt_t                  *content_length;				//	指向 "content_length" 请求头域，指定请求中body的长度
@@ -384,7 +384,7 @@ struct ngx_http_request_s {
     ngx_str_t                         request_line;					//	请求行的内容 (e.g. "GET / HTTP/1.1")
     ngx_str_t                         uri;							//	请求行中uri部分(e.g. "/", 就一个字节)
     ngx_str_t                         args;
-    ngx_str_t                         exten;
+    ngx_str_t                         exten;						//	uri中的文件后缀在函数ngx_http_process_request_line()中设置 （e.g. index.html中的html）
     ngx_str_t                         unparsed_uri;					//	备份请求行中原始的uri，即未被解析过的（uri有复合类型的）
 
     ngx_str_t                         method_name;					//	请求行中的method字符串值（GET、PUT、POST）
@@ -546,22 +546,22 @@ struct ngx_http_request_s {
      * via ngx_http_ephemeral_t
      */
 
-    u_char                           *uri_start;					/* [analy]	uri开始地址 */
-    u_char                           *uri_end;
-    u_char                           *uri_ext;						//	?????????????
+    u_char                           *uri_start;					//	uri开始地址
+    u_char                           *uri_end;						//	uri结束地址
+    u_char                           *uri_ext;						//	请求uri中的带有后缀的部分在函数ngx_http_parse_request_line()中设置 (e.g. index.html中html)
     u_char                           *args_start;
-    u_char                           *request_start;				/* [analy]	请求的开始地址-> "GET .. ... .. " */
-    u_char                           *request_end;					/* [analy]	请求行的结束地址		 */
-    u_char                           *method_end;					/* [analy]	method的结束地址-> "GET URL VER", 字符串"GET"尾部 */
-    u_char                           *schema_start;					/* [analy]	schema开始地址（例如：http://www.baidu.com中的http开始处） */
-    u_char                           *schema_end;					/* [analy]	schema结束地址（例如：http://www.baidu.com中的http尾处） */
-    u_char                           *host_start;					/* [analy]	设置host开始地址(www.baidu.com开始位置) */
-    u_char                           *host_end;						/* [analy]	设置host结束地址(www.baidu.com结束位置) */
-    u_char                           *port_start;					/* [analy]	设置port开始地址(http://www.baidu.com:80/在80开始位置) */
-    u_char                           *port_end;						/* [analy]	设置port结束地址(http://www.baidu.com:80/在80结束位置) */
+    u_char                           *request_start;				//	请求的开始地址-> "GET .. ... .. "
+    u_char                           *request_end;					//	请求行的结束地址	
+    u_char                           *method_end;					//	ethod的结束地址-> "GET URL VER", 字符串"GET"尾部
+    u_char                           *schema_start;					//	schema开始地址（例如：http://www.baidu.com中的http开始处）
+    u_char                           *schema_end;					//	schema结束地址（例如：http://www.baidu.com中的http尾处）
+    u_char                           *host_start;					//	设置host开始地址(www.baidu.com开始位置)
+    u_char                           *host_end;						//	设置host结束地址(www.baidu.com结束位置)
+    u_char                           *port_start;					//	设置port开始地址(http://www.baidu.com:80/在80开始位置)
+    u_char                           *port_end;						//	设置port结束地址(http://www.baidu.com:80/在80结束位置)
 
-    unsigned                          http_minor:16;				//	请求头中的http协议次本号
-    unsigned                          http_major:16;				//	请求头中的http协议主本号
+    unsigned                          http_minor:16;				//	请求头中的http协议次本号(e.g. http/1.0中的0)
+    unsigned                          http_major:16;				//	请求头中的http协议主本号(e.g. http/1.0中的1)
 };			//	end ngx_http_request_s
 
 

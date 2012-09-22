@@ -117,7 +117,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         sw_host_ip_literal,
         sw_port,
         sw_host_http_09,
-        sw_after_slash_in_uri,
+        sw_after_slash_in_uri,			//	相对路径的uri， 解析斜线之后的uri部分
         sw_check_uri,
         sw_check_uri_http_09,
         sw_uri,
@@ -153,15 +153,15 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 return NGX_HTTP_PARSE_INVALID_METHOD;
             }
 
-            state = sw_method;					/* [analy]	说明下一步的解析状态 */
+            state = sw_method;					//	说明下一步的解析状态
             break;
 
         case sw_method:
-            if (ch == ' ') {					/* [analy]	循环几次后遇到空格说明下一步该解析URL，此时先将method解析 */		
+            if (ch == ' ') {					//	循环几次后遇到空格说明下一步该解析URL，此时先将method解析
                 r->method_end = p - 1;
                 m = r->request_start;
 
-                switch (p - m) {				/* [analy]	得到方法的长度，通过长度来得到具体不同的方法，然后给request的method赋值 */
+                switch (p - m) {				//	得到方法的长度，通过长度来得到具体不同的方法，然后给request的method赋值
 
                 case 3:
                     if (ngx_str3_cmp(m, 'G', 'E', 'T', ' ')) {
@@ -263,7 +263,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                     break;
                 }
 
-                state = sw_spaces_before_uri;								/* [analy]	下一步准备解析URI */
+                state = sw_spaces_before_uri;								//	下一步准备解析URI
                 break;
             }
 
@@ -274,22 +274,22 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             break;
 
         /* space* before URI */
-        case sw_spaces_before_uri:								/* [analy]	这里由于uri会有两种情况，一种是带schema的，一种是直接相对路径的(可以看前面的uri格式). */
+        case sw_spaces_before_uri:								//	这里由于uri会有两种情况，一种是带schema的，一种是直接相对路径的(可以看前面的uri格式)
 
             if (ch == '/') {
                 r->uri_start = p;
-                state = sw_after_slash_in_uri;
+                state = sw_after_slash_in_uri;	//	斜线之后的uri
                 break;
             }
 
-            c = (u_char) (ch | 0x20);	/* [analy]	大写转换为小写 */
+            c = (u_char) (ch | 0x20);	//	大写转换为小写
             if (c >= 'a' && c <= 'z') {
                 r->schema_start = p;
                 state = sw_schema;
                 break;
             }
 
-            switch (ch) {				/* [analy]	空格的话继续这个状态 */ 
+            switch (ch) {				//	空格的话继续这个状态
             case ' ':
                 break;
             default:
@@ -297,14 +297,14 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             }
             break;
 
-        case sw_schema:					/* [analy]	是字母时直接跳过（http://www.baidu.com），当遇到":"时下步执行 sw_schema_slash 状态 */
+        case sw_schema:					//	是字母时直接跳过（http://www.baidu.com），当遇到":"时下步执行 sw_schema_slash 状态
 
             c = (u_char) (ch | 0x20);	
             if (c >= 'a' && c <= 'z') {
                 break;
             }
 
-			/* [analy]	到这里说明schema已经结束, 这里必须是":"，如果不是冒号则直接返回错误 */
+			//	到这里说明schema已经结束, 这里必须是":"，如果不是冒号则直接返回错误
             switch (ch) {
             case ':':
                 r->schema_end = p;
@@ -480,7 +480,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         /* check "/.", "//", "%", and "\" (Win32) in URI */
         case sw_after_slash_in_uri:
 
-            if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
+            if (usual[ch >> 5] & (1 << (ch & 0x1f))) {							//	??????????
                 state = sw_check_uri;
                 break;
             }
@@ -549,7 +549,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 state = sw_after_slash_in_uri;
                 break;
             case '.':
-                r->uri_ext = p + 1;
+                r->uri_ext = p + 1;						//	获取"."后的结尾符(e.g. index.html中的html)
                 break;
             case ' ':
                 r->uri_end = p;
