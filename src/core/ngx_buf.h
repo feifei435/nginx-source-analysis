@@ -20,13 +20,13 @@ typedef struct ngx_buf_s  ngx_buf_t;
 struct ngx_buf_s {
     u_char          *pos;			//	暂时理解为 已经解析完数据的末尾指针
     u_char          *last;			//	暂时理解为 读到的数据末尾指针
-    off_t            file_pos;
-    off_t            file_last;
+    off_t            file_pos;		//	如果数据在文件里，标识在文件中的当前位置
+    off_t            file_last;		//	如果数据在文件里，标识在文件中的结尾位置
 
     u_char          *start;         /* start of buffer */
     u_char          *end;           /* end of buffer */
     ngx_buf_tag_t    tag;
-    ngx_file_t      *file;			//	文件结构指针
+    ngx_file_t      *file;			//	对应文件结构指针
     ngx_buf_t       *shadow;
 
 
@@ -43,7 +43,7 @@ struct ngx_buf_s {
     unsigned         mmap:1;			//	内存中的文件映射
 
     unsigned         recycled:1;		//	被回收
-    unsigned         in_file:1;			//	文件缓冲
+    unsigned         in_file:1;			//	文件缓冲(标识要发送的数据在文件中)
     unsigned         flush:1;			//	被清除
     unsigned         sync:1;			//	异步
     unsigned         last_buf:1;		//	此字段是一个位域，设为1表示此缓冲区是链表中最后一个元素，设置为0说明后边还有元素

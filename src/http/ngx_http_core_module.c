@@ -1771,10 +1771,11 @@ ngx_http_set_content_type(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    if (r->exten.len) {
+    if (r->exten.len) {					//	如果请求的uri中有文件后缀名，此时r->exten中有值
 
         hash = 0;
 
+		//	对r->exten做hash计算，然后在clcf->types_hash中进行hash查找
         for (i = 0; i < r->exten.len; i++) {
             c = r->exten.data[i];
 
@@ -1795,25 +1796,26 @@ ngx_http_set_content_type(ngx_http_request_t *r)
             hash = ngx_hash(hash, c);
         }
 
+		//	找到对应的值，设置到content_type后并返回
         type = ngx_hash_find(&clcf->types_hash, hash,
                              r->exten.data, r->exten.len);
 
         if (type) {
             r->headers_out.content_type_len = type->len;
-            r->headers_out.content_type = *type;
+            r->headers_out.content_type = *type;						//	e.g. html --> text/html
 
             return NGX_OK;
         }
     }
 
-    r->headers_out.content_type_len = clcf->default_type.len;
-    r->headers_out.content_type = clcf->default_type;
+    r->headers_out.content_type_len = clcf->default_type.len;				
+    r->headers_out.content_type = clcf->default_type;					//	设置默认的编码类型
 
     return NGX_OK;
 }
 
 /*
- *	[analy]	设置 r->exten 
+ *	[analy]	解析uri中是否有文件后缀名，如果有设置到 r->exten(e.g. index.html中html)
  */
 void
 ngx_http_set_exten(ngx_http_request_t *r)

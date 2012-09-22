@@ -39,7 +39,7 @@
 #define NGX_HTTP_LINGERING_ALWAYS       2
 
 
-#define NGX_HTTP_IMS_OFF                0
+#define NGX_HTTP_IMS_OFF                0					//	指令 "if_modified_since" 使用
 #define NGX_HTTP_IMS_EXACT              1
 #define NGX_HTTP_IMS_BEFORE             2
 
@@ -342,7 +342,7 @@ struct ngx_http_core_loc_conf_s {
 
     ngx_array_t  *types;
     ngx_hash_t    types_hash;
-    ngx_str_t     default_type;
+    ngx_str_t     default_type;								//	指令 "default_type" 指定的正文的类型，默认是text/plain
 
     off_t         client_max_body_size;    /* client_max_body_size 指令指定允许客户端连接的最大请求实体大小，它出现在请求头部的Content-Length字段 */
     off_t         directio;                /* directio */
@@ -378,7 +378,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    keepalive_disable;       /* keepalive_disable */
     ngx_uint_t    satisfy;                 /* satisfy */
     ngx_uint_t    lingering_close;         /* lingering_close 指令默认是开启的，指定socket的SO_LINGER选项 */
-    ngx_uint_t    if_modified_since;       /* if_modified_since */
+    ngx_uint_t    if_modified_since;       // 指令 "if_modified_since" 指定将文件最后修改时间与请求头中的”If-Modified-Since”时间相比较的方式，默认exact
     ngx_uint_t    max_ranges;              /* max_ranges */
     ngx_uint_t    client_body_in_file_only;			// client_body_in_file_only 指令打开后将始终保存request的body信息
 
@@ -398,7 +398,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_flag_t    msie_refresh;            /* msie_refresh */
     ngx_flag_t    log_not_found;           /* log_not_found: 指令指定是否将一些文件没有找到的错误信息写入error_log指定的文件中 */
     ngx_flag_t    log_subrequest;          /* log_subrequest */
-    ngx_flag_t    recursive_error_pages;   /* recursive_error_pages */
+    ngx_flag_t    recursive_error_pages;   /* 指令"recursive_error_pages" */
     ngx_flag_t    server_tokens;           /* server_tokens: 是否在错误页面和服务器头中输出nginx版本信息 */
     ngx_flag_t    chunked_transfer_encoding; /* chunked_transfer_encoding */
 

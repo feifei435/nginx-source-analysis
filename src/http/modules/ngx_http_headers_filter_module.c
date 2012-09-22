@@ -43,7 +43,7 @@ struct ngx_http_header_val_s {
 typedef struct {
     ngx_uint_t               expires;
     time_t                   expires_time;
-    ngx_array_t             *headers;
+    ngx_array_t             *headers;				//	array of ngx_http_header_val_t
 } ngx_http_headers_conf_t;
 
 
@@ -583,7 +583,7 @@ ngx_http_headers_add(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     set = ngx_http_set_headers;
     for (i = 0; set[i].name.len; i++) {
-        if (ngx_strcasecmp(value[1].data, set[i].name.data) != 0) {
+        if (ngx_strcasecmp(value[1].data, set[i].name.data) != 0) {		//	≤ªœ‡µ»
             continue;
         }
 
