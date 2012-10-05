@@ -1389,6 +1389,7 @@ ngx_conf_set_enum_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value = cf->args->elts;
     e = cmd->post;
 
+	//	检查指令设置的是否为enum中指定的， 是就获取value并设置，如果不是报错。
     for (i = 0; e[i].name.len != 0; i++) {
         if (e[i].name.len != value[1].len
             || ngx_strcasecmp(e[i].name.data, value[1].data) != 0)
@@ -1396,7 +1397,7 @@ ngx_conf_set_enum_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
-        *np = e[i].value;
+        *np = e[i].value;				
 
         return NGX_CONF_OK;
     }

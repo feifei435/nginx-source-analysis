@@ -1283,7 +1283,9 @@ ngx_reopen_files(ngx_cycle_t *cycle, ngx_uid_t user)
 #endif
 }
 
-
+/* 
+ *	[analy]	添加一个到 ngx_shm_zone_t 到 cf->cycle->shared_memory 中
+ */
 ngx_shm_zone_t *
 ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)
 {
@@ -1294,6 +1296,9 @@ ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)
     part = &cf->cycle->shared_memory.part;
     shm_zone = part->elts;
 
+	//	遍历已经存在的共享内存区与预申请的共享内存区进行比较
+	//	查找共享内存表， 当已经存在同名的共享内存区时将比较预申请的共享内存区大小和使用的模块，
+	//	如果完全一致将直接返回此共享内存区，否则重新添加一个到 cf->cycle->shared_memory 中
     for (i = 0; /* void */ ; i++) {
 
         if (i >= part->nelts) {
@@ -1334,6 +1339,7 @@ ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)
         return &shm_zone[i];
     }
 
+	//	
     shm_zone = ngx_list_push(&cf->cycle->shared_memory);
 
     if (shm_zone == NULL) {
@@ -1341,12 +1347,12 @@ ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)
     }
 
     shm_zone->data = NULL;
-    shm_zone->shm.log = cf->cycle->log;
-    shm_zone->shm.size = size;
-    shm_zone->shm.name = *name;
+    shm_zone->shm.log = cf->cycle->log;				//	共享内存使用的log
+    shm_zone->shm.size = size;						//	根据参数设置共享内存大小
+    shm_zone->shm.name = *name;						//	根据参数设置共享内存名称
     shm_zone->shm.exists = 0;
     shm_zone->init = NULL;
-    shm_zone->tag = tag;
+    shm_zone->tag = tag;							//	使用共享内存的模块名称（内存地址）
 
     return shm_zone;
 }

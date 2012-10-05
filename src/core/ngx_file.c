@@ -264,7 +264,7 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         path->name.len--;
     }
 
-	//	检查是否为完整路径
+	//	检查是否为完整路径，如果不是将添加系统运行路径
     if (ngx_conf_full_name(cf->cycle, &path->name, 0) != NGX_OK) {
         return NULL;
     }
@@ -286,13 +286,13 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         path->len += level + 1;			//	???
     }
 
-    while (i < 3) {						//	默认的路径级别为0
+    while (i < 3) {						//	未在指令中显示指定的级别， 设置默认的路径级别为0
         path->level[i++] = 0;
     }
 
     *slot = path;
 
-	//	增加 slot 到 cf->cycle->pathes 数组中
+	//	增加 path 到 cf->cycle->pathes 数组中
     if (ngx_add_path(cf, slot) == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }
@@ -300,11 +300,24 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ *	[analy]	合并指令 "proxy_temp_path" 指定的路径， 如果此指令在http、server、location中均未指定，将使用init默认值
+ *			1. 最低层块中配置的指令将覆盖高层指令
+ *			2. 如果低层块中未配置指令，将继承上层指令配置项
+ *	 在执行configure配置时，指定选项。如果未指定，将使用以下默认值。
+ *	 NGX_HTTP_FASTCGI_TEMP_PATH  -fastcgi_temp
+ *	 NGX_HTTP_PROXY_TEMP_PATH	 -proxy_temp
+ *	 NGX_HTTP_SCGI_TEMP_PATH	 -scgi_temp
+ *	 NGX_HTTP_UWSGI_TEMP_PATH	 -uwsgi_temp
+ *	 NGX_HTTP_CLIENT_TEMP_PATH	 -client_body_temp
+ */
 char *
 ngx_conf_merge_path_value(ngx_conf_t *cf, ngx_path_t **path, ngx_path_t *prev,
     ngx_path_init_t *init)
 {
+	
+	//	如果本层指定了路径， 上层是否配置均不影响本层。如果本层未设置，将使用上层的配置项
+	//	(e.g. http block { set path; location { set path } } location中的将替换掉http中设置的路径)
     if (*path) {
         return NGX_CONF_OK;
     }
@@ -314,6 +327,7 @@ ngx_conf_merge_path_value(ngx_conf_t *cf, ngx_path_t **path, ngx_path_t *prev,
         return NGX_CONF_OK;
     }
 
+	//	如果配置指令未指定 path， 将重新创建
     *path = ngx_palloc(cf->pool, sizeof(ngx_path_t));
     if (*path == NULL) {
         return NGX_CONF_ERROR;
@@ -321,6 +335,7 @@ ngx_conf_merge_path_value(ngx_conf_t *cf, ngx_path_t **path, ngx_path_t *prev,
 
     (*path)->name = init->name;
 
+	//	检查初始化的路径是否为完整路径，不是将添加系统指令路径
     if (ngx_conf_full_name(cf->cycle, &(*path)->name, 0) != NGX_OK) {
         return NGX_CONF_ERROR;
     }

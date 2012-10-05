@@ -1120,7 +1120,9 @@ ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ *	[analy]	user指令设置
+ */
 static char *
 ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1157,26 +1159,27 @@ ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ccf->username = (char *) value[1].data;
 
     ngx_set_errno(0);
-    pwd = getpwnam((const char *) value[1].data);
+    pwd = getpwnam((const char *) value[1].data);				//	获取用户登录信息
     if (pwd == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
                            "getpwnam(\"%s\") failed", value[1].data);
         return NGX_CONF_ERROR;
     }
 
-    ccf->user = pwd->pw_uid;
+    ccf->user = pwd->pw_uid;									//	uid
 
-    group = (char *) ((cf->args->nelts == 2) ? value[1].data : value[2].data);
+	//	如果user指令仅指定一个参数，group将使用默认第一个参数
+    group = (char *) ((cf->args->nelts == 2) ? value[1].data : value[2].data);			
 
     ngx_set_errno(0);
-    grp = getgrnam(group);
+    grp = getgrnam(group);										//	获取用户的组信息
     if (grp == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
                            "getgrnam(\"%s\") failed", group);
         return NGX_CONF_ERROR;
     }
 
-    ccf->group = grp->gr_gid;
+    ccf->group = grp->gr_gid;									//	gid
 
     return NGX_CONF_OK;
 

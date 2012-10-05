@@ -40,8 +40,8 @@ typedef void (*ngx_path_loader_pt) (void *data);
 
 
 typedef struct {
-    ngx_str_t                  name;
-    size_t                     len;
+    ngx_str_t                  name;				//	路径的名称
+    size_t                     len;					//	???????
     size_t                     level[3];
 
 //	对应的回调，以及回调数据
@@ -49,8 +49,8 @@ typedef struct {
     ngx_path_loader_pt         loader;
     void                      *data;
 
-    u_char                    *conf_file;
-    ngx_uint_t                 line;
+    u_char                    *conf_file;			//	配置文件的地址指针
+    ngx_uint_t                 line;				//	解析的行号
 } ngx_path_t;
 
 

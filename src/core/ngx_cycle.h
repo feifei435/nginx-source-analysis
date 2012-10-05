@@ -28,9 +28,9 @@ typedef ngx_int_t (*ngx_shm_zone_init_pt) (ngx_shm_zone_t *zone, void *data);
 
 struct ngx_shm_zone_s {
     void                     *data;
-    ngx_shm_t                 shm;
+    ngx_shm_t                 shm;				//	共享内存属性
     ngx_shm_zone_init_pt      init;
-    void                     *tag;
+    void                     *tag;				//	使用共享内存的模块名称（内存地址）
 };
 
 
@@ -50,7 +50,7 @@ struct ngx_cycle_s {
     ngx_array_t               listening;
     ngx_array_t               pathes;								/* [analy]   路径数组 （array of (ngx_path_t *)）*/					
     ngx_list_t                open_files;							/* [analy]   打开文件列表   */	
-    ngx_list_t                shared_memory;						/* [analy]   共享内存列表   */		
+    ngx_list_t                shared_memory;						//	共享内存列表 array of ngx_shm_zone_t
 
     ngx_uint_t                connection_n;							/* [analy]   每个进程预先创建的connection数目(worker_connections指令指定) */
     ngx_uint_t                files_n;
@@ -88,9 +88,9 @@ typedef struct {
      ngx_uint_t               cpu_affinity_n;
      u_long                  *cpu_affinity;
 
-     char                    *username;
-     ngx_uid_t                user;
-     ngx_gid_t                group;
+     char                    *username;								//	指令 "user" 设置的用户名
+     ngx_uid_t                user;									//	uid
+     ngx_gid_t                group;								//	gid
 
      ngx_str_t                working_directory;
      ngx_str_t                lock_file;							/* [analy]	指令lock_file指定锁文件名，未指定时使用默认“logs/nginx.lock” */
