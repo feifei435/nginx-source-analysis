@@ -82,7 +82,7 @@ struct ngx_command_s {
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		/* [analy]   函数执行解析并获取配置项值的操作 */
     ngx_uint_t            conf;						/* [analy]   字段conf被NGX_HTTP_MODULE类型模块所用，该字段指定当前配置项所在的大致位置 */
     ngx_uint_t            offset;					/* [analy]   解析出来的配置项值所存放的地址 */
-    void                 *post;						/* [analy]   post指向模块读配置的时候需要的一些零碎变量 */
+    void                 *post;						// post指向模块读配置的时候需要的一些enum型变量(e.g. ngx_conf_set_enum_slot()函数中有例子)
 };
 
 #define ngx_null_command  { ngx_null_string, 0, NULL, 0, 0, NULL }

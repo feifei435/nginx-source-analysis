@@ -26,20 +26,20 @@ typedef struct {
 
 typedef struct {
     ngx_rbtree_t       *rbtree;
-    ngx_int_t           index;			//	变量在索引变量数组中的位置
-    ngx_str_t           var;			//	存放变量的字符串值
+    ngx_int_t           index;			//	指令 "limit_conn_zone" 的参数变量在索引变量数组中的位置
+    ngx_str_t           var;			//	存放指令 "limit_conn_zone" 的参数变量的字符串值(未展开的)
 } ngx_http_limit_conn_ctx_t;
 
 
 typedef struct {
-    ngx_shm_zone_t     *shm_zone;
-    ngx_uint_t          conn;
+    ngx_shm_zone_t     *shm_zone;		//	指令 "limit_conn" 参数1指定的共享区(ngx_shared_memory_add())
+    ngx_uint_t          conn;			//	指令 "limit_conn" 参数2指定的连接数
 } ngx_http_limit_conn_limit_t;
 
 
 typedef struct {
-    ngx_array_t         limits;
-    ngx_uint_t          log_level;
+    ngx_array_t         limits;			//	array of ngx_http_limit_conn_limit_t
+    ngx_uint_t          log_level;		//	当连接数量达到限制时，设置的日志级别，默认error
 } ngx_http_limit_conn_conf_t;
 
 
@@ -97,7 +97,7 @@ static ngx_command_t  ngx_http_limit_conn_commands[] = {
       0,
       NULL },
 
-    { ngx_string("limit_conn_log_level"),
+    { ngx_string("limit_conn_log_level"),			
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_enum_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
@@ -155,6 +155,7 @@ ngx_http_limit_conn_handler(ngx_http_request_t *r)
     ngx_http_limit_conn_limit_t    *limits;
     ngx_http_limit_conn_cleanup_t  *lccln;
 
+	//	??????
     if (r->main->limit_conn_set) {
         return NGX_DECLINED;
     }
@@ -510,7 +511,7 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 		
         if (ngx_strncmp(value[i].data, "zone=", 5) == 0) {
 
-			//	提取 zong= 后的name 赋值给 ngx_str_t name;
+			//	提取 zone= 后的name 赋值给 ngx_str_t name;
             name.data = value[i].data + 5;
 
             p = (u_char *) ngx_strchr(name.data, ':');
@@ -571,6 +572,7 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	//	必须设置共享内存区的名称
     if (name.len == 0) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "\"%V\" must have \"zone\" parameter",
@@ -578,6 +580,7 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	//	指令 "limit_conn_zone" 的参数必须有变量
     if (ctx == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "no variable is defined for %V \"%V\"",
@@ -585,6 +588,7 @@ ngx_http_limit_conn_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+	//	增加一个共享内存到系统的内存表中
     shm_zone = ngx_shared_memory_add(cf, &name, size,
                                      &ngx_http_limit_conn_module);
     if (shm_zone == NULL) {
@@ -676,7 +680,7 @@ ngx_http_limit_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+//	指令 "limit_conn" 调用此函数
 static char *
 ngx_http_limit_conn(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -690,6 +694,7 @@ ngx_http_limit_conn(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+	//	创建一个共享内存区
     shm_zone = ngx_shared_memory_add(cf, &value[1], 0,
                                      &ngx_http_limit_conn_module);
     if (shm_zone == NULL) {
@@ -713,6 +718,7 @@ ngx_http_limit_conn(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+	//	指令"limit_conn"指定的连接数，不能小于等于0，或大于65535
     n = ngx_atoi(value[2].data, value[2].len);
     if (n <= 0) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
