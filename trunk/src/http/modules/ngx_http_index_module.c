@@ -93,6 +93,11 @@ ngx_module_t  ngx_http_index_module = {
  * it only indicates that path contains an usual file in place of directory.
  */
 
+
+/****************************************************************** 
+		index指令的理解，当访问某个目录时未指定文件，如果此location
+		设置了index指令，将返回index指令设置的页面
+ ******************************************************************/
 static ngx_int_t
 ngx_http_index_handler(ngx_http_request_t *r)
 {
@@ -133,7 +138,7 @@ ngx_http_index_handler(ngx_http_request_t *r)
 
         if (index[i].lengths == NULL) {				//	index指令参数中没有使用变量时
 
-            if (index[i].name.data[0] == '/') {		//	index指定的参数以"/"结尾的
+            if (index[i].name.data[0] == '/') {		//	index指定的参数以"/"开始的， 将产生内部重定向。
                 return ngx_http_internal_redirect(r, &index[i].name, &r->args);
             }
 

@@ -10,11 +10,11 @@
 #include <ngx_http.h>
 
 /*
-*	[analy]	此模块默认不被编译的，需要手动添加
-*		这个模块可以在当前的location之前或者之后增加别的location。它作为一个输出过滤器执行，
-*		包含到其他location中的主请求和子请求不会被完全缓冲，并且仍然以流的形式传递到客户端，
-*		因为最终应答体的长度在传递HTTP头的时候是未知的，HTTP的chunked编码总是在这里使用。
-*/
+ *	[analy]	此模块默认不被编译的，需要手动添加
+ *		这个模块可以在当前的location之前或者之后增加别的location。它作为一个输出过滤器执行，
+ *		包含到其他location中的主请求和子请求不会被完全缓冲，并且仍然以流的形式传递到客户端，
+ *		因为最终应答体的长度在传递HTTP头的时候是未知的，HTTP的chunked编码总是在这里使用。
+ */
 
 
 typedef struct {
@@ -22,7 +22,7 @@ typedef struct {
     ngx_str_t     after_body;
 
     ngx_hash_t    types;
-    ngx_array_t  *types_keys;
+    ngx_array_t  *types_keys;					//	array of ngx_hash_key_t
 } ngx_http_addition_conf_t;
 
 
@@ -115,10 +115,12 @@ ngx_http_addition_header_filter(ngx_http_request_t *r)
         return ngx_http_next_header_filter(r);
     }
 
+	//	??????????
     if (ngx_http_test_content_type(r, &conf->types) == NULL) {
         return ngx_http_next_header_filter(r);
     }
 
+	//	申请 addition模块 的ctx 并设置到 request_t 结构中
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_addition_ctx_t));
     if (ctx == NULL) {
         return NGX_ERROR;
@@ -126,6 +128,7 @@ ngx_http_addition_header_filter(ngx_http_request_t *r)
 
     ngx_http_set_ctx(r, ctx, ngx_http_addition_filter_module);
 
+	//	为什么清除这里的content_length长度
     ngx_http_clear_content_length(r);
     ngx_http_clear_accept_ranges(r);
 
@@ -139,7 +142,7 @@ ngx_http_addition_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_int_t                  rc;
     ngx_uint_t                 last;
     ngx_chain_t               *cl;
-    ngx_http_request_t        *sr;
+    ngx_http_request_t        *sr;						//	子请求的request结构
     ngx_http_addition_ctx_t   *ctx;
     ngx_http_addition_conf_t  *conf;
 
@@ -245,6 +248,7 @@ ngx_http_addition_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->before_body, prev->before_body, "");
     ngx_conf_merge_str_value(conf->after_body, prev->after_body, "");
 
+	//	合并 addition_types 指令指定的参数，如果未指定将使用默认ngx_http_html_default_types
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->types,
                              &prev->types_keys, &prev->types,
                              ngx_http_html_default_types)

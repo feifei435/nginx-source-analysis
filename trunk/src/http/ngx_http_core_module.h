@@ -310,6 +310,12 @@ struct ngx_http_core_loc_conf_s {
     unsigned      exact_match:1;							//	精确匹配("=")
     unsigned      noregex:1;								//	非正则匹配( " ^~ " )
 
+	/* 此字段在以下几个模块中被赋值
+		ngx_http_fastcgi_module.c
+		ngx_http_memcached_module.c
+		ngx_http_proxy_module.c
+		ngx_http_scgi_module.c
+		ngx_http_uwsgi_module.c */
     unsigned      auto_redirect:1;
 
 #if (NGX_HTTP_GZIP)

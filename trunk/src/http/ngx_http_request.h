@@ -10,7 +10,7 @@
 
 
 #define NGX_HTTP_MAX_URI_CHANGES           10						//	最大URI的重定向次数
-#define NGX_HTTP_MAX_SUBREQUESTS           200
+#define NGX_HTTP_MAX_SUBREQUESTS           200						//	最大子请求个数
 
 /* must be 2^n */
 #define NGX_HTTP_LC_HEADER_LEN             32
@@ -351,7 +351,7 @@ struct ngx_http_request_s {
 
     ngx_connection_t                 *connection;
 
-    void                            **ctx;										//	http中各个模块使用的ctx，在 ngx_http_init_request（）函数中申请
+    void                            **ctx;										//	http中各个模块使用的ctx，在 ngx_http_init_request（）函数中申请， 释放在什么位置？
     void                            **main_conf;
     void                            **srv_conf;
     void                            **loc_conf;
@@ -369,8 +369,8 @@ struct ngx_http_request_s {
     ngx_pool_t                       *pool;
     ngx_buf_t                        *header_in;					/* [analy]	调用recv等函数读取到的header信息的缓存，通过这个缓存对header进行分析 */
 
-    ngx_http_headers_in_t             headers_in;					//	请求header的结构体
-    ngx_http_headers_out_t            headers_out;
+    ngx_http_headers_in_t             headers_in;					//	客户端请求header的结构体
+    ngx_http_headers_out_t            headers_out;					//	响应给客户端的header结构体
 
     ngx_http_request_body_t          *request_body;					//	ngx_http_read_client_request_body()函数中申请
 	
@@ -392,8 +392,8 @@ struct ngx_http_request_s {
 
 	ngx_chain_t                      *out;							//	这个chain保存的是上一次还没有被发完的buf，这样每次我们接收到新的chain的话，
 																	//	就需要将新的chain连接到老的out chain上，然后再发出去。 
-    ngx_http_request_t               *main;							//	在ngx_http_init_request()函数中将设置为当前的request
-    ngx_http_request_t               *parent;
+    ngx_http_request_t               *main;							//	子请求的根请求( 在ngx_http_init_request()函数中将设置为当前的request )
+    ngx_http_request_t               *parent;						//	子请求的父请求( 在函数ngx_http_subrequest()中设置 )
     ngx_http_postponed_request_t     *postponed;
     ngx_http_post_subrequest_t       *post_subrequest;
     ngx_http_posted_request_t        *posted_requests;
@@ -457,7 +457,7 @@ struct ngx_http_request_s {
     unsigned                          valid_location:1;					//	??????????
     unsigned                          valid_unparsed_uri:1;				//	????????????
     unsigned                          uri_changed:1;					//	当前的uri是否被重定向，是否改变
-    unsigned                          uri_changes:4;					//	uri可以重定向的最大次数，最大10次（ngx_http_init_request()函数中初始化）
+    unsigned                          uri_changes:4;					//	uri可以重定向的最大次数，最大10次（ngx_http_init_request()函数中初始化, 子请求的）
 
     unsigned                          request_body_in_single_buf:1;		//	指令 "client_body_in_single_buffer" 打开时，将设置为1
     unsigned                          request_body_in_file_only:1;		//	指令 "client_body_in_file_only" 打开时，将设置为1
@@ -466,7 +466,7 @@ struct ngx_http_request_s {
     unsigned                          request_body_file_group_access:1;
     unsigned                          request_body_file_log_level:3;	//	日志级别
 
-    unsigned                          subrequest_in_memory:1;
+    unsigned                          subrequest_in_memory:1;			//	subrequest独有的标记
     unsigned                          waited:1;
 
 #if (NGX_HTTP_CACHE)
@@ -502,7 +502,7 @@ struct ngx_http_request_s {
     unsigned                          keepalive:1;					//	是否为keepalive连接( ngx_http_handler()函数中根据 r->headers_in.connection_type类型确定 )
     unsigned                          lingering_close:1;
     unsigned                          discard_body:1;				//	如果已经调用 ngx_http_discard_request_body（）函数，将设置为1
-    unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()函数中设置）
+    unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()和 ngx_http_subrequest() 函数中设置）
     unsigned                          error_page:1;
     unsigned                          ignore_content_encoding:1;
     unsigned                          filter_finalize:1;			//	仅在 ngx_http_filter_finalize_request（）函数中调用
@@ -510,7 +510,7 @@ struct ngx_http_request_s {
     unsigned                          request_complete:1;
     unsigned                          request_output:1;
     unsigned                          header_sent:1;
-    unsigned                          expect_tested:1;
+    unsigned                          expect_tested:1;				//	??????(ngx_http_subrequest() 函数中设置)
     unsigned                          root_tested:1;
     unsigned                          done:1;
     unsigned                          logged:1;

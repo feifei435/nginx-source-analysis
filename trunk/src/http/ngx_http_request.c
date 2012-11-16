@@ -205,17 +205,20 @@ ngx_http_init_connection(ngx_connection_t *c)
     rev = c->read;
     rev->handler = ngx_http_init_request;			//	当有数据可读时，调用的handler (ngx_process_events_and_timers --> ngx_process_events(ngx_epoll_process_events))
 
-    c->write->handler = ngx_http_empty_handler;
+	//	这里注册写事件回调函数什么都不做是因为接下来仅登记了（ngx_handle_read_event（））读事件到事件监听队列中
+	//	没有监听写事件，自然不需要处理
+    c->write->handler = ngx_http_empty_handler;		
 
 #if (NGX_STAT_STUB)
     (void) ngx_atomic_fetch_add(ngx_stat_reading, 1);
 #endif
 
-	//	如果接收准备好了，则直接调用ngx_http_init_request
+	//	如果接收准备好了，则直接调用ngx_http_init_request；
+	//	这里为什么会检查事件的准备状态呢？需要查看TCP选项（deferred accept）
     if (rev->ready) {
         /* the deferred accept(), rtsig, aio, iocp */
 
-        if (ngx_use_accept_mutex) {			/* [analy] 如果使用了mutex锁，则post 这个event，然后返回 */
+        if (ngx_use_accept_mutex) {			//	如果使用了mutex锁，则post 这个event，然后返回
             ngx_post_event(rev, &ngx_posted_events);
             return;
         }
@@ -407,7 +410,7 @@ ngx_http_init_request(ngx_event_t *rev)
     r->loc_conf = cscf->ctx->loc_conf;
 
     rev->handler = ngx_http_process_request_line;						//	重新设置当前请求的处理句柄，修改为 ngx_http_process_request_line
-    r->read_event_handler = ngx_http_block_reading;
+    r->read_event_handler = ngx_http_block_reading;						//	为什么要注册此handler??
 
 #if (NGX_HTTP_SSL)
 
@@ -515,7 +518,7 @@ ngx_http_init_request(ngx_event_t *rev)
     r->headers_out.last_modified_time = -1;
 
     r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;					//	初始化 uri_changes 的最大个数
-    r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;
+    r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;					//	初始化子请求的最大个数
 
     r->http_state = NGX_HTTP_READING_REQUEST_STATE;
 
@@ -734,7 +737,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, rev->log, 0,
                    "http process request line");
 
-	//	超时检查
+	//	因为此函数不是马上执行，所以需要判断是否超时！如果超时，将直接关闭连接
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
         c->timedout = 1;
@@ -1688,12 +1691,12 @@ ngx_http_process_request(ngx_http_request_t *r)
 
 	/*
 		这里为什么注册事件的读写句柄呢，目前只能猜测下：
-		当已经解析完请求头后，在处理请求时，又发来请求这时将调用
+		当解析完请求头处理请求过程中， 又有读事件发生，此时将调用  ngx_http_request_handler函数
 	*/
 
     c->read->handler = ngx_http_request_handler;				//	在这注册的event-handler，在 ngx_epoll_process_events（）函数中调用
     c->write->handler = ngx_http_request_handler;
-    r->read_event_handler = ngx_http_block_reading;				//	为什么这里选择阻塞的方式进行读数据？？？
+    r->read_event_handler = ngx_http_block_reading;				//	边缘触发时不起作用
 
     ngx_http_handler(r);
 
@@ -1915,12 +1918,15 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
     }
 }
 
-
+/*
+ *	[analy]	挂载一个 ngx_http_posted_request_t 结构到主请求的 posted_requests 链表中
+ */
 ngx_int_t
 ngx_http_post_request(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
 {
     ngx_http_posted_request_t  **p;
 
+	//	如果pr为空， 创建一个 ngx_http_posted_request_t 结构
     if (pr == NULL) {
         pr = ngx_palloc(r->pool, sizeof(ngx_http_posted_request_t));
         if (pr == NULL) {
@@ -1931,6 +1937,7 @@ ngx_http_post_request(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
     pr->request = r;
     pr->next = NULL;
 
+	//	找到主请求 posted_requests 中最后一个节点，并挂载一个新的sub_request进去
     for (p = &r->main->posted_requests; *p; p = &(*p)->next) { /* void */ }
 
     *p = pr;
