@@ -19,7 +19,7 @@ typedef struct ngx_buf_s  ngx_buf_t;
 
 struct ngx_buf_s {
     u_char          *pos;			//	暂时理解为 已经解析完数据的末尾指针
-    u_char          *last;			//	暂时理解为 读到的数据末尾指针
+    u_char          *last;			//	暂时理解为 读到的数据末尾指针(即缓冲区中已经存在数据)
     off_t            file_pos;		//	如果数据在文件里，标识在文件中的当前位置
     off_t            file_last;		//	如果数据在文件里，标识在文件中的结尾位置
 

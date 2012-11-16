@@ -76,12 +76,12 @@
 
 
 struct ngx_command_s {
-    ngx_str_t             name;						/* [analy]   指令名称	   */		
-    ngx_uint_t            type;						/* [analy]   type是标识符集，标识指令在配置文件中的合法位置和指令的参数个数.
-													 				这是一个至少有32bit的无符号整形，前16bit用于标识位置，后16bit用于标识参数 */													 
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		/* [analy]   函数执行解析并获取配置项值的操作 */
-    ngx_uint_t            conf;						/* [analy]   字段conf被NGX_HTTP_MODULE类型模块所用，该字段指定当前配置项所在的大致位置 */
-    ngx_uint_t            offset;					/* [analy]   解析出来的配置项值所存放的地址 */
+    ngx_str_t             name;						//	指令名称
+    ngx_uint_t            type;						//	type是标识符集，标识指令在配置文件中的合法位置和指令的参数个数.
+													//	这是一个至少有32bit的无符号整形，前16bit用于标识位置，后16bit用于标识参数													 
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);		//	函数执行解析并获取配置项值的操作(在函数ngx_conf_handler()中进行解析)
+    ngx_uint_t            conf;						//	该字段含义为此指令配置文件的位置（e.g. NGX_HTTP_SRV_CONF_OFFSET -- 说明此指令的配置文件在srv_conf中）
+    ngx_uint_t            offset;					//	解析出来的配置项值所存放的地址 e.g. offsetof(ngx_core_conf_t, worker_processes)
     void                 *post;						// post指向模块读配置的时候需要的一些enum型变量(e.g. ngx_conf_set_enum_slot()函数中有例子)
 };
 
@@ -176,12 +176,16 @@ struct ngx_conf_s {
     ngx_cycle_t          *cycle;			/* [analy] 当前使用的cycle */
     ngx_pool_t           *pool;				/* [analy] 当前使用的pool */
     ngx_pool_t           *temp_pool;		/* [analy] 这个pool将会在配置解析完毕后释放 */
-    ngx_conf_file_t      *conf_file;		/* [analy] 要解析的配置文件 */
+    ngx_conf_file_t      *conf_file;		//	要解析的配置文件
     ngx_log_t            *log;				/* [analy] 配置Log */
 
     void                 *ctx;				/* [analy] 主要为了提供模块的层次化(后续会详细介绍) */
     ngx_uint_t            module_type;		/* [analy] 模块类型 */
-    ngx_uint_t            cmd_type;			/* [analy] 命令类型 */
+	/*
+		此变量一般在解析block类型的指令时需要设置 (e.g. 解析http blcok时设置为NGX_HTTP_MAIN_CONF)
+		在函数 ngx_conf_handler() 中需要检查此类型
+	*/
+    ngx_uint_t            cmd_type;			//	命令作用域范围 (e.g. NGX_HTTP_MAIN_CONF、NGX_HTTP_LOC_CONF等)
 
     ngx_conf_handler_pt   handler;			/* [analy] 模块定义的handler */
     char                 *handler_conf;		/* [analy] 自定义的handler */

@@ -98,7 +98,9 @@ ngx_conf_param(ngx_conf_t *cf)
     return rv;
 }
 
-
+/* 
+ *	[analy]	参数filename不为NULL，将解析的是parse_file
+ */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -287,7 +289,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
     ngx_str_t      *name;
     ngx_command_t  *cmd;
 
-    name = cf->args->elts;
+    name = cf->args->elts;												//	指令名称（e.g. 指令"default_type"）
 
     multi = 0;
 
@@ -295,32 +297,32 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
         /* look up the directive in the appropriate modules */
 
-        if (ngx_modules[i]->type != NGX_CONF_MODULE
+        if (ngx_modules[i]->type != NGX_CONF_MODULE						//	检查模块的类型是否是正准备验证的（e.g. NGX_HTTP_MODULE）
             && ngx_modules[i]->type != cf->module_type)
         {
             continue;
         }
 
-        cmd = ngx_modules[i]->commands;
+        cmd = ngx_modules[i]->commands;									//	开始依次查找指定类型(NGX_HTTP_MODULE)模块的指令是否与
         if (cmd == NULL) {
             continue;
         }
 
-        for ( /* void */ ; cmd->name.len; cmd++) {
+        for ( /* void */ ; cmd->name.len; cmd++) {						//	遍历单个模块的所有指令
 
             if (name->len != cmd->name.len) {
                 continue;
             }
 
-            if (ngx_strcmp(name->data, cmd->name.data) != 0) {
+            if (ngx_strcmp(name->data, cmd->name.data) != 0) {			//	比较命令名字
                 continue;
             }
 
 
             /* is the directive's location right ? */
 
-            if (!(cmd->type & cf->cmd_type)) {
-                if (cmd->type & NGX_CONF_MULTI) {
+            if (!(cmd->type & cf->cmd_type)) {							//	检查命令的范围（e.g. server指令是否允许出现在location中）				
+                if (cmd->type & NGX_CONF_MULTI) {						//	？？？
                     multi = 1;
                     continue;
                 }
@@ -328,14 +330,14 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 goto not_allowed;
             }
 
-            if (!(cmd->type & NGX_CONF_BLOCK) && last != NGX_OK) {
+            if (!(cmd->type & NGX_CONF_BLOCK) && last != NGX_OK) {			//	????
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                   "directive \"%s\" is not terminated by \";\"",
                                   name->data);
                 return NGX_ERROR;
             }
 
-            if ((cmd->type & NGX_CONF_BLOCK) && last != NGX_CONF_BLOCK_START) {
+            if ((cmd->type & NGX_CONF_BLOCK) && last != NGX_CONF_BLOCK_START) {		//	????
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "directive \"%s\" has no opening \"{\"",
                                    name->data);
@@ -344,7 +346,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             /* is the directive's argument count right ? */
 
-            if (!(cmd->type & NGX_CONF_ANY)) {
+            if (!(cmd->type & NGX_CONF_ANY)) {										//	检查参数个数是否正确
 
                 if (cmd->type & NGX_CONF_FLAG) {
 
@@ -384,11 +386,16 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             } else if (cmd->type & NGX_MAIN_CONF) {
                 conf = &(((void **) cf->ctx)[ngx_modules[i]->index]);
 
-            } else if (cf->ctx) {
+            } else if (cf->ctx) {					
+
+				/* 	e.g. 如果当前解析的指令在location block {...}中，则cf->ctx是当前location中申请的ctx值 
+						 参考: ngx_http_core_location()
+				*/
+
                 confp = *(void **) ((char *) cf->ctx + cmd->conf);
 
                 if (confp) {
-                    conf = confp[ngx_modules[i]->ctx_index];
+                    conf = confp[ngx_modules[i]->ctx_index];			//	查找到指定模块在特定block内的配置文件地址
                 }
             }
 

@@ -280,7 +280,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-	/* [analy]	对NGX_CORE_MODULE模块的配置项进行赋值
+	/* 
+		对NGX_CORE_MODULE模块的配置项进行赋值
 		cycle->conf_file；默认时/usr/local/nginx/conf/nginx.conf
 	*/
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {

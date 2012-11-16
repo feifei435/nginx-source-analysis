@@ -317,7 +317,7 @@ ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
 
         /* kqueue, epoll */
 
-        if (!rev->active && !rev->ready) {								/* [analy]	当此事件处于非活跃状态时， ready状态暂不清楚？？？？？ */
+        if (!rev->active && !rev->ready) {								//	当此事件处于非活跃状态时(即没有被添加到epoll事件监控队列中时)， rev->ready是此连接没有读事件到来
             if (ngx_add_event(rev, NGX_READ_EVENT, NGX_CLEAR_EVENT)		/* [analy]	调用ngx_epoll_add_event()， 当使用epoll时，宏NGX_CLEAR_EVENT被定义成 EPOLLET */
                 == NGX_ERROR)
             {

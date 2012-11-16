@@ -860,7 +860,7 @@ ngx_http_handler(ngx_http_request_t *r)
     r->gzip_vary = 0;
 #endif
 
-    r->write_event_handler = ngx_http_core_run_phases;
+    r->write_event_handler = ngx_http_core_run_phases;		//	为什么注册这个函数？？？
     ngx_http_core_run_phases(r);							//	运行所有phase
 }
 
@@ -1428,7 +1428,9 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 
     /* rc == NGX_DECLINED */
 
-    ph++;
+	//	如果content phase后边还有phase将继续执行后边的phase，
+	//	什么情况时content phase后没有phase???
+    ph++;								
 
     if (ph->checker) {
         r->phase_handler++;
@@ -2431,7 +2433,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
     ngx_http_core_srv_conf_t      *cscf;
     ngx_http_postponed_request_t  *pr, *p;
 
-    r->main->subrequests--;
+    r->main->subrequests--;												//	父request下的子请求总个数
 
     if (r->main->subrequests == 0) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -2440,7 +2442,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));
+    sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));				//	子请求申请专属的request结构
     if (sr == NULL) {
         return NGX_ERROR;
     }
@@ -2448,42 +2450,42 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->signature = NGX_HTTP_MODULE;
 
     c = r->connection;
-    sr->connection = c;
+    sr->connection = c;													//	与父请求共用一个connection
 
-    sr->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
+    sr->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);	//	子请求专属的ctx结构
     if (sr->ctx == NULL) {
         return NGX_ERROR;
     }
 
-    if (ngx_list_init(&sr->headers_out.headers, r->pool, 20,
+    if (ngx_list_init(&sr->headers_out.headers, r->pool, 20,			//	子请求专属的响应头结构
                       sizeof(ngx_table_elt_t))
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
-    cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+    cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);		//	子请求专属的main_conf、srv_conf、loc_conf与父请求一致
     sr->main_conf = cscf->ctx->main_conf;
     sr->srv_conf = cscf->ctx->srv_conf;
     sr->loc_conf = cscf->ctx->loc_conf;
 
-    sr->pool = r->pool;
+    sr->pool = r->pool;													//	子请求与父请求共用一个内存池
 
-    sr->headers_in = r->headers_in;
+    sr->headers_in = r->headers_in;										//	子请求与父请求共用一个客户端请求头结构
 
-    ngx_http_clear_content_length(sr);
+    ngx_http_clear_content_length(sr);									//	???
     ngx_http_clear_accept_ranges(sr);
     ngx_http_clear_last_modified(sr);
 
-    sr->request_body = r->request_body;
+    sr->request_body = r->request_body;									//	子请求与父请求共用一个请求body			
 
-    sr->method = NGX_HTTP_GET;
-    sr->http_version = r->http_version;
+    sr->method = NGX_HTTP_GET;											//	子请求专属的请求方法"GET"
+    sr->http_version = r->http_version;									//	子请求与父请求共用http请求版本号
 
-    sr->request_line = r->request_line;
-    sr->uri = *uri;
+    sr->request_line = r->request_line;									//	子请求与父请求共用一个请求行
+    sr->uri = *uri;														//	子请求专属的uri
 
-    if (args) {
+    if (args) {															//	子请求如果有独有的参数，就不与父请求共享
         sr->args = *args;
     }
 
@@ -2493,27 +2495,27 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->subrequest_in_memory = (flags & NGX_HTTP_SUBREQUEST_IN_MEMORY) != 0;
     sr->waited = (flags & NGX_HTTP_SUBREQUEST_WAITED) != 0;
 
-    sr->unparsed_uri = r->unparsed_uri;
-    sr->method_name = ngx_http_core_get_method;
-    sr->http_protocol = r->http_protocol;
+    sr->unparsed_uri = r->unparsed_uri;									//	子请求与父请求共用一个unparsed_uri字符串值
+    sr->method_name = ngx_http_core_get_method;							//	子请求行中独有的字符串"GET"
+    sr->http_protocol = r->http_protocol;								//	子请求与父请求共用一个http_protocol字符串值
 
     ngx_http_set_exten(sr);
 
-    sr->main = r->main;
-    sr->parent = r;
+    sr->main = r->main;													//	子请求的根请求
+    sr->parent = r;														//	子请求的父请求
     sr->post_subrequest = ps;
-    sr->read_event_handler = ngx_http_request_empty_handler;
+    sr->read_event_handler = ngx_http_request_empty_handler;			//	为什么这么设置？？？
     sr->write_event_handler = ngx_http_handler;
 
-    if (c->data == r && r->postponed == NULL) {
+    if (c->data == r && r->postponed == NULL) {							//	设置同一层级的第一个subrequest
         c->data = sr;
     }
 
-    sr->variables = r->variables;
+    sr->variables = r->variables;										//	子请求与父请求共享同一个索引变量数组
 
-    sr->log_handler = r->log_handler;
+    sr->log_handler = r->log_handler;									//	子请求与父请求共享同一个日志处理句柄
 
-    pr = ngx_palloc(r->pool, sizeof(ngx_http_postponed_request_t));
+    pr = ngx_palloc(r->pool, sizeof(ngx_http_postponed_request_t));		//	postponed request
     if (pr == NULL) {
         return NGX_ERROR;
     }
@@ -2523,29 +2525,30 @@ ngx_http_subrequest(ngx_http_request_t *r,
     pr->next = NULL;
 
     if (r->postponed) {
-        for (p = r->postponed; p->next; p = p->next) { /* void */ }
+        for (p = r->postponed; p->next; p = p->next) { /* void */ }			//	找到postponed链表的末尾，将当前节点挂载进去
         p->next = pr;
 
     } else {
         r->postponed = pr;
     }
 
-    sr->internal = 1;
+    sr->internal = 1;											//	此请求为内部请求
 
     sr->discard_body = r->discard_body;
     sr->expect_tested = 1;
     sr->main_filter_need_in_memory = r->main_filter_need_in_memory;
 
-    sr->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
+    sr->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;				//	子请求的uri跳转次数
 
-    tp = ngx_timeofday();
+    tp = ngx_timeofday();								//	设置时间
     sr->start_sec = tp->sec;
     sr->start_msec = tp->msec;
 
-    r->main->count++;
+    r->main->count++;									//	根请求的计数++？为什么？？
 
-    *psr = sr;
+    *psr = sr;											//	函数外要获取函数内子请求的地址，所以在此赋值
 
+	//	挂载子请求到父请求的 posted_requests 链表上
     return ngx_http_post_request(sr, NULL);
 }
 
@@ -2582,7 +2585,7 @@ ngx_http_internal_redirect(ngx_http_request_t *r,
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "internal redirect: \"%V?%V\"", uri, &r->args);
 
-    ngx_http_set_exten(r);			//	设置 r->exten
+    ngx_http_set_exten(r);			//	设置 r->exten 文件扩展名
 
     /* clear the modules contexts */
     ngx_memzero(r->ctx, sizeof(void *) * ngx_http_max_module);

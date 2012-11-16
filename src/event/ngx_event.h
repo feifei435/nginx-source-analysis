@@ -49,12 +49,12 @@ struct ngx_event_s {
      * the event was passed or would be passed to a kernel;
      * in aio mode - operation was posted.
      */
-    unsigned         active:1;							/* [analy]   标识此事件是否已经送进epoll事件处理数组中，=1（已经加入） */
+    unsigned         active:1;							//	标识此事件是否已经送进epoll事件处理数组中，=1（已经加入）
 
     unsigned         disabled:1;
 
     /* the ready event; in aio mode 0 means that no operation can be posted */
-    unsigned         ready:1;							//	有读写事件发生，可以读取或写入数据了
+    unsigned         ready:1;							//	有读写事件发生，可以读取或写入数据了(ngx_epoll_process_events（）函数中设置)， 调用recv等接收函数后将此标记置零
 
     unsigned         oneshot:1;
 

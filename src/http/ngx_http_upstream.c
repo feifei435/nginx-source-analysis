@@ -4106,6 +4106,8 @@ ngx_http_upstream_cache_status(ngx_http_request_t *r,
  *			ngx_http_conf_ctx_t -> main_conf	指向http层
  *			ngx_http_conf_ctx_t -> srv_conf		指向自身本层
  *			ngx_http_conf_ctx_t -> loc_conf		指向自身本层
+ *
+ *			参数3: 不使用
  */
 static char *
 ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)

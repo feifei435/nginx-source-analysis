@@ -3389,7 +3389,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     clcf->handler = ngx_http_proxy_handler;							//	设置handler后，content phase阶段的其他handler将不会被执行
 
-    if (clcf->name.data[clcf->name.len - 1] == '/') {				//	proxy_pass 指定的地址最后以"/"
+    if (clcf->name.data[clcf->name.len - 1] == '/') {				//	proxy_pass 指定的地址最后以"/"结尾的
         clcf->auto_redirect = 1;
     }
 

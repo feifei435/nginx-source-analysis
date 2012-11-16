@@ -134,7 +134,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    *(ngx_http_conf_ctx_t **) conf = ctx;
+    *(ngx_http_conf_ctx_t **) conf = ctx;							//	设置http block 的ctx，到 cf->ctx[ngx_modules[i]->index] 中
 
 
     /* count the number of the http modules and set up their indices */
@@ -730,6 +730,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
         n += cmcf->phases[i].handlers.nelts;
 
+		//	将phase中的handler设置到ph所指的cmcf->phase_engine.handlers中
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
             ph->handler = h[j];
@@ -2156,7 +2157,7 @@ ngx_http_types_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     types = (ngx_array_t **) (p + cmd->offset);
 
-    if (*types == (void *) -1) {
+    if (*types == (void *) -1) {				//	*types = -1， 是因为指令参数中指定了 "*"(所有的类型)， 后续设置已经包含在"*"内所以不需要解析
         return NGX_CONF_OK;
     }
 
@@ -2168,6 +2169,7 @@ ngx_http_types_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
+		//	当设置了默认类型时，将使用默认类型
         if (default_type) {
             type = ngx_array_push(*types);
             if (type == NULL) {
@@ -2183,8 +2185,10 @@ ngx_http_types_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+	//	循环处理指令参数
     for (i = 1; i < cf->args->nelts; i++) {
 
+		//	如果指令的参数指定了 "*" , 将*type的地址指向 "-1"
         if (value[i].len == 1 && value[i].data[0] == '*') {
             *types = (void *) -1;
             return NGX_CONF_OK;
@@ -2193,6 +2197,7 @@ ngx_http_types_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         hash = ngx_hash_strlow(value[i].data, value[i].data, value[i].len);
         value[i].data[value[i].len] = '\0';
 
+		//	检查是否重复设置MIME
         type = (*types)->elts;
         for (n = 0; n < (*types)->nelts; n++) {
 
@@ -2226,7 +2231,7 @@ ngx_http_merge_types(ngx_conf_t *cf, ngx_array_t **keys, ngx_hash_t *types_hash,
 
     if (*keys) {
 
-        if (*keys == (void *) -1) {
+        if (*keys == (void *) -1) {				//	如果指令指定了的参数"*", 将不用创建hash表(设置在ngx_http_types_slot()函数中)
             return NGX_CONF_OK;
         }
 
@@ -2245,6 +2250,9 @@ ngx_http_merge_types(ngx_conf_t *cf, ngx_array_t **keys, ngx_hash_t *types_hash,
         return NGX_CONF_OK;
     }
 
+
+	//	如果当前的location中未显示指定此指令， 将检查上层http、server或location是否设置， 如果上层未设置将
+	//	设置一个默认的类型
     if (prev_types_hash->buckets == NULL) {
 
         if (*prev_keys == NULL) {
@@ -2275,13 +2283,16 @@ ngx_http_merge_types(ngx_conf_t *cf, ngx_array_t **keys, ngx_hash_t *types_hash,
         }
     }
 
-    *types_hash = *prev_types_hash;
+	//	如果http层未指定指令，server层指定了指令，location层未指定，此时如果解析location时，将server层的指令赋值给location层
+	*types_hash = *prev_types_hash;				
 
     return NGX_CONF_OK;
 
 }
 
-
+/* 
+ *	[analy]	设置默认的default_type
+ */
 ngx_int_t
 ngx_http_set_default_types(ngx_conf_t *cf, ngx_array_t **types,
     ngx_str_t *default_type)
