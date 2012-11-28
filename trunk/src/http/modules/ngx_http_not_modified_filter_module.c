@@ -9,6 +9,19 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+/*
+	模块功能:			此模块是第一个执行的header filter; 
+	模块使用指令:		"if_modified_since"进行检查
+	首先检查;
+		1. 响应状态码(r->headers_out.status)不等于200时，不执行此模块
+		2. "非根请求" 不执行此模块;
+		3. "r->headers_out.last_modified_time"字段如果未被赋值(说明客户端请求的是服务器端的一个文件)，不执行此模块
+	再检查:
+		检查请求头中是否包含 "if_unmodified_since" 和 "if_modified_since" 字段
+	
+
+*/
+
 
 static ngx_int_t ngx_http_test_precondition(ngx_http_request_t *r);
 static ngx_int_t ngx_http_test_not_modified(ngx_http_request_t *r);
@@ -56,7 +69,7 @@ ngx_http_not_modified_header_filter(ngx_http_request_t *r)
 {
     if (r->headers_out.status != NGX_HTTP_OK
         || r != r->main
-        || r->headers_out.last_modified_time == -1)
+        || r->headers_out.last_modified_time == -1)				//	响应状态码不是200、进行处理的不是主请求、last_modified_time=
     {
         return ngx_http_next_header_filter(r);
     }
@@ -117,17 +130,18 @@ ngx_http_test_not_modified(ngx_http_request_t *r)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http ims:%d lm:%d", ims, r->headers_out.last_modified_time);
 
-	//	请求中"if_modified_since"时间与文件的最后修改时间不一致，将根据指令 "if_modified_since" 来决定返回的状态码
+	//	请求头中"if modified since"时间与文件的最后修改时间不一致， 
+	//	指令 "if_modified_since" 指定为 "精确匹配时" 或 请求头中的文件最后修改时间 < 服务器中的文件最后修改时间， 将执行下一个filter
     if (ims != r->headers_out.last_modified_time) {
 
         if (clcf->if_modified_since == NGX_HTTP_IMS_EXACT
-            || ims < r->headers_out.last_modified_time)
+            || ims < r->headers_out.last_modified_time)		
         {
             return ngx_http_next_header_filter(r);
         }
     }
 
-	//	返回304
+	//	如果if modified since 返回的时间与服务器上文件最后修改时间相等则返回304
     r->headers_out.status = NGX_HTTP_NOT_MODIFIED;				//	304
     r->headers_out.status_line.len = 0;
     r->headers_out.content_type.len = 0;

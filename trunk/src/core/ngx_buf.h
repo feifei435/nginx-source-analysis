@@ -88,8 +88,8 @@ struct ngx_output_chain_ctx_s {
     ngx_chain_t                 *busy;		//	这个保存了已经发送完毕的buf，也就是每次我们从in中将buf读取完毕后，确定数据已经取完，
 											//	此时就会将这个chain拷贝到busy中。然后将比较老的busy buf拷贝到free中
 
-	//	相关的标记，是否使用sendfile，是否使用directio等等
-    unsigned                     sendfile:1;
+	//	是否使用sendfile，是否使用directio等等
+    unsigned                     sendfile:1;	//	ngx_http_copy_filter()函数中根据c->sendfile来设置
     unsigned                     directio:1;
 #if (NGX_HAVE_ALIGNED_DIRECTIO)
     unsigned                     unaligned:1;
