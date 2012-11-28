@@ -10,6 +10,15 @@
 #include <ngx_http.h>
 
 
+/*		
+		模块功能:			此模块是第一个执行的header filter; 
+		模块指令:			"expires:"、"add_header"
+		逻辑说明;			
+			首先检查是否使用"expires"和"add_header"两个指定， 未使用将执行下一个filter
+			然后分别处理两条指令
+*/
+
+
 typedef struct ngx_http_header_val_s  ngx_http_header_val_t;
 
 typedef ngx_int_t (*ngx_http_set_header_pt)(ngx_http_request_t *r,
@@ -41,8 +50,8 @@ struct ngx_http_header_val_s {
 
 
 typedef struct {
-    ngx_uint_t               expires;
-    time_t                   expires_time;
+    ngx_uint_t               expires;				//	指令"expires"的类型，默认是off
+    time_t                   expires_time;			//	指令"expires"指定的过期时间
     ngx_array_t             *headers;				//	array of ngx_http_header_val_t
 } ngx_http_headers_conf_t;
 
@@ -78,7 +87,27 @@ static ngx_http_set_header_t  ngx_http_set_headers[] = {
 
 static ngx_command_t  ngx_http_headers_filter_commands[] = {
 
-    { ngx_string("expires"),
+	/*
+		使用本指令可以控制HTTP应答中的“Expires”和“Cache-Control”的头标， （起到控制页面缓存的作用）
+		可以在time值中使用正数或负数。“Expires”头标的值将通过当前系统时间加上您设定的 time 值来获得。
+		epoch 指定“Expires”的值为 1 January, 1970, 00:00:01 GMT
+		max 指定“Expires”的值为 31 December 2037 23:59:59 GMT，“Cache-Control”的值为10年
+		-1 指定“Expires”的值为 服务器当前时间 -1s,即永远过期 
+
+		expires 两种配置方式:
+			expires [ modified ] time
+			expires epoch | max | off
+
+		example:
+			expires    24h;
+			expires    modified +24h;
+			expires    @24h;
+			expires    0;
+			expires    -1;
+			expires    epoch|max|off;
+
+	*/
+    { ngx_string("expires"),				
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE12,
       ngx_http_headers_expires,
@@ -86,6 +115,9 @@ static ngx_command_t  ngx_http_headers_filter_commands[] = {
       0,
       NULL},
 
+	/* 
+	 *	
+	 */
     { ngx_string("add_header"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE2,
@@ -142,8 +174,8 @@ ngx_http_headers_filter(ngx_http_request_t *r)
 
     conf = ngx_http_get_module_loc_conf(r, ngx_http_headers_filter_module);
 
-    if ((conf->expires == NGX_HTTP_EXPIRES_OFF && conf->headers == NULL)
-        || r != r->main
+    if ((conf->expires == NGX_HTTP_EXPIRES_OFF && conf->headers == NULL)			//	未使用"expires"和"add_header"两个指定时， 将执行下一个filter
+        || r != r->main																//	当前请求不是根请求
         || (r->headers_out.status != NGX_HTTP_OK
             && r->headers_out.status != NGX_HTTP_NO_CONTENT
             && r->headers_out.status != NGX_HTTP_PARTIAL_CONTENT
@@ -156,12 +188,15 @@ ngx_http_headers_filter(ngx_http_request_t *r)
         return ngx_http_next_header_filter(r);
     }
 
-    if (conf->expires != NGX_HTTP_EXPIRES_OFF) {
-        if (ngx_http_set_expires(r, conf) != NGX_OK) {
+
+	//	处理"expires"指令
+    if (conf->expires != NGX_HTTP_EXPIRES_OFF) {									//	当使用了expires指令时
+        if (ngx_http_set_expires(r, conf) != NGX_OK) {			//	添加"Expires"和"Cache-Control"头到响应头中
             return NGX_ERROR;
         }
     }
 
+	//	处理"add_header"指令
     if (conf->headers) {
         h = conf->headers->elts;
         for (i = 0; i < conf->headers->nelts; i++) {
@@ -581,6 +616,8 @@ ngx_http_headers_add(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     hv->handler = ngx_http_add_header;
     hv->offset = 0;
 
+	//	遍历"ngx_http_set_headers"表中是否有与指令"add_header"设定的相同， 如果相同则将使用
+	//	"ngx_http_set_headers"表中设置的handler和offest
     set = ngx_http_set_headers;
     for (i = 0; set[i].name.len; i++) {
         if (ngx_strcasecmp(value[1].data, set[i].name.data) != 0) {		//	不相等

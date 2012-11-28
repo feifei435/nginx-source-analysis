@@ -39,9 +39,9 @@
 #define NGX_HTTP_LINGERING_ALWAYS       2
 
 
-#define NGX_HTTP_IMS_OFF                0					//	指令 "if_modified_since" 使用
-#define NGX_HTTP_IMS_EXACT              1
-#define NGX_HTTP_IMS_BEFORE             2
+#define NGX_HTTP_IMS_OFF                0					//	指令 "if_modified_since" 使用(不检查请求头中的”If-Modified-Since)
+#define NGX_HTTP_IMS_EXACT              1					//	exact：精确匹配
+#define NGX_HTTP_IMS_BEFORE             2					//	before：文件修改时间应小于请求头中的”If-Modified-Since”时间
 
 
 #define NGX_HTTP_KEEPALIVE_DISABLE_NONE    0x0002
