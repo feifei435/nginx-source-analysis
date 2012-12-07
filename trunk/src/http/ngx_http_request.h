@@ -197,7 +197,7 @@ typedef struct {
 #endif
 
 #if (NGX_HTTP_REALIP)
-    ngx_table_elt_t                  *x_real_ip;
+    ngx_table_elt_t                  *x_real_ip;					//	当请求头中包含此字段时，不为空
 #endif
 
 #if (NGX_HTTP_HEADERS)
@@ -499,7 +499,7 @@ struct ngx_http_request_s {
     unsigned                          plain_http:1;					//	用在ssl中
     unsigned                          chunked:1;					//	是否为chunked传输
     unsigned                          header_only:1;				//	是否仅有消息头
-    unsigned                          keepalive:1;					//	是否为keepalive连接( ngx_http_handler()函数中根据 r->headers_in.connection_type类型确定 )
+    unsigned                          keepalive:1;					//	是否为keepalive连接( ngx_http_handler()函数中根据 r->headers_in.connection_type类型确定)
     unsigned                          lingering_close:1;
     unsigned                          discard_body:1;				//	如果已经调用 ngx_http_discard_request_body（）函数，将设置为1
     unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()和 ngx_http_subrequest() 函数中设置）

@@ -123,20 +123,22 @@ typedef enum {
     NGX_HTTP_LOG_PHASE									// [analy]	记录日志处理阶段，具体说明应当是请求完成后，关闭请求时处理
 } ngx_http_phases;
 
-typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
+typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;					//	phase中handler使用的类型
 
-typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
+
+//	每个phase的checker类型函数指针; 参数2: 
+typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,				
     ngx_http_phase_handler_t *ph);
 
 struct ngx_http_phase_handler_s {
     ngx_http_phase_handler_pt  checker;
     ngx_http_handler_pt        handler;
-    ngx_uint_t                 next;
+    ngx_uint_t                 next;			//	指向下一个phase在数组中的元素下标或特定phase的下标
 };
 
 
 typedef struct {
-    ngx_http_phase_handler_t  *handlers;							//	所有 phase 的数组集合
+    ngx_http_phase_handler_t  *handlers;							//	phase中所有handler集合
     ngx_uint_t                 server_rewrite_index;				//	指向　NGX_HTTP_SERVER_REWRITE_PHASE　 阶段的索引号
     ngx_uint_t                 location_rewrite_index;				//	指向　NGX_HTTP_REWRITE_PHASE		　阶段的索引号
 } ngx_http_phase_engine_t;
