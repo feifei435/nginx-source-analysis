@@ -826,7 +826,7 @@ ngx_http_handler(ngx_http_request_t *r)
 
     r->connection->unexpected_eof = 0;
 
-	//	当前请求不是内部跳转时，phase_handler从0开始运行,是内部请求时，将从server_rewrite开始执行
+	//	当前请求不是内部跳转时，phase_handler从0开始运行,是内部请求时将从server_rewrite开始执行
     if (!r->internal) {								
 
 		//	r->headers_in.connection_type == 0, 说明client发起的请求未指明 "Connection: close(1.0)/Keep-Alive(1.1)" 域
@@ -908,7 +908,7 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
     if (rc == NGX_OK) {
 		
-		//	下一个phase的索引  
+		//	处理下一个phase(下一个phase的索引) 
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }

@@ -9,23 +9,29 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+/*
+ *	模块说明: 此模块默认是开启的， 通过--with-http_realip_module选项开启或关闭
+ *
+ */
 
-#define NGX_HTTP_REALIP_XREALIP  0
-#define NGX_HTTP_REALIP_XFWD     1
-#define NGX_HTTP_REALIP_HEADER   2
 
+//	指令 "real_ip_header" 使用的类型
+#define NGX_HTTP_REALIP_XREALIP  0				//	"X-Real-IP"				
+#define NGX_HTTP_REALIP_XFWD     1				//	"X-Forwarded-For"
+#define NGX_HTTP_REALIP_HEADER   2				//	
 
+//	指令 "set_real_ip_from" 指定的IP地址和掩码
 typedef struct {
-    in_addr_t          mask;
+    in_addr_t          mask;			
     in_addr_t          addr;
 } ngx_http_realip_from_t;
 
 
 typedef struct {
-    ngx_array_t       *from;     /* array of ngx_http_realip_from_t */
-    ngx_uint_t         type;
-    ngx_uint_t         hash;
-    ngx_str_t          header;
+    ngx_array_t       *from;		//	指令 "set_real_ip_from" 使用时，将添加参数到此数组中	/* array of ngx_http_realip_from_t */
+    ngx_uint_t         type;		//	指令 "real_ip_header" 使用的类型, 默认"X-Real-IP"	
+    ngx_uint_t         hash;		//	指令 "real_ip_header" 指定的参数值的HASH
+    ngx_str_t          header;		//	指令 "real_ip_header" 指定的参数值
 #if (NGX_HAVE_UNIX_DOMAIN)
     ngx_uint_t         unixsock; /* unsigned  unixsock:2; */
 #endif
@@ -55,6 +61,13 @@ static ngx_int_t ngx_http_realip_init(ngx_conf_t *cf);
 
 static ngx_command_t  ngx_http_realip_commands[] = {
 
+	/*
+	 *	语法：set_real_ip_from [the address|CIDR|”unix:”]
+	 *	默认值：none
+	 *		set_real_ip_from   192.168.1.0/24;
+	 *		set_real_ip_from   192.168.2.1;
+	 *	这个指令指定信任的代理IP，它们将会以精确的替换IP转发
+	 */
     { ngx_string("set_real_ip_from"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_http_realip_from,
@@ -62,6 +75,9 @@ static ngx_command_t  ngx_http_realip_commands[] = {
       0,
       NULL },
 
+	/*	设置需要使用哪个头来确定替换的IP地址[X-Real-IP|X-Forwarded-For]
+	 *	默认: X-Real-IP 
+	 */
     { ngx_string("real_ip_header"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_http_realip,
@@ -121,13 +137,13 @@ ngx_http_realip_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_realip_module);
 
-    if (ctx) {
+    if (ctx) {						//	执行当前phase的下一个handler
         return NGX_DECLINED;
     }
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_realip_module);
 
-    if (rlcf->from == NULL
+    if (rlcf->from == NULL			//	当未使用指令"set_real_ip_from"时，将直接运行本phase的下一个handler
 #if (NGX_HAVE_UNIX_DOMAIN)
         && !rlcf->unixsock
 #endif
@@ -138,9 +154,9 @@ ngx_http_realip_handler(ngx_http_request_t *r)
 
     switch (rlcf->type) {
 
-    case NGX_HTTP_REALIP_XREALIP:
+    case NGX_HTTP_REALIP_XREALIP:			//	默认类型
 
-        if (r->headers_in.x_real_ip == NULL) {
+        if (r->headers_in.x_real_ip == NULL) {			//	请求头中没有 "X_REAL_IP" 
             return NGX_DECLINED;
         }
 
@@ -149,15 +165,17 @@ ngx_http_realip_handler(ngx_http_request_t *r)
 
         break;
 
-    case NGX_HTTP_REALIP_XFWD:
+    case NGX_HTTP_REALIP_XFWD:				//	"X-Forwarded-For"
 
-        if (r->headers_in.x_forwarded_for == NULL) {
+        if (r->headers_in.x_forwarded_for == NULL) {	//	请求头中没有 "X-Forwarded-For"
             return NGX_DECLINED;
         }
 
         len = r->headers_in.x_forwarded_for->value.len;
         ip = r->headers_in.x_forwarded_for->value.data;
 
+
+		//	????????
         for (p = ip + len - 1; p > ip; p--) {
             if (*p == ' ' || *p == ',') {
                 p++;
@@ -215,7 +233,7 @@ found:
     if (c->sockaddr->sa_family == AF_INET) {
         sin = (struct sockaddr_in *) c->sockaddr;
 
-        from = rlcf->from->elts;
+        from = rlcf->from->elts;							//	遍历
         for (i = 0; i < rlcf->from->nelts; i++) {
 
             ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -416,7 +434,7 @@ ngx_http_realip_create_loc_conf(ngx_conf_t *cf)
 
     conf->type = NGX_CONF_UNSET_UINT;
 #if (NGX_HAVE_UNIX_DOMAIN)
-    conf->unixsock = 2;
+	conf->unixsock = 2;
 #endif
 
     return conf;

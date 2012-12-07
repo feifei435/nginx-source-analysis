@@ -144,7 +144,7 @@ ngx_http_header_t  ngx_http_headers_in[] = {
                  ngx_http_process_header_line },
 #endif
 
-#if (NGX_HTTP_REALIP)
+#if (NGX_HTTP_REALIP)			//	在configure指定取消realip模块时，此宏不会被定义
     { ngx_string("X-Real-IP"),
                  offsetof(ngx_http_headers_in_t, x_real_ip),
                  ngx_http_process_header_line },
@@ -1105,10 +1105,12 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
             }
 
-			//	在ngx_http_headers_in 静态数组的hash表中查找, 在hash表中找到后调用对应的handler
+			//	在ngx_http_headers_in 数组的hash表中查找, 如果在hash表中找到后将调用对应的handler(e.g. ngx_http_process_header_line())
             hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,				
                                h->lowcase_key, h->key.len);
 
+			/*	此函数将 request->(ngx_http_headers_in_t) headers_in 中的指针域指向
+			 *	request->(ngx_http_headers_in_t) headers_in->(ngx_list_t) headers 中的元素 */
             if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {			
                 return;
             }
@@ -2223,10 +2225,10 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
         return;
     }
 
-    if (!ngx_terminate
+    if (!ngx_terminate						//	未接收到相应的信号时
          && !ngx_exiting
-         && r->keepalive
-         && clcf->keepalive_timeout > 0)
+         && r->keepalive					//	此请求为长连接 （nginx对收到的请求检查connection_type后设置此字段）
+         && clcf->keepalive_timeout > 0)	//	服务器主动关闭连接的超时时间
     {
         ngx_http_set_keepalive(r);
         return;
@@ -3065,11 +3067,12 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
     log->action = "closing request";
 
+	//	???
     if (r->connection->timedout) {
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
         if (clcf->reset_timedout_connection) {
-            linger.l_onoff = 1;
+            linger.l_onoff = 1;					//	夭折TCP连接
             linger.l_linger = 0;
 
             if (setsockopt(r->connection->fd, SOL_SOCKET, SO_LINGER,
