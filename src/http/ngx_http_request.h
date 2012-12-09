@@ -432,7 +432,7 @@ struct ngx_http_request_s {
     ngx_http_cleanup_t               *cleanup;						//	ngx_http_cleanup_t类型的单向循环列表
 
     unsigned                          subrequests:8;				//	subrequests的最大次数（ngx_http_init_request()函数中初始化）
-    unsigned                          count:8;						//	????????//
+    unsigned                          count:8;						//	(赋值在函数 ngx_http_subrequest()、ngx_http_internal_redirect（）、ngx_http_named_location（）
     unsigned                          blocked:8;					//	???????
 
     unsigned                          aio:1;

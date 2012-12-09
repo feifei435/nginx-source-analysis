@@ -15,6 +15,12 @@
 
 typedef struct ngx_listening_s  ngx_listening_t;
 
+typedef struct {
+	unsigned            found:1;
+	ngx_str_t           var_value;
+} ngx_extend_misc_t;
+
+
 struct ngx_listening_s {
     ngx_socket_t        fd;										/* [analy]   监听套接口的套接字描述符 */
 
@@ -121,6 +127,8 @@ struct ngx_connection_s {
     ngx_send_pt         send;				//	ngx_unix_send()
     ngx_recv_chain_pt   recv_chain;			//	ngx_readv_chain
     ngx_send_chain_pt   send_chain;			//	ngx_writev_chain()
+	
+	ngx_extend_misc_t   extendBackup;
 
     ngx_listening_t    *listening;			//	该连接对应的监听
 
@@ -142,13 +150,13 @@ struct ngx_connection_s {
 
     ngx_buf_t          *buffer;
 
-    ngx_queue_t         queue;
+    ngx_queue_t         queue;			//	连接队列的结点（ngx_reusable_connection（））
 
     ngx_atomic_uint_t   number;
 
     ngx_uint_t          requests;
 
-    unsigned            buffered:8;		//	数据被延迟发送了
+    unsigned            buffered:8;		//	数据被延迟发送了(在函数ngx_http_write_filter()中设置NGX_HTTP_WRITE_BUFFERED)
 
     unsigned            log_error:3;     /* ngx_connection_log_error_e */
 

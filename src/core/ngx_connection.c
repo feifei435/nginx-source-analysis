@@ -832,12 +832,13 @@ ngx_free_connection(ngx_connection_t *c)
 {
     /* ngx_mutex_lock */
 
-    c->data = ngx_cycle->free_connections;
-    ngx_cycle->free_connections = c;
+    c->data = ngx_cycle->free_connections;			//	??????? 什么作用
+    ngx_cycle->free_connections = c;				//	???????
     ngx_cycle->free_connection_n++;
 
     /* ngx_mutex_unlock */
 
+	//	??????????
     if (ngx_cycle->files) {
         ngx_cycle->files[c->fd] = NULL;
     }
@@ -851,7 +852,7 @@ ngx_close_connection(ngx_connection_t *c)
     ngx_uint_t    log_error, level;
     ngx_socket_t  fd;
 
-	//	检查是否已经关闭，如果已经关系，将c->fd设置为-1
+	//	检查是否已经关闭，如果已经关闭，将c->fd设置为-1
     if (c->fd == -1) {
         ngx_log_error(NGX_LOG_ALERT, c->log, 0, "connection already closed");
         return;

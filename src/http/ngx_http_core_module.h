@@ -372,8 +372,8 @@ struct ngx_http_core_loc_conf_s {
 													以便服务器不用重复关闭，如果不指定这个参数，nginx不会在应答头中发送Keep-Alive信息。
 										   */
 
-    ngx_msec_t    lingering_time;          /* lingering_time 指令指定 */
-    ngx_msec_t    lingering_timeout;       /* lingering_timeout 指令指定 */
+    ngx_msec_t    lingering_time;          /* lingering_time 指令指定，参数指定的时间单位为秒，在内存中存放的是毫秒（msec) */
+    ngx_msec_t    lingering_timeout;       /* lingering_timeout 指令指定, 参数指定的时间单位为秒，在内存中存放的是毫秒（msec)  */
     ngx_msec_t    resolver_timeout;        /* resolver_timeout */
 
     ngx_resolver_t  *resolver;             /* resolver */

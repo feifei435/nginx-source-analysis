@@ -2209,6 +2209,7 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	???
     if (r->main->count != 1) {
 
         if (r->discard_body) {
@@ -2228,7 +2229,7 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
     if (!ngx_terminate						//	未接收到相应的信号时
          && !ngx_exiting
          && r->keepalive					//	此请求为长连接 （nginx对收到的请求检查connection_type后设置此字段）
-         && clcf->keepalive_timeout > 0)	//	服务器主动关闭连接的超时时间
+         && clcf->keepalive_timeout > 0)	//	服务器主动关闭连接的超时时间大于0
     {
         ngx_http_set_keepalive(r);
         return;
@@ -2817,6 +2818,7 @@ ngx_http_set_lingering_close(ngx_http_request_t *r)
     rev = c->read;
     rev->handler = ngx_http_lingering_close_handler;
 
+	//	计算lingering时间
     r->lingering_time = ngx_time() + (time_t) (clcf->lingering_time / 1000);
     ngx_add_timer(rev, clcf->lingering_timeout);
 
