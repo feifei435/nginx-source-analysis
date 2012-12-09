@@ -54,7 +54,7 @@ struct ngx_event_s {
     unsigned         disabled:1;
 
     /* the ready event; in aio mode 0 means that no operation can be posted */
-    unsigned         ready:1;							//	有读写事件发生，可以读取或写入数据了(ngx_epoll_process_events（）函数中设置)， 调用recv等接收函数后将此标记置零
+    unsigned         ready:1;							//	等于1时说明有读写事件发生，可以读取或写入数据了(ngx_epoll_process_events（）函数中设置)， 调用recv等接收函数后将此标记置零
 
     unsigned         oneshot:1;
 
@@ -135,7 +135,7 @@ struct ngx_event_s {
 
     ngx_rbtree_node_t   timer;
 
-    unsigned         closed:1;
+    unsigned         closed:1;					//	说明此事件已经关闭，没有在使用（这个字段貌似没有起作用）
 
     /* to test on worker exit */
     unsigned         channel:1;

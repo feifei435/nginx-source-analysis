@@ -54,7 +54,7 @@ ngx_shmtx_t           ngx_accept_mutex;					//	"nginx.lock.accept"的文件锁
 ngx_uint_t            ngx_use_accept_mutex;				//	表示是否需要通过对accept加锁来解决惊群问题， 配置文件中打开accept_mutex；1，已打开 (ngx_event_process_init()函数中设置)
 ngx_uint_t            ngx_accept_events;				//	貌似没什么用
 ngx_uint_t            ngx_accept_mutex_held;			//	是否获得了锁, 持有锁时=1，否则相反(ngx_trylock_accept_mutex()函数中设置)
-ngx_msec_t            ngx_accept_mutex_delay;			//	指令 "accept_mutex_delay" 设置
+ngx_msec_t            ngx_accept_mutex_delay;			//	指令 "accept_mutex_delay" 设置，默认500ms
 ngx_int_t             ngx_accept_disabled;
 ngx_file_t            ngx_accept_mutex_lock_file;
 
@@ -223,9 +223,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 #endif
     }
 
-	/* 
-	 *	[analy] 系统使用accpte_mutex锁来解决惊群问题，对listen->fd进行交替accept操作时 
-	 */
+	 //	系统使用accpte_mutex锁来解决惊群问题，对listen->fd进行交替accept操作
     if (ngx_use_accept_mutex) {			
 		
 		/* 
