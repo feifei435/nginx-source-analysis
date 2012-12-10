@@ -113,7 +113,7 @@ ngx_event_accept(ngx_event_t *ev)
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
-        c = ngx_get_connection(s, ev->log);								/* [analy]	在连接池中为客户端描述符获取一个新的连接 */	
+        c = ngx_get_connection(s, ev->log);								//	连接池中为客户端描述符获取一个新的连接
 
         if (c == NULL) {
             if (ngx_close_socket(s) == -1) {
@@ -128,13 +128,13 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_active, 1);
 #endif
 
-        c->pool = ngx_create_pool(ls->pool_size, ev->log);		/* [analy]	创建内存池 */
+        c->pool = ngx_create_pool(ls->pool_size, ev->log);		//	创建connection使用的内存池
         if (c->pool == NULL) {
             ngx_close_accepted_connection(c);
             return;
         }
 
-        c->sockaddr = ngx_palloc(c->pool, socklen);				/* [analy]	备份客户端地址信息 */
+        c->sockaddr = ngx_palloc(c->pool, socklen);				//	备份客户端地址信息
         if (c->sockaddr == NULL) {
             ngx_close_accepted_connection(c);
             return;

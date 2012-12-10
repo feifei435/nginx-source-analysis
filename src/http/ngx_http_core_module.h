@@ -186,7 +186,7 @@ typedef struct {
 
     ngx_str_t                   server_name;					//	是 server_names 数组中第一个服务器名称
 
-    size_t                      connection_pool_size;			//	指令 "connection_pool_size" 为每个连接分配的内存池
+    size_t                      connection_pool_size;			//	指令 "connection_pool_size" 为每个连接分配的内存池( 在函数ngx_http_add_listening()中赋值，赋值给ls->pool_size )
     size_t                      request_pool_size;				//	指令 "request_pool_size" 在处理请求时，所使用的内存池大小，默认是4K
 	size_t                      client_header_buffer_size;		//	指令 "client_header_buffer_size" 指定客户端请求头部的缓冲区大小, 绝大多数情况下一个请求头不会大于1k
 																//					不过如果有来自于wap客户端的较大的cookie它可能会大于1k设置处理从客户端过来的请求buffer大小

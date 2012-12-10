@@ -48,7 +48,7 @@ struct ngx_listening_s {
     ngx_log_t           log;
     ngx_log_t          *logp;
 
-    size_t              pool_size;
+    size_t              pool_size;							//	作为connection使用的内存池
     /* should be here because of the AcceptEx() preread */
     size_t              post_accept_buffer_size;
     /* should be here because of the deferred accept */
