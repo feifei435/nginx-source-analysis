@@ -24,10 +24,10 @@ typedef struct {
 struct ngx_listening_s {
     ngx_socket_t        fd;										/* [analy]   监听套接口的套接字描述符 */
 
-    struct sockaddr    *sockaddr;								/* [analy]   监听的套接口协议地址 */
+    struct sockaddr    *sockaddr;								//	监听的套接口协议地址
     socklen_t           socklen;								/* size of sockaddr */
-    size_t              addr_text_max_len;
-    ngx_str_t           addr_text;								/* [analy]   套接口的IP地址 */
+    size_t              addr_text_max_len;						//	socket地址格式为ASCII时最大的长度（在函数ngx_create_listening()中赋值）
+    ngx_str_t           addr_text;								//	套接口的IP地址
 
     int                 type;									/* [analy]   socket的类型 -> SOCK_STREAM */
 
@@ -138,15 +138,15 @@ struct ngx_connection_s {
 
     ngx_pool_t         *pool;				//	内存池指针
 
-    struct sockaddr    *sockaddr;			//	保存客户端的地址信息
+    struct sockaddr    *sockaddr;			//	保存客户端的地址信息(有什么用？？？？)
     socklen_t           socklen;
-    ngx_str_t           addr_text;
+    ngx_str_t           addr_text;			//	保存与服务器连接的客户端socket信息（ngx_event_accept（）函数中赋值，并且保存格式为ACSII）
 
 #if (NGX_SSL)
     ngx_ssl_connection_t  *ssl;
 #endif
 
-    struct sockaddr    *local_sockaddr;
+    struct sockaddr    *local_sockaddr;		//	保存本地监听的套接口信息
 
     ngx_buf_t          *buffer;
 
@@ -161,7 +161,7 @@ struct ngx_connection_s {
     unsigned            log_error:3;     /* ngx_connection_log_error_e */
 
     unsigned            single_connection:1;
-    unsigned            unexpected_eof:1;
+    unsigned            unexpected_eof:1;	//	????
     unsigned            timedout:1;
     unsigned            error:1;
     unsigned            destroyed:1;		//	说明此连接是否已经销毁，如果已经销毁等于1

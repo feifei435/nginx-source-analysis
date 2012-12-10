@@ -153,10 +153,9 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
     index = cmcf->phase_engine.location_rewrite_index;
 
-	//	判断是否为NGX_HTTP_REWRITE_PHASE 阶段调用的ngx_http_rewrite_handler（），
-	//	如果是将检查r->loc_conf是否在配置文件中找对对应，如果未找到，它将等于ngx_http_core_srv_conf_t中的ctx->loc_conf
-	//	因为在init request（）函数中， r->loc_conf 被赋值为 ngx_http_core_srv_conf_t中的ctx->loc_conf，只有在find location
-	//	phase阶段找到对应的Location才会改变r->loc_conf的值
+	//	判断是否为NGX_HTTP_REWRITE_PHASE 阶段调用的ngx_http_rewrite_handler（），如果是将检查r->loc_conf是否在配置文件中找到对应;
+	//	如果未找到，它将等于ngx_http_core_srv_conf_t中的ctx->loc_conf,因为在init request（）函数中， r->loc_conf 被赋值为 ngx_http_core_srv_conf_t中的ctx->loc_conf，
+	//	只有在find location phase阶段找到对应的Location才会改变r->loc_conf的值
     if (r->phase_handler == index && r->loc_conf == cscf->ctx->loc_conf) {
         /* skipping location rewrite phase for server null location */
         return NGX_DECLINED;

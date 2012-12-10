@@ -142,7 +142,7 @@ ngx_event_accept(ngx_event_t *ev)
 
         ngx_memcpy(c->sockaddr, sa, socklen);				
 
-        log = ngx_palloc(c->pool, sizeof(ngx_log_t));			/* [analy]	为日志分配空间 */
+        log = ngx_palloc(c->pool, sizeof(ngx_log_t));			//	为日志分配空间
         if (log == NULL) {
             ngx_close_accepted_connection(c);
             return;
@@ -173,7 +173,7 @@ ngx_event_accept(ngx_event_t *ev)
 
         *log = ls->log;											/* [analy]	初始化从连接池取出来的连接 */
 
-        c->recv = ngx_recv;
+        c->recv = ngx_recv;										//	安装收发接口
         c->send = ngx_send;
         c->recv_chain = ngx_recv_chain;
         c->send_chain = ngx_send_chain;
@@ -181,9 +181,9 @@ ngx_event_accept(ngx_event_t *ev)
         c->log = log;
         c->pool->log = log;
 
-        c->socklen = socklen;
+        c->socklen = socklen;								//	客户端的sockaddr结构长度
         c->listening = ls;
-        c->local_sockaddr = ls->sockaddr;
+        c->local_sockaddr = ls->sockaddr;					//	指向本地监听的套接口信息
 
         c->unexpected_eof = 1;
 
