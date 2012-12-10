@@ -3039,7 +3039,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
-	//	调用所有清理函数
+	//	调用所有request上的清理函数（ngx_http_cleanup_add()函数添加的）
     for (cln = r->cleanup; cln; cln = cln->next) {
         if (cln->handler) {
             cln->handler(cln->data);

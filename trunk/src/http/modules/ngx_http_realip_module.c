@@ -135,6 +135,8 @@ ngx_http_realip_handler(ngx_http_request_t *r)
     ngx_http_realip_from_t      *from;
     ngx_http_realip_loc_conf_t  *rlcf;
 
+
+	//	获取realip模块在当前request的ctx值， 如果已经存在ctx则执行下一个模块
     ctx = ngx_http_get_module_ctx(r, ngx_http_realip_module);
 
     if (ctx) {						//	执行当前phase的下一个handler
@@ -268,13 +270,14 @@ ngx_http_realip_set_addr(ngx_http_request_t *r, u_char *ip, size_t len)
     ngx_pool_cleanup_t     *cln;
     ngx_http_realip_ctx_t  *ctx;
 
+	//	在请求的连接池上增加一个， 清理函数。（此清理函数什么时候被调用呢？ -- 在销毁内存池的时候会调用ngx_destroy_pool()）
     cln = ngx_pool_cleanup_add(r->pool, sizeof(ngx_http_realip_ctx_t));
     if (cln == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    ctx = cln->data;
-    ngx_http_set_ctx(r, ctx, ngx_http_realip_module);
+    ctx = cln->data;	//	ctx结构在 ngx_pool_cleanup_add（）函数中已经申请，此时直接使用即可
+    ngx_http_set_ctx(r, ctx, ngx_http_realip_module);			//	设置realip模块的的ctx到当前请求的ctx中
 
     c = r->connection;
 
@@ -289,7 +292,7 @@ ngx_http_realip_set_addr(ngx_http_request_t *r, u_char *ip, size_t len)
         break;
     }
 
-    p = ngx_pnalloc(c->pool, len);
+    p = ngx_pnalloc(c->pool, len);			//	为什么在connection的连接池上申请？？？
     if (p == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -298,11 +301,12 @@ ngx_http_realip_set_addr(ngx_http_request_t *r, u_char *ip, size_t len)
 
     cln->handler = ngx_http_realip_cleanup;
 
-    ctx->connection = c;
-    ctx->sockaddr = c->sockaddr;
+    ctx->connection = c;					//	设置正在使用的connection
+    ctx->sockaddr = c->sockaddr;			//	备份与服务器连接的客户端socket信息
     ctx->socklen = c->socklen;
-    ctx->addr_text = c->addr_text;
+    ctx->addr_text = c->addr_text;			//	备份与服务器连接的客户端的IP地址（ASCII格式)
 
+	//	设置解析出的真实客户端IP信息
     c->sockaddr = addr.sockaddr;
     c->socklen = addr.socklen;
     c->addr_text.len = len;
