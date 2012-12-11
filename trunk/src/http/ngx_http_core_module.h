@@ -133,7 +133,7 @@ typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
 struct ngx_http_phase_handler_s {
     ngx_http_phase_handler_pt  checker;
     ngx_http_handler_pt        handler;
-    ngx_uint_t                 next;			//	指向下一个phase在数组中的元素下标或特定phase的下标
+    ngx_uint_t                 next;			//	指向下一个phase在数组中的元素下标或特定phase的下标(而不是同一phase的下一个handler)
 };
 
 
@@ -171,7 +171,7 @@ typedef struct {
 
     ngx_array_t               *ports;								//	array of ngx_http_conf_port_t
 
-    ngx_uint_t                 try_files;							//	使用了try_files指令时设置为1			/* unsigned  try_files:1 */
+    ngx_uint_t                 try_files;							//	使用了try_files指令时设置为1(ngx_http_core_try_files()中设置)			/* unsigned  try_files:1 */
 
     ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
 } ngx_http_core_main_conf_t;
@@ -289,12 +289,12 @@ typedef struct {
 
 
 typedef struct {
-    ngx_array_t               *lengths;
-    ngx_array_t               *values;
-    ngx_str_t                  name;
+    ngx_array_t               *lengths;					//	try_files指令变量使用
+    ngx_array_t               *values;					//	try_files指令变量使用
+    ngx_str_t                  name;					//	try_files指令的参数
 
     unsigned                   code:10;
-    unsigned                   test_dir:1;
+    unsigned                   test_dir:1;				//	是否为目录
 } ngx_http_try_file_t;
 
 
@@ -428,10 +428,10 @@ struct ngx_http_core_loc_conf_s {
 															//	指向"disable_symlinks" 指令申请的ngx_http_complex_value_t结构（函数中ngx_http_disable_symlinks()设置）
 #endif	
 
-    ngx_array_t  *error_pages;             /* error_page */
-    ngx_http_try_file_t    *try_files;     /* try_files */
+    ngx_array_t  *error_pages;					/* error_page */
+    ngx_http_try_file_t    *try_files;			//	ngx_http_core_try_files()函数中设置	/* try_files */
 
-    ngx_path_t   *client_body_temp_path;   /* client_body_temp_path */
+    ngx_path_t   *client_body_temp_path;		/* client_body_temp_path */
 
     ngx_open_file_cache_t  *open_file_cache;	//	指令"open_file_cache"不为off时，将创建一个 ngx_open_file_cache_t 类型结构(ngx_http_core_open_file_cache()函数中创建)
     time_t        open_file_cache_valid;		//	这个指令指定了何时需要检查open_file_cache中缓存项目的有效信息。 （默认60s）
