@@ -974,6 +974,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
     r->content_handler = NULL;
     r->uri_changed = 0;
 
+	//	查找对应的Location, 找到后将设置 r->loc_conf 为个性化的loc_conf
     rc = ngx_http_core_find_location(r);
 
     if (rc == NGX_ERROR) {
@@ -1117,6 +1118,8 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_int_t                  rc;
     ngx_http_core_loc_conf_t  *clcf;
 
+
+	//	如果当前请求不是根请求，则执行下一个phase，而不是本phase中的下一个handler
     if (r != r->main) {
         r->phase_handler = ph->next;
         return NGX_AGAIN;
@@ -1125,6 +1128,10 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "access phase: %ui", r->phase_handler);
 
+	/*	默认的两个handler
+		ngx_http_access_handler
+		ngx_http_auth_basic_handler
+	*/
     rc = ph->handler(r);
 
     if (rc == NGX_DECLINED) {
@@ -4614,6 +4621,7 @@ ngx_http_core_try_files(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
+	//	设置 ngx_http_core_main_conf_t 结构中的 try_files 字段
     cmcf->try_files = 1;
 
     tf = ngx_pcalloc(cf->pool, cf->args->nelts * sizeof(ngx_http_try_file_t));

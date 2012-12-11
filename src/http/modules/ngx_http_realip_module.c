@@ -11,7 +11,7 @@
 
 /*
  *	模块说明: 此模块默认是开启的， 通过--with-http_realip_module选项开启或关闭
- *
+ *				Q:	此模块在 NGX_HTTP_POST_READ_PHASE 和 NGX_HTTP_PREACCESS_PHASE阶段都设置了此handler, 为什么在preaccess阶段注册此模块？
  */
 
 
@@ -120,7 +120,10 @@ ngx_module_t  ngx_http_realip_module = {
     NGX_MODULE_V1_PADDING
 };
 
+/*
+	
 
+*/
 static ngx_int_t
 ngx_http_realip_handler(ngx_http_request_t *r)
 {
@@ -137,6 +140,8 @@ ngx_http_realip_handler(ngx_http_request_t *r)
 
 
 	//	获取realip模块在当前request的ctx值， 如果已经存在ctx则执行下一个模块
+	//	当期请求如果已经检查到有"X-Forwarded-For"和"X_REAL_IP"等请求头，并且设置了客户端的真实IP
+	//	后将不在执行此模块，非当前请求将继续检查此模块
     ctx = ngx_http_get_module_ctx(r, ngx_http_realip_module);
 
     if (ctx) {						//	执行当前phase的下一个handler
