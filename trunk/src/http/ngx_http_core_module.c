@@ -1226,6 +1226,7 @@ ngx_http_core_try_files_phase(ngx_http_request_t *r,
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	没有使用 "try_files" 指令
     if (clcf->try_files == NULL) {
         r->phase_handler++;
         return NGX_AGAIN;

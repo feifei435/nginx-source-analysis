@@ -423,7 +423,7 @@ struct ngx_http_request_s {
 
     off_t                             request_length;				//	请求头的长度
 
-    ngx_uint_t                        err_status;
+    ngx_uint_t                        err_status;					//	???
 
     ngx_http_connection_t            *http_connection;
 
