@@ -43,11 +43,11 @@ struct ngx_buf_s {
     unsigned         mmap:1;			//	内存中的文件映射
 
     unsigned         recycled:1;		//	被回收
-    unsigned         in_file:1;			//	文件缓冲(标识要发送的数据在文件中)
+    unsigned         in_file:1;			//	文件缓冲(等于1时，标识要发送的数据在文件中)
     unsigned         flush:1;			//	被清除
     unsigned         sync:1;			//	异步
     unsigned         last_buf:1;		//	此字段是一个位域，设为1表示此缓冲区是链表中最后一个元素，设置为0说明后边还有元素
-    unsigned         last_in_chain:1;	//	链表的尾部
+    unsigned         last_in_chain:1;	//	chain链表中的最后一个
 
     unsigned         last_shadow:1;
     unsigned         temp_file:1;		//	是否是临时文件中的缓冲
@@ -82,8 +82,8 @@ typedef void (*ngx_output_chain_aio_pt)(ngx_output_chain_ctx_t *ctx,
  *	[analy] 主要是管理输出buf 
  */
 struct ngx_output_chain_ctx_s {			
-    ngx_buf_t                   *buf;		//	这个域也就是我们拷贝数据的地方，我们一般输出的话都是从in直接copy相应的size到buf中
-    ngx_chain_t                 *in;		//	这个就是我们保存那些需要发送数据的地方
+    ngx_buf_t                   *buf;		//	需要拷贝数据的地方， 一般输出的话都是从in直接copy相应的size到buf中
+    ngx_chain_t                 *in;		//	保存那些需要发送数据的地方
     ngx_chain_t                 *free;		//	这个保存了一些空的buf，也就是说如果free存在，我们都会直接从free中取buf到前面的buf域
     ngx_chain_t                 *busy;		//	这个保存了已经发送完毕的buf，也就是每次我们从in中将buf读取完毕后，确定数据已经取完，
 											//	此时就会将这个chain拷贝到busy中。然后将比较老的busy buf拷贝到free中
@@ -104,7 +104,7 @@ struct ngx_output_chain_ctx_s {
 
     off_t                        alignment;
 
-    ngx_pool_t                  *pool;
+    ngx_pool_t                  *pool;				//	当前buffer链使用的内存池
     ngx_int_t                    allocated;			//	每次从pool中重新alloc一个buf这个值都会相应加一  
     ngx_bufs_t                   bufs;
     ngx_buf_tag_t                tag;				//	这个用来标记当前那个模块使用这个chain  
@@ -125,18 +125,24 @@ typedef struct {
 
 #define NGX_CHAIN_ERROR     (ngx_chain_t *) NGX_ERROR
 
-
+//	缓冲的数据是否在内存中(有可能同时存在于文件中)
 #define ngx_buf_in_memory(b)        (b->temporary || b->memory || b->mmap)
+
+//	缓冲的数据是否仅存在内存中
 #define ngx_buf_in_memory_only(b)   (ngx_buf_in_memory(b) && !b->in_file)
 
 #define ngx_buf_special(b)                                                   \
-    ((b->flush || b->last_buf || b->sync)                                    \
-     && !ngx_buf_in_memory(b) && !b->in_file)
+    ((b->flush || b->last_buf || b->sync)                                    \			//	
+     && !ngx_buf_in_memory(b) && !b->in_file)											//	不在内存同时也不在文件中
 
 #define ngx_buf_sync_only(b)                                                 \
     (b->sync                                                                 \
      && !ngx_buf_in_memory(b) && !b->in_file && !b->flush && !b->last_buf)
 
+
+/*
+ *	获取缓冲buf大小，区分内存和文件两种形式
+ */
 #define ngx_buf_size(b)                                                      \
     (ngx_buf_in_memory(b) ? (off_t) (b->last - b->pos):                      \
                             (b->file_last - b->file_pos))

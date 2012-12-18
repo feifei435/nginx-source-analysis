@@ -508,14 +508,14 @@ struct ngx_http_request_s {
     unsigned                          filter_finalize:1;			//	仅在 ngx_http_filter_finalize_request（）函数中调用
     unsigned                          post_action:1;
     unsigned                          request_complete:1;
-    unsigned                          request_output:1;
+    unsigned                          request_output:1;				//	?????
     unsigned                          header_sent:1;
     unsigned                          expect_tested:1;				//	??????(ngx_http_subrequest() 函数中设置)
     unsigned                          root_tested:1;
     unsigned                          done:1;
     unsigned                          logged:1;
 
-    unsigned                          buffered:4;
+    unsigned                          buffered:4;					//	
 
     unsigned                          main_filter_need_in_memory:1;		//	???
     unsigned                          filter_need_in_memory:1;

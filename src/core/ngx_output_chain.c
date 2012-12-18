@@ -68,7 +68,6 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
     }
 
     /* add the incoming buf to the chain ctx->in */
-
     if (in) {
         if (ngx_output_chain_add_copy(ctx->pool, &ctx->in, in) == NGX_ERROR) {
             return NGX_ERROR;
@@ -118,10 +117,12 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
                 continue;
             }
 
+			//	检查是否需要复制buf
             if (ngx_output_chain_as_is(ctx, ctx->in->buf)) {
 
                 /* move the chain link to the output chain */
 
+				//	不需要拷贝时, 检查chain链中的下一个
                 cl = ctx->in;
                 ctx->in = cl->next;
 
@@ -192,7 +193,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
             *last_out = cl;
             last_out = &cl->next;
             ctx->buf = NULL;
-        }
+        }	//	while end
 
         if (out == NULL && last != NGX_NONE) {
 
@@ -215,16 +216,20 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
     }
 }
 
-
+/*
+ *	函数主要用来判断是否需要复制buf。返回1,表示不需要拷贝，否则为需要拷贝 
+ */
 static ngx_inline ngx_int_t
 ngx_output_chain_as_is(ngx_output_chain_ctx_t *ctx, ngx_buf_t *buf)
 {
     ngx_uint_t  sendfile;
 
+	//	是否为specialbuf，是的话返回1,也就是不用拷贝 
     if (ngx_buf_special(buf)) {
         return 1;
     }
 
+	//	如果buf在文件中，并且使用了directio的话，需要拷贝buf  
     if (buf->in_file && buf->file->directio) {
         return 0;
     }
@@ -259,7 +264,10 @@ ngx_output_chain_as_is(ngx_output_chain_ctx_t *ctx, ngx_buf_t *buf)
     return 1;
 }
 
-
+/*
+ *	合并chain
+ *	将参数3中的chain加入到参数2的chain链表中
+ */
 static ngx_int_t
 ngx_output_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain,
     ngx_chain_t *in)
@@ -271,12 +279,14 @@ ngx_output_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain,
 
     ll = chain;
 
+	//	找到chain链表的最后一个
     for (cl = *chain; cl; cl = cl->next) {
         ll = &cl->next;
     }
 
     while (in) {
 
+		//	获取一个chain
         cl = ngx_alloc_chain_link(pool);
         if (cl == NULL) {
             return NGX_ERROR;
@@ -310,7 +320,7 @@ ngx_output_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain,
             cl->buf = b;
 
         } else {
-            cl->buf = buf;
+            cl->buf = buf;				//	
             in = in->next;
         }
 
@@ -322,7 +332,7 @@ ngx_output_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain,
 
         cl->next = NULL;
         *ll = cl;
-        ll = &cl->next;
+        ll = &cl->next;				//	将ll指向刚申请的cl的下一个元素
     }
 
     return NGX_OK;
@@ -337,13 +347,14 @@ ngx_output_chain_align_file_buf(ngx_output_chain_ctx_t *ctx, off_t bsize)
 
     in = ctx->in->buf;
 
+	//	未开启direct io
     if (in->file == NULL || !in->file->directio) {
         return NGX_DECLINED;
     }
 
     ctx->directio = 1;
 
-    size = (size_t) (in->file_pos - (in->file_pos & ~(ctx->alignment - 1)));
+    size = (size_t) (in->file_pos - (in->file_pos & ~(ctx->alignment - 1)));				//	???
 
     if (size == 0) {
 
@@ -479,6 +490,7 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
 
 #endif
 
+	//	需要拷贝的buf在内存中
     if (ngx_buf_in_memory(src)) {
         ngx_memcpy(dst->pos, src->pos, (size_t) size);
         src->pos += (size_t) size;

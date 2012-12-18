@@ -32,6 +32,8 @@ static ngx_int_t ngx_http_copy_filter_init(ngx_conf_t *cf);
 
 static ngx_command_t  ngx_http_copy_filter_commands[] = {
 
+	
+	//	默认是1个buf，大小为32768字节
     { ngx_string("output_buffers"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
       ngx_conf_set_bufs_slot,
@@ -94,6 +96,8 @@ ngx_http_copy_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ctx = ngx_http_get_module_ctx(r, ngx_http_copy_filter_module);
 
     if (ctx == NULL) {
+
+		//	copy filter ctx 为空时，申请一个并设置到request的ctx中
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_output_chain_ctx_t));
         if (ctx == NULL) {
             return NGX_ERROR;
@@ -111,8 +115,8 @@ ngx_http_copy_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
         ctx->alignment = clcf->directio_alignment;
 
-        ctx->pool = r->pool;
-        ctx->bufs = conf->bufs;
+        ctx->pool = r->pool;					//	使用request的内存池
+        ctx->bufs = conf->bufs;					//	根据指令 "output_buffers" 来设置
         ctx->tag = (ngx_buf_tag_t) &ngx_http_copy_filter_module;
 
         ctx->output_filter = (ngx_output_chain_filter_pt) ngx_http_next_filter;
