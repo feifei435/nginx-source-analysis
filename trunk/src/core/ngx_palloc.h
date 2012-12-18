@@ -57,14 +57,13 @@ typedef struct {
 } ngx_pool_data_t;
 
 /* 
- * [analy]	
  * 内存池头部结构
  */
 struct ngx_pool_s {
     ngx_pool_data_t       d;						//	内存池中的数据块
     size_t                max;						//	数据块的大小，即可分配的内存的最大值
     ngx_pool_t           *current;					//	指向当前内存池
-    ngx_chain_t          *chain;					//	挂接一个ngx_chain_t结构链表，此链表应为废弃的不用的；在宏 ngx_free_chain（）函数中添加的
+    ngx_chain_t          *chain;					//	挂接一个ngx_chain_t结构链表，此链表应为空闲的；在宏 ngx_free_chain（）函数中添加的
     ngx_pool_large_t     *large;					//	大块内存链表，即分配空间超过max的内存
     ngx_pool_cleanup_t   *cleanup;					//	释放内存池的callback (单向循环链表)
     ngx_log_t            *log;						//	日志信息
