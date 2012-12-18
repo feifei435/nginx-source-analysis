@@ -403,10 +403,10 @@ struct ngx_http_core_loc_conf_s {
     ngx_flag_t    server_name_in_redirect; /* server_name_in_redirect */
     ngx_flag_t    port_in_redirect;        /* port_in_redirect */
     ngx_flag_t    msie_padding;            /* msie_padding */
-    ngx_flag_t    msie_refresh;            /* msie_refresh */
+    ngx_flag_t    msie_refresh;            /* msie_refresh: 指令允许或拒绝为MSIE发布一个refresh而不是做一次redirect */
     ngx_flag_t    log_not_found;           /* log_not_found: 指令指定是否将一些文件没有找到的错误信息写入error_log指定的文件中 */
     ngx_flag_t    log_subrequest;          /* log_subrequest */
-    ngx_flag_t    recursive_error_pages;   /* 指令"recursive_error_pages" */
+    ngx_flag_t    recursive_error_pages;   /* 指令"recursive_error_pages" 指定启用除第一条error_page指令以外其他的error_page */
     ngx_flag_t    server_tokens;           /* server_tokens: 是否在错误页面和服务器头中输出nginx版本信息 */
     ngx_flag_t    chunked_transfer_encoding; /* chunked_transfer_encoding */
 

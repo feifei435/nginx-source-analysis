@@ -17,14 +17,14 @@ static ngx_int_t ngx_http_send_special_response(ngx_http_request_t *r,
     ngx_http_core_loc_conf_t *clcf, ngx_uint_t err);
 static ngx_int_t ngx_http_send_refresh(ngx_http_request_t *r);
 
-
+//	包含“nginx+版本号”字符串信息
 static u_char ngx_http_error_full_tail[] =
 "<hr><center>" NGINX_VER "</center>" CRLF
 "</body>" CRLF
 "</html>" CRLF
 ;
 
-
+//	包含“nginx”字符串信息
 static u_char ngx_http_error_tail[] =
 "<hr><center>nginx</center>" CRLF
 "</body>" CRLF
@@ -375,6 +375,7 @@ ngx_http_special_response_handler(ngx_http_request_t *r, ngx_int_t error)
 
     r->err_status = error;
 
+	//	????????
     if (r->keepalive) {
         switch (error) {
             case NGX_HTTP_BAD_REQUEST:
@@ -388,6 +389,7 @@ ngx_http_special_response_handler(ngx_http_request_t *r, ngx_int_t error)
         }
     }
 
+	//	??????????
     if (r->lingering_close) {
         switch (error) {
             case NGX_HTTP_BAD_REQUEST:
