@@ -498,9 +498,9 @@ struct ngx_http_request_s {
     unsigned                          pipeline:1;
     unsigned                          plain_http:1;					//	用在ssl中
     unsigned                          chunked:1;					//	是否为chunked传输
-    unsigned                          header_only:1;				//	是否仅有消息头
+    unsigned                          header_only:1;				//	是否仅有消息头（在哪里赋值？？？）
     unsigned                          keepalive:1;					//	是否为keepalive连接( ngx_http_handler()函数中根据 r->headers_in.connection_type类型确定)
-    unsigned                          lingering_close:1;
+    unsigned                          lingering_close:1;			//	???????
     unsigned                          discard_body:1;				//	如果已经调用 ngx_http_discard_request_body（）函数，将设置为1
     unsigned                          internal:1;					//	标示此请求是内部跳转 （ngx_http_internal_redirect()和 ngx_http_subrequest() 函数中设置）
     unsigned                          error_page:1;
