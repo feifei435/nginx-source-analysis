@@ -4371,7 +4371,8 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
     ngx_http_upstream_srv_conf_t   *uscf, **uscfp;
     ngx_http_upstream_main_conf_t  *umcf;
 
-    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {				//	flags中设置了非 NGX_HTTP_UPSTREAM_CREATE 标记时
+	//	flags中设置了非 NGX_HTTP_UPSTREAM_CREATE 标记时,将解析URL（仅在配置文件中配置了upstream指令时会有此标记）
+    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {				
 
         if (ngx_parse_url(cf->pool, u) != NGX_OK) {
             if (u->err) {
@@ -4724,7 +4725,7 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 
-		//	调用 init_upstream 
+		//	调用 init_upstream （负载均衡初始化）
         if (init(cf, uscfp[i]) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
