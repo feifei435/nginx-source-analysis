@@ -633,7 +633,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     ngx_http_proxy_ctx_t       *ctx;
     ngx_http_proxy_loc_conf_t  *plcf;
 
-	//	在r->upstream上创建ngx_http_upstream_t
+	//	在客户端的r->upstream上创建ngx_http_upstream_t
     if (ngx_http_upstream_create(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -643,11 +643,11 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    ngx_http_set_ctx(r, ctx, ngx_http_proxy_module);				//	设置proxy的个性
+    ngx_http_set_ctx(r, ctx, ngx_http_proxy_module);				//	设置proxy模块的上下文结构
 
     plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);
 
-    u = r->upstream;
+    u = r->upstream;			//	在函数 ngx_http_upstream_create() 中创建
 
     if (plcf->proxy_lengths == NULL) {
         ctx->vars = plcf->vars;
