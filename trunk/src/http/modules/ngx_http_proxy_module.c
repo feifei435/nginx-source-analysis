@@ -54,7 +54,7 @@ typedef struct {
     ngx_array_t                   *proxy_lengths;			//	指令 "proxy_pass" 使用变量时，将处理变量和常量字符串长度的函数加入到此列表里
     ngx_array_t                   *proxy_values;			//	指令 "proxy_pass" 使用变量时，将处理变量和常量字符串函数加入到此列表里
 
-    ngx_array_t                   *redirects;
+    ngx_array_t                   *redirects;				//	array of ngx_http_proxy_rewrite_t (ngx_http_proxy_redirect())
     ngx_array_t                   *cookie_domains;
     ngx_array_t                   *cookie_paths;
 
@@ -70,7 +70,7 @@ typedef struct {
 
     ngx_http_proxy_vars_t          vars;
 
-    ngx_flag_t                     redirect;
+    ngx_flag_t                     redirect;							//	ngx_http_proxy_merge_loc_conf()函数中设置
 
     ngx_uint_t                     http_version;						//	指令"proxy_http_version "设置，默认1.0
 
@@ -1361,7 +1361,7 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
 
     u->process_header = ngx_http_proxy_process_header;
 
-    return ngx_http_proxy_process_header(r);									//	处理相应头
+    return ngx_http_proxy_process_header(r);									//	处理响应头
 }
 
 /* 
@@ -3506,7 +3506,7 @@ ngx_http_proxy_redirect(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_proxy_rewrite_t          *pr;
     ngx_http_compile_complex_value_t   ccv;
 
-    if (plcf->redirect == 0) {
+    if (plcf->redirect == 0) {				//	plcf->redirect 默认1
         return NGX_CONF_OK;
     }
 
