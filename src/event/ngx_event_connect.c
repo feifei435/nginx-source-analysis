@@ -22,13 +22,13 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     ngx_event_t       *rev, *wev;
     ngx_connection_t  *c;
 
-	//	这里将处理负载均衡
+	//	1. 这里将处理负载均衡
     rc = pc->get(pc, pc->data);				//	ngx_http_upstream_get_round_robin_peer()
     if (rc != NGX_OK) {
         return rc;
     }
 
-	//	创建socket
+	//	2. 创建socket
     s = ngx_socket(pc->sockaddr->sa_family, SOCK_STREAM, 0);
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, pc->log, 0, "socket %d", s);
@@ -39,7 +39,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         return NGX_ERROR;
     }
 
-	//	在连接池中获取空闲连接
+	//	3. 在连接池中获取空闲连接 （pc->log指向哪里？？？）
     c = ngx_get_connection(s, pc->log);
 
     if (c == NULL) {
@@ -51,6 +51,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         return NGX_ERROR;
     }
 
+	//	4. 设置接收缓冲区大小
     if (pc->rcvbuf) {
 
 		//	设置socket的接收缓冲区大小
@@ -63,6 +64,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         }
     }
 
+	//	5. 设置socket为非阻塞
     if (ngx_nonblocking(s) == -1) {
         ngx_log_error(NGX_LOG_ALERT, pc->log, ngx_socket_errno,
                       ngx_nonblocking_n " failed");
@@ -70,6 +72,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         goto failed;
     }
 
+	//	6. ?????
     if (pc->local) {
         if (bind(s, pc->local->sockaddr, pc->local->socklen) == -1) {
             ngx_log_error(NGX_LOG_CRIT, pc->log, ngx_socket_errno,
@@ -79,6 +82,8 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         }
     }
 
+
+	//	7. 设置收发数据接口
     c->recv = ngx_recv;
     c->send = ngx_send;
     c->recv_chain = ngx_recv_chain;
@@ -88,6 +93,8 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
 
     c->log_error = pc->log_error;
 
+
+	//	8. ??????
     if (pc->sockaddr->sa_family != AF_INET) {
         c->tcp_nopush = NGX_TCP_NOPUSH_DISABLED;
         c->tcp_nodelay = NGX_TCP_NODELAY_DISABLED;
@@ -119,6 +126,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
 
 #endif
 
+	//	9. 添加读写事件（边缘触发）到事件模型监控队列中
     if (ngx_add_conn) {
         if (ngx_add_conn(c) == NGX_ERROR) {
             goto failed;
@@ -128,6 +136,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, pc->log, 0,
                    "connect to %V, fd:%d #%d", pc->name, s, c->number);
 
+	//	10. 连接后端服务器
     rc = connect(s, pc->sockaddr, pc->socklen);
 
     if (rc == -1) {
@@ -171,6 +180,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         }
     }
 
+	//	????
     if (ngx_add_conn) {
         if (rc == -1) {
 
