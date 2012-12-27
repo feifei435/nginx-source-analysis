@@ -54,7 +54,7 @@ typedef struct {
     ngx_msec_t                       bl_time;
     ngx_uint_t                       bl_state;
 
-    ngx_uint_t                       status;
+    ngx_uint_t                       status;					//	后端服务器响应的状态码整数形式(ngx_http_proxy_process_status_line（）函数中赋值)
     time_t                           response_sec;
     ngx_uint_t                       response_msec;
     off_t                            response_length;
@@ -204,8 +204,8 @@ typedef struct {
 typedef struct {
     ngx_list_t                       headers;						//	存放后端服务器响应的header
 
-    ngx_uint_t                       status_n;						//	相应状态码(e.g. 200、301、302、304）
-    ngx_str_t                        status_line;
+    ngx_uint_t                       status_n;						//	后端响应状态码整数形式(e.g. 200、301、302、304）( ngx_http_proxy_process_status_line() )
+    ngx_str_t                        status_line;					//	后端服务器响应的状态原因字符串( ngx_http_proxy_process_status_line() )
 
     ngx_table_elt_t                 *status;
     ngx_table_elt_t                 *date;
@@ -314,7 +314,7 @@ struct ngx_http_upstream_s {
 
     ngx_msec_t                       timeout;
 
-    ngx_http_upstream_state_t       *state;
+    ngx_http_upstream_state_t       *state;							//	指向 r->upstream_states 数组中正在使用的位置， 对它的修改就是对 r->upstream_states的修改
 
     ngx_str_t                        method;
     ngx_str_t                        schema;

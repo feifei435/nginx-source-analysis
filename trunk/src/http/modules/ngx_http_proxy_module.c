@@ -633,11 +633,12 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     ngx_http_proxy_ctx_t       *ctx;
     ngx_http_proxy_loc_conf_t  *plcf;
 
-	//	在客户端的r->upstream上创建ngx_http_upstream_t
+	//	1. 在客户端的r->upstream上创建ngx_http_upstream_t
     if (ngx_http_upstream_create(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+	//	2. 申请proxy模块的空间并设置到request结构的ctx上
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_ctx_t));
     if (ctx == NULL) {
         return NGX_ERROR;
@@ -687,7 +688,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->buffering = plcf->upstream.buffering;
 
-    u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));
+    u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));		//	创建 ngx_event_pipe_t
     if (u->pipe == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -1301,7 +1302,7 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
 
     u = r->upstream;
 
-	//	解析相应的状态行
+	//	解析后端服务器响应的状态行存放于 ctx->status 结构中
     rc = ngx_http_parse_status_line(r, &u->buffer, &ctx->status);
 
     if (rc == NGX_AGAIN) {
@@ -1336,12 +1337,12 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
     }
 
     if (u->state) {
-        u->state->status = ctx->status.code;
+        u->state->status = ctx->status.code;									//	设置后端服务器响应的状态码
     }
 
     u->headers_in.status_n = ctx->status.code;									//	设置响应状态码
 
-    len = ctx->status.end - ctx->status.start;									//	以下拷贝响应状态码的字符串
+    len = ctx->status.end - ctx->status.start;									//	以下拷贝后端服务器响应状态码的字符串
     u->headers_in.status_line.len = len;
 
     u->headers_in.status_line.data = ngx_pnalloc(r->pool, len);
@@ -1355,13 +1356,13 @@ ngx_http_proxy_process_status_line(ngx_http_request_t *r)
                    "http proxy status %ui \"%V\"",
                    u->headers_in.status_n, &u->headers_in.status_line);
 
-    if (ctx->status.http_version < NGX_HTTP_VERSION_11) {						//	后端服务器的响应http版本低于1.1，将关系连接
+    if (ctx->status.http_version < NGX_HTTP_VERSION_11) {						//	后端服务器的响应http版本低于1.1，将关闭连接
         u->headers_in.connection_close = 1;
     }
 
     u->process_header = ngx_http_proxy_process_header;
 
-    return ngx_http_proxy_process_header(r);									//	处理响应头
+    return ngx_http_proxy_process_header(r);									//	处理后端反馈的响应头
 }
 
 /* 

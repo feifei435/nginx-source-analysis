@@ -1121,6 +1121,8 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     r->connection->single_connection = 0;
 
+
+	//	????
     if (u->state && u->state->response_sec) {
         tp = ngx_timeofday();
         u->state->response_sec = tp->sec - u->state->response_sec;
@@ -1580,7 +1582,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return;
     }
 
-	//	3. 
+	//	3. 申请保存后端服务器反馈的Buffer()
     if (u->buffer.start == NULL) {
         u->buffer.start = ngx_palloc(r->pool, u->conf->buffer_size);
         if (u->buffer.start == NULL) {
@@ -1617,13 +1619,14 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 	//	4. 读取后端服务器的response
     for ( ;; ) {
 
-        n = c->recv(c, u->buffer.last, u->buffer.end - u->buffer.last);
+        n = c->recv(c, u->buffer.last, u->buffer.end - u->buffer.last);			//	当前平台 ngx_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
 
         if (n == NGX_AGAIN) {
 #if 0
             ngx_add_timer(rev, u->read_timeout);
 #endif
 
+			//	之前已经添加了监听事件，为什么此时还需要再次添加？？？
             if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
                 ngx_http_upstream_finalize_request(r, u,
                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1643,7 +1646,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
             return;
         }
 
-        u->buffer.last += n;
+        u->buffer.last += n;	//	按照读取到的数据长度将原指针偏移
 
 #if 0
         u->valid_header_in = 0;
@@ -2054,6 +2057,7 @@ ngx_http_upstream_process_body_in_memory(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http upstream process body on memory");
 
+	//	???
     if (rev->timedout) {
         ngx_connection_error(c, NGX_ETIMEDOUT, "upstream timed out");
         ngx_http_upstream_finalize_request(r, u, NGX_ETIMEDOUT);
@@ -2073,7 +2077,7 @@ ngx_http_upstream_process_body_in_memory(ngx_http_request_t *r,
             return;
         }
 
-        n = c->recv(c, b->last, size);
+        n = c->recv(c, b->last, size);			//	读取后端反馈的Body
 
         if (n == NGX_AGAIN) {
             break;
@@ -2106,6 +2110,7 @@ ngx_http_upstream_process_body_in_memory(ngx_http_request_t *r,
         return;
     }
 
+	//	???
     if (rev->active) {
         ngx_add_timer(rev, u->conf->read_timeout);
 
@@ -3987,6 +3992,9 @@ ngx_http_upstream_response_time_variable(ngx_http_request_t *r,
     v->no_cacheable = 0;
     v->not_found = 0;
 
+	/*
+	 *	ngx_http_upstream_init_request() 函数中创建 r->upstream_states
+	 */
     if (r->upstream_states == NULL || r->upstream_states->nelts == 0) {
         v->not_found = 1;
         return NGX_OK;
