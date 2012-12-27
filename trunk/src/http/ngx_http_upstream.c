@@ -937,13 +937,13 @@ ngx_http_upstream_handler(ngx_event_t *ev)
     ngx_http_log_ctx_t   *ctx;
     ngx_http_upstream_t  *u;
 
-    c = ev->data;
-    r = c->data;
+    c = ev->data;			//	获取与后端服务器的连接
+    r = c->data;			//	获取此连接对应的request
 
-    u = r->upstream;
-    c = r->connection;
+    u = r->upstream;		//	获取此请求对应的 ngx_http_upstream_t 结构
+    c = r->connection;		//	获取此request与客户端的connection
 
-    ctx = c->log->data;
+    ctx = c->log->data;	
     ctx->current_request = r;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -956,6 +956,7 @@ ngx_http_upstream_handler(ngx_event_t *ev)
         u->read_event_handler(r, u);
     }
 
+	//	???????????
     ngx_http_run_posted_requests(c);
 }
 
@@ -1170,15 +1171,19 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->data = r;
 
+	//	注册connection的读写handler(与后端服务器的connection， 读写事件的注册在ngx_event_connect_peer()函数中进行的)
     c->write->handler = ngx_http_upstream_handler;
     c->read->handler = ngx_http_upstream_handler;
 
+	//	注册读写函数
     u->write_event_handler = ngx_http_upstream_send_request_handler;
     u->read_event_handler = ngx_http_upstream_process_header;
 
     c->sendfile &= r->connection->sendfile;
     u->output.sendfile = c->sendfile;
 
+
+	//	创建与后端服务器使用的connection内存池
     if (c->pool == NULL) {
 
         /* we need separate pool here to be able to cache SSL connections */
@@ -1191,6 +1196,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
     }
 
+	//	*** 定义与后端服务器使用的日志文件 *** 
     c->log = r->connection->log;
     c->pool->log = c->log;
     c->read->log = c->log;
@@ -1239,6 +1245,9 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     u->request_sent = 0;
 
+
+	/*	当调用ngx_event_connect_peer()函数与后端发起连接时，由于非阻塞连接可能连接不能立刻成功，此时会返回errno = EINPROGRESS
+		此时nginx需要等待连接成功的写事件触发，并且设置指定时间内必须触发，未触发将关闭socket */
     if (rc == NGX_AGAIN) {
         ngx_add_timer(c->write, u->conf->connect_timeout);
         return;
@@ -1413,6 +1422,7 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http upstream send request");
 
+	//	1. 当Nginx未发送过请求头时，需要检测与后端服务器的连接是否真的成功了
     if (!u->request_sent && ngx_http_upstream_test_connect(c) != NGX_OK) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_ERROR);
         return;
@@ -1420,16 +1430,23 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->log->action = "sending request to upstream";
 
-	//	向后端服务器发送数据
+	//	2. 向后端服务器发送数据
     rc = ngx_output_chain(&u->output, u->request_sent ? NULL : u->request_bufs);
 
-    u->request_sent = 1;
+    u->request_sent = 1;		//	设置已经向后端服务器发送过数据，说明连接已经成功了
 
     if (rc == NGX_ERROR) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_ERROR);
         return;
     }
 
+
+	/* ngx_http_upstream_connect()函数中调用 ngx_event_connect_peer()向后端发起连接时，如果返回NGX_AGAIN，
+	说明连接过程还在进行中需要过会再次尝试，此时增加一个写操作定时器，如果在指定时间内未超时，将会调用在函数
+	ngx_http_upstream_connect() 中注册的写 ngx_http_upstream_send_request_handler()
+	不管此连接的写事件是否超时，ngx_http_upstream_send_request_handler()函数都将被调用一次
+	此函数中检查写事件是否超时，如果超时，将不发送请求到后端服务器，如果未超时将调用ngx_http_upstream_send_request()
+	此函数中将会删除掉定时器	*/
     if (c->write->timer_set) {
         ngx_del_timer(c->write);
     }
@@ -1437,6 +1454,8 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
     if (rc == NGX_AGAIN) {
         ngx_add_timer(c->write, u->conf->send_timeout);
 
+
+		//	添加写事件到epoll事件监控队列中，这里为什么需要设置发送缓冲区的阀值？？？
         if (ngx_handle_write_event(c->write, u->conf->send_lowat) != NGX_OK) {
             ngx_http_upstream_finalize_request(r, u,
                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1460,6 +1479,7 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
         c->tcp_nopush = NGX_TCP_NOPUSH_UNSET;
     }
 
+	//	增加后端服务器的读事件计时器， 目的是读取请求的响应，处理读事件的handler = ngx_http_upstream_process_header()
     ngx_add_timer(c->read, u->conf->read_timeout);
 
 #if 1
@@ -1501,6 +1521,8 @@ ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http upstream send request handler");
 
+	/*	检查与后端服务器的connection写事件是否超时， 定时器在ngx_http_upstream_connect()中添加，
+		为什么会超时？由于在使用非阻塞connect()函数时不是立即返回成功，需要等待此socket的写事件触发	*/
     if (c->write->timedout) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_TIMEOUT);
         return;
@@ -1523,10 +1545,13 @@ ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
         return;
     }
 
+	//	向后端服务器发送请求
     ngx_http_upstream_send_request(r, u);
 }
 
-
+/*
+ *	接收并处理后端服务器的请求头
+ */
 static void
 ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -1541,16 +1566,21 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->log->action = "reading response header from upstream";
 
+	//	1. 检查读事件是否超时（在函数ngx_http_upstream_send_request()中，成功发送到后端服务器的请求后，会增加一个定时器）
     if (c->read->timedout) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_TIMEOUT);
         return;
     }
 
+	/*	2. 检查sokcet是否发生错误
+		由于使用非阻塞connect()，当socket发生错误和connect()成功，都会触发读写事件， 此时要检查Nginx是否已经给后端发送过数据，
+		如果未发送过并且有读事件触发，应该检查socket是否发生错误， 未发生错误说明后端服务器主动向Nginx发来数据 */
     if (!u->request_sent && ngx_http_upstream_test_connect(c) != NGX_OK) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_ERROR);
         return;
     }
 
+	//	3. 
     if (u->buffer.start == NULL) {
         u->buffer.start = ngx_palloc(r->pool, u->conf->buffer_size);
         if (u->buffer.start == NULL) {
@@ -1584,6 +1614,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 #endif
     }
 
+	//	4. 读取后端服务器的response
     for ( ;; ) {
 
         n = c->recv(c, u->buffer.last, u->buffer.end - u->buffer.last);
@@ -1620,6 +1651,8 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         u->peer.cached = 0;
 #endif
 
+		/*	对于proxy模块在函数 ngx_http_proxy_handler() 中注册ngx_http_proxy_process_status_line()
+			在ngx_http_proxy_process_status_line()函数中注册 ngx_http_proxy_process_header() */
         rc = u->process_header(r);
 
         if (rc == NGX_AGAIN) {
@@ -1637,7 +1670,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
 
         break;
-    }
+    }	//	for
 
     if (rc == NGX_HTTP_UPSTREAM_INVALID_HEADER) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_INVALID_HEADER);
@@ -1667,6 +1700,8 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
     }
 
+
+	//	??????????
     if (ngx_http_upstream_process_headers(r, u) != NGX_OK) {
         return;
     }
@@ -1708,6 +1743,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
     }
 
+	//	注册response的body处理
     u->read_event_handler = ngx_http_upstream_process_body_in_memory;
 
     ngx_http_upstream_process_body_in_memory(r, u);
@@ -1830,7 +1866,12 @@ ngx_http_upstream_intercept_errors(ngx_http_request_t *r,
     return NGX_DECLINED;
 }
 
-
+/*	################	检测与后端服务器的连接是否真的成功了	################
+ *	非阻塞connect()调用，连接不能立刻成功，当成功或者出现错误时，epoll会检测到socket描述符可读可写，我们必须判断这种情况。发生错误时套接字既可读又可写，
+ *	而connect连接成功时套接字也可能即可读又可写，如何区分这两种情况呢？因此，必须调用 getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len)
+ *	另一个问题，对于非阻塞式套接字，如果其上的connect调用被信号中断并且不会由内核自动重启，那么它将返回EINTR，此时我们不能再次调用connect等待未完成的连接继续完成，
+ *	这样做将导致返回EADDRINUSE错误。我们只能调用select检测其状态，就像上面说的那样。
+ */
 static ngx_int_t
 ngx_http_upstream_test_connect(ngx_connection_t *c)
 {

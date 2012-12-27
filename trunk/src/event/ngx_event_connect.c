@@ -64,7 +64,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         }
     }
 
-	//	5. 设置socket为非阻塞
+	//	5. 设置socket为非阻塞， 以实现非阻塞连接（connect）
     if (ngx_nonblocking(s) == -1) {
         ngx_log_error(NGX_LOG_ALERT, pc->log, ngx_socket_errno,
                       ngx_nonblocking_n " failed");
@@ -111,7 +111,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     rev->log = pc->log;
     wev->log = pc->log;
 
-    pc->connection = c;
+    pc->connection = c;			//	设置与后端使用的connection
 
     c->number = ngx_atomic_fetch_add(ngx_connection_counter, 1);
 
@@ -143,6 +143,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         err = ngx_socket_errno;
 
 
+		//	当前socket为非阻塞时，执行connect后连接并不能立刻完成, 并返回errno = EINPROGRESS, 此时错误可以忽略
         if (err != NGX_EINPROGRESS
 #if (NGX_WIN32)
             /* Winsock returns WSAEWOULDBLOCK (NGX_EAGAIN) */
