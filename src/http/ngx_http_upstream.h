@@ -121,10 +121,12 @@ struct ngx_http_upstream_srv_conf_s {
 typedef struct {
     ngx_http_upstream_srv_conf_t    *upstream;
 
-    ngx_msec_t                       connect_timeout;					//	指令"proxy_connect_timeout"指定的超时时间
-    ngx_msec_t                       send_timeout;						//	指令"proxy_send_timeout"
-    ngx_msec_t                       read_timeout;						//	指令"proxy_read_timeout"
-    ngx_msec_t                       timeout;		
+	ngx_msec_t                       connect_timeout;					/*	当调用ngx_event_connect_peer()函数与后端发起连接时，由于非阻塞连接可能连接不能立刻成功，
+																		此时会返回errno = EINPROGRESS， 此时nginx需要等待连接成功的写事件触发，这个变量用于检查连接成功写事件触发的超时时间；
+																		指令"proxy_connect_timeout"指定的超时时间 */
+    ngx_msec_t                       send_timeout;						//	发送请求到后端服务器，可能一次并不能全部发送出去，当第二次再次可以发送的时间间隔（指令"proxy_send_timeout"）
+    ngx_msec_t                       read_timeout;						//	请求成功发送到后端服务器后， 多久内需要接收到response，ngx_http_upstream_send_request()中有使用 （指令"proxy_read_timeout"）
+    ngx_msec_t                       timeout;							//	?????????	
 
     size_t                           send_lowat;						//	指令"proxy_send_lowat" 设置
     size_t                           buffer_size;						//	指令"proxy_buffer_size" 设置
@@ -331,7 +333,7 @@ struct ngx_http_upstream_s {
     unsigned                         buffering:1;
     unsigned                         keepalive:1;
 
-    unsigned                         request_sent:1;				//	是否已经发送过，在 ngx_http_upstream_send_request()函数中设置
+    unsigned                         request_sent:1;				//	是否已经向后端服务器发送过请求，在 ngx_http_upstream_send_request()函数中设置
     unsigned                         header_sent:1;
 };
 

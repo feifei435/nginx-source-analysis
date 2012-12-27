@@ -35,7 +35,7 @@ typedef void (*ngx_event_save_peer_session_pt)(ngx_peer_connection_t *pc,
 
 
 struct ngx_peer_connection_s {
-    ngx_connection_t                *connection;			//	与后端连接使用的connection，连接池中的
+    ngx_connection_t                *connection;			//	与后端连接使用的connection，连接池中的(ngx_event_connect_peer()函数中设置)
 
     struct sockaddr                 *sockaddr;
     socklen_t                        socklen;
