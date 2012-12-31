@@ -473,7 +473,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         return;
     }
 
-    u = r->upstream;
+    u = r->upstream;				//	获取指向内存中的 ngx_http_upstream_t
 
 #if (NGX_HTTP_CACHE)
 
@@ -1688,6 +1688,8 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     /* rc == NGX_OK */
 
+	/**** 后端服务器的命令行和请求头已经解析完毕 ****/
+
     if (u->headers_in.status_n > NGX_HTTP_SPECIAL_RESPONSE) {
 
         if (r->subrequest_in_memory) {
@@ -1716,12 +1718,13 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     /* subrequest content in memory */
 
-    if (u->input_filter == NULL) {
+    if (u->input_filter == NULL) {				//	默认的处理接口
         u->input_filter_init = ngx_http_upstream_non_buffered_filter_init;
         u->input_filter = ngx_http_upstream_non_buffered_filter;
         u->input_filter_ctx = r;
     }
 
+	//	此处调用的函数，可能是 ngx_http_proxy_input_filter_init()
     if (u->input_filter_init(u->input_filter_ctx) == NGX_ERROR) {
         ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1735,7 +1738,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
         u->state->response_length += n;
 
-        if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {
+        if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {				//	proxy模块调用 ngx_http_proxy_non_buffered_copy_filter
             ngx_http_upstream_finalize_request(r, u, NGX_ERROR);
             return;
         }
@@ -3096,11 +3099,11 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
                        "close http upstream connection: %d",
                        u->peer.connection->fd);
 
-        if (u->peer.connection->pool) {
+        if (u->peer.connection->pool) {							//	销毁连接内存池
             ngx_destroy_pool(u->peer.connection->pool);
         }
 
-        ngx_close_connection(u->peer.connection);
+        ngx_close_connection(u->peer.connection);				//	关闭与后端服务器的连接
     }
 
     u->peer.connection = NULL;
@@ -4204,7 +4207,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    ctx->srv_conf[ngx_http_upstream_module.ctx_index] = uscf;		//	设置申请的 upstream 模块在 srv_conf中的
+    ctx->srv_conf[ngx_http_upstream_module.ctx_index] = uscf;		//	设置申请的 upstream 模块在 srv_conf中
 
     uscf->srv_conf = ctx->srv_conf;					//	upstream模块的srv_conf指向本层的srv_conf
 
@@ -4770,8 +4773,13 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 	//	ngx_http_upstream_add()函数可以向 ngx_http_upstream_main_conf_t的upstreams中添加 ngx_http_upstream_srv_conf_t
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
-		//	检查 init_upstream 是否被赋值，未赋值时将采用 round_robin 方式处理。如果采用其他的负载均衡，
-		//	将会在遇到 "ip_hash" 和 "keep_alive" 指令时设置 peer.init_upstream 此值
+		/*	
+			检查 init_upstream 是否被赋值，未赋值时将采用 round_robin 方式处理。
+			如果采用其他的负载均衡， 将会在遇到 "ip_hash" 和 "keep_alive" 指令时设置 peer.init_upstream 此值 
+			
+
+
+		*/
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 
