@@ -37,6 +37,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_http_upstream_server_t    *server;
     ngx_http_upstream_rr_peers_t  *peers, *backup;
 
+	//	1. ????
     us->peer.init = ngx_http_upstream_init_round_robin_peer;
 
 	//	检查当前的upstream块中是否有 ngx_http_upstream_server_t
@@ -145,7 +146,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
                  ngx_http_upstream_cmp_servers);
 
         return NGX_OK;
-    }
+    }	//	enf if
 
 
     /* an upstream implicitly defined by proxy_pass, etc. */
