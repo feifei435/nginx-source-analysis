@@ -657,7 +657,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
 found:
 
-    if (uscf->peer.init(r, uscf) != NGX_OK) {			//	将调用 ngx_http_upstream_init_round_robin_peer（），在函数 ngx_http_upstream_init_main_conf（）中设置
+    if (uscf->peer.init(r, uscf) != NGX_OK) {			//	将调用 ngx_http_upstream_init_round_robin_peer（），在函数 ngx_http_upstream_init_round_robin（）中设置
 		ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
@@ -4441,8 +4441,10 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 
     uscfp = umcf->upstreams.elts;
 
+	//	
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
+		//	检查host是否已经存在
         if (uscfp[i]->host.len != u->host.len
             || ngx_strncasecmp(uscfp[i]->host.data, u->host.data, u->host.len)
                != 0)
@@ -4450,6 +4452,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             continue;
         }
 
+		//	检查是否重复配置upstream块
         if ((flags & NGX_HTTP_UPSTREAM_CREATE)
              && (uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE))
         {
@@ -4458,6 +4461,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
+		//	使用 "proxy_pass" 指令时， 指定的后端服务器组名字时，不允许出现端口信息
         if ((uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE) && u->port) {
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "upstream \"%V\" may not have port %d",
@@ -4465,6 +4469,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
+		//	当解析"upstream"指令时， 如果已经存在的配置中有端口信息，将会引起冲突
         if ((flags & NGX_HTTP_UPSTREAM_CREATE) && uscfp[i]->port) {
             ngx_log_error(NGX_LOG_WARN, cf->log, 0,
                           "upstream \"%V\" may not have port %d in %s:%ui",
@@ -4752,7 +4757,9 @@ ngx_http_upstream_create_main_conf(ngx_conf_t *cf)
 
 /*
  *	[analy]	1. 调用 umcf->upstreams 中的server->peer.init_upstream 函数指针
-			2. 初始化 umcf->headers_in_hash 表
+ *			2. 初始化 umcf->headers_in_hash 表
+ *	************************************************************************
+ *		此函数调用在http block {...} 中的所有指令解析完之后
  */
 static char *
 ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
@@ -4774,11 +4781,11 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
 		/*	
-			检查 init_upstream 是否被赋值，未赋值时将采用 round_robin 方式处理。
-			如果采用其他的负载均衡， 将会在遇到 "ip_hash" 和 "keep_alive" 指令时设置 peer.init_upstream 此值 
-			
+			检查 init_upstream 是否被赋值，未赋值时将采用 round_robin 方式处理
+			如果采用其他的负载均衡， 将会在解析upstream block {...} 时遇到 "ip_hash" 和 "keep_alive" 指令并设置 peer.init_upstream 值
 
-
+			注：如果指令 "proxy_pass" 未指定后端服务器组时（e.g. proxy_pass http://192.168.124.1:6666 ）, 也会被指定一个默认的负载均衡函数
+				如果指令 "proxy_pass" 指定了后端服务器组，将与指令 "upstream" 共享同一个 ngx_http_upstream_srv_conf_t
 		*/
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;

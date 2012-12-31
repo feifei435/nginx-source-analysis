@@ -54,7 +54,7 @@ struct ngx_http_upstream_rr_peers_s {
 
     ngx_http_upstream_rr_peers_t   *next;
 
-    ngx_http_upstream_rr_peer_t     peer[1];
+    ngx_http_upstream_rr_peer_t     peer[1];			//	柔性数组成员
 };
 
 

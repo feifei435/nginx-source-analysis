@@ -95,7 +95,7 @@ typedef struct {
 } ngx_http_upstream_server_t;
 
 
-#define NGX_HTTP_UPSTREAM_CREATE        0x0001
+#define NGX_HTTP_UPSTREAM_CREATE        0x0001			//	解析到"upstream"指令时使用， 调用ngx_http_upstream()函数时会设置
 #define NGX_HTTP_UPSTREAM_WEIGHT        0x0002
 #define NGX_HTTP_UPSTREAM_MAX_FAILS     0x0004
 #define NGX_HTTP_UPSTREAM_FAIL_TIMEOUT  0x0008
@@ -263,7 +263,7 @@ struct ngx_http_upstream_s {
     ngx_http_upstream_handler_pt     read_event_handler;
     ngx_http_upstream_handler_pt     write_event_handler;
 
-    ngx_peer_connection_t            peer;
+    ngx_peer_connection_t            peer;						//	此结构用于保存与后端服务器通信的变量
 
     ngx_event_pipe_t                *pipe;
 
