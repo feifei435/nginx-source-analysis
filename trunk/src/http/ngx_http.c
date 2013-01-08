@@ -765,8 +765,8 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
         ctx->srv_conf = cscfp[s]->ctx->srv_conf;	//	获取到ngx_http_core_server（）里创建的ctx->srv_conf
 
         if (module->merge_srv_conf) {
-            rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],				//	上层的ctx->srv_conf
-                                        cscfp[s]->ctx->srv_conf[ctx_index]);		//	下层的ngx_http_core_server（）里创建的
+            rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],				//	http层的ctx->srv_conf
+                                        cscfp[s]->ctx->srv_conf[ctx_index]);		//	server层的ngx_http_core_server（）里创建的
             if (rv != NGX_CONF_OK) {
                 goto failed;
             }
