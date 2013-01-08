@@ -218,8 +218,8 @@ create_srv_conf
 create_loc_conf
 preconfiguration			//	大多数是设置variables变量
 init_main_conf				//	对create_main_conf中的字段初始化
-merge_srv_conf
-merge_loc_conf
+merge_srv_conf				//	ngx_http_merge_servers()
+merge_loc_conf				//	ngx_http_merge_servers()
 postconfiguration			//	设置相应阶段的handler
 
 ngx_http_core_server(配置文件中遇见server时将会调用)
