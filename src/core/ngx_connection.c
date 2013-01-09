@@ -1012,7 +1012,9 @@ ngx_drain_connections(void)
     }
 }
 
-
+/*
+ *	获取connection_t->fd的信息，通过参数ngx_str_t *s返回；返回的格式：IP地址+端口号
+ */
 ngx_int_t
 ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
     ngx_uint_t port)
@@ -1045,10 +1047,11 @@ ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
         break;
     }
 
-    if (addr == 0) {
+    if (addr == 0) {			//	ip地址等于0
 
         len = NGX_SOCKADDRLEN;
 
+		//	根据socket描述符获取套接字格式
         if (getsockname(c->fd, (struct sockaddr *) &sa, &len) == -1) {
             ngx_connection_error(c, ngx_socket_errno, "getsockname() failed");
             return NGX_ERROR;

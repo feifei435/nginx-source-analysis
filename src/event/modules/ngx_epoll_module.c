@@ -629,10 +629,24 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         c = event_list[i].data.ptr;
 
         instance = (uintptr_t) c & 1;
-        c = (ngx_connection_t *) ((uintptr_t) c & (uintptr_t) ~1);
+        c = (ngx_connection_t *) ((uintptr_t) c & (uintptr_t) ~1);			
 
         rev = c->read;
 
+		/* 
+			fd在当前处理时变成-1，意味着在之前的事件处理时，把当前请求关闭了， 
+			即close fd并且当前事件对应的连接已被还回连接池，此时该次事件就不应该处理了，作废掉。 
+			其次，如果fd > 0,那么是否本次事件就可以正常处理，就可以认为是一个合法的呢？答案是否定的。 
+			这里我们给出一个情景： 
+			当前的事件序列是： A ... B ... C ... 
+			其中A,B,C是本次epoll上报的其中一些事件，但是他们此时却相互牵扯： 
+			A事件是向客户端写的事件，B事件是新连接到来，C事件是A事件中请求建立的upstream连接，此时需要读源数据， 
+			然后A事件处理时，由于种种原因将C中upstream的连接关闭了(比如客户端关闭，此时需要同时关闭掉取源连接)，自然 
+			C事件中请求对应的连接也被还到连接池(注意，客户端连接与upstream连接使用同一连接池)， 
+			而B事件中的请求到来，获取连接池时，刚好拿到了之前C中upstream还回来的连接结构，当前需要处理C事件的时候， 
+			c->fd != -1，因为该连接被B事件拿去接收请求了，而rev->instance在B使用时，已经将其值取反了，所以此时C事件epoll中 
+			携带的instance就不等于rev->instance了，因此我们也就识别出该stale event，跳过不处理了。 
+		*/ 
         if (c->fd == -1 || rev->instance != instance) {
 
             /*

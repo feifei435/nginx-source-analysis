@@ -121,7 +121,7 @@ struct ngx_connection_s {
     ngx_event_t        *read;				//	读事件，与cycle字段中read_events数组对应
     ngx_event_t        *write;				//	写事件
 
-    ngx_socket_t        fd;					//	用于通信的socket描述符
+    ngx_socket_t        fd;					//	用于通信的socket描述符(本地与客户端或服务器端通信的socket描述符)
 
     ngx_recv_pt         recv;				//	ngx_unix_recv()
     ngx_send_pt         send;				//	ngx_unix_send()

@@ -179,6 +179,7 @@ ngx_inet6_addr(u_char *p, size_t len, u_char *addr)
 /* 
  *	[analy]	将参数 sockaddr *sa的 sa->sin_addr 指向的IP地址和参数port
  *			拼装成字符串格式后存放于text参数中（e.g. 115.238.175.238:80）
+ *			返回:	字符串的长度
  */
 size_t
 ngx_sock_ntop(struct sockaddr *sa, u_char *text, size_t len, ngx_uint_t port)
