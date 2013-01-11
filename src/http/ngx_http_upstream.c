@@ -1711,6 +1711,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return;
     }
 
+	//	????
     if (!r->subrequest_in_memory) {
         ngx_http_upstream_send_response(r, u);
         return;
