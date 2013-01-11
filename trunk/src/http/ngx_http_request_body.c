@@ -622,7 +622,10 @@ ngx_http_read_discarded_request_body(ngx_http_request_t *r)
 
 /*
  *	[analy]	检查客户端请求是否包含"expect: "字段,并且检查http版本是否低于1.1
- *			如果低于1.1版本将直接返回，不做任何处理，否则将响应客户端 "HTTP/1.1 100 Continue"。
+ *			如果低于1.1版本将直接返回，不做任何处理，否则将响应客户端 "HTTP/1.1 100 Continue"
+ *			
+ *			Expect:100-Continue 目的在于允许客户端判定服务器是否愿意接受客户端发来的消息主体（基于请求头域）在客户端发送此请求消息主体前。 
+ *								在有些情况下，如果服务器拒绝查看消息主体，这时客户端发送消息主体是不合适的或会降低效率
  */
 static ngx_int_t
 ngx_http_test_expect(ngx_http_request_t *r)
