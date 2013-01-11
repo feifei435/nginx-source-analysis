@@ -59,7 +59,7 @@
 
 
 /* unused                                  1 */
-#define NGX_HTTP_SUBREQUEST_IN_MEMORY      2
+#define NGX_HTTP_SUBREQUEST_IN_MEMORY      2					//	???
 #define NGX_HTTP_SUBREQUEST_WAITED         4
 #define NGX_HTTP_LOG_UNSAFE                8
 
@@ -466,7 +466,7 @@ struct ngx_http_request_s {
     unsigned                          request_body_file_group_access:1;
     unsigned                          request_body_file_log_level:3;	//	日志级别
 
-    unsigned                          subrequest_in_memory:1;			//	subrequest独有的标记
+    unsigned                          subrequest_in_memory:1;			//	subrequest独有的标记（ngx_http_subrequest()函数中设置，仅当有NGX_HTTP_SUBREQUEST_IN_MEMORY标记时为1）
     unsigned                          waited:1;
 
 #if (NGX_HTTP_CACHE)
