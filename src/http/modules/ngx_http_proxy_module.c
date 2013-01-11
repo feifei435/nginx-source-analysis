@@ -564,7 +564,9 @@ static ngx_keyval_t  ngx_http_proxy_headers[] = {
     { ngx_null_string, ngx_null_string }
 };
 
-
+/*
+ *	默认不转发后端服务器到客户端的响应头域列表
+ */
 static ngx_str_t  ngx_http_proxy_hide_headers[] = {
     ngx_string("Date"),
     ngx_string("Server"),

@@ -370,7 +370,7 @@ struct ngx_http_request_s {
     ngx_buf_t                        *header_in;					//	调用recv等函数读取到的header信息的缓存，通过这个缓存对header进行分析
 
     ngx_http_headers_in_t             headers_in;					//	客户端请求header的结构体
-    ngx_http_headers_out_t            headers_out;					//	响应给客户端的header结构体
+    ngx_http_headers_out_t            headers_out;					//	响应给客户端的头域结构体
 
     ngx_http_request_body_t          *request_body;					//	ngx_http_read_client_request_body()函数中申请
 	

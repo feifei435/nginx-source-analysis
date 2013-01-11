@@ -64,8 +64,8 @@ typedef struct {
 
 
 typedef struct {
-    ngx_hash_t                       headers_in_hash;			//	ngx_http_upstream_headers_in 静态数组的hash表
-    ngx_array_t                      upstreams;                 /* ngx_http_upstream_srv_conf_t */
+    ngx_hash_t                       headers_in_hash;			//	ngx_http_upstream_headers_in 静态数组的hash表（预定义后端服务器响应的指定头域的操作方式的hash表）
+    ngx_array_t                      upstreams;                 //	ngx_http_upstream_srv_conf_t
 } ngx_http_upstream_main_conf_t;
 
 typedef struct ngx_http_upstream_srv_conf_s  ngx_http_upstream_srv_conf_t;
@@ -154,7 +154,11 @@ typedef struct {
 
     ngx_path_t                      *temp_path;							//	指令 "proxy_temp_path" 设置
 
-    ngx_hash_t                       hide_headers_hash;					//	对从被代理服务器传来的不进行转发的一些特殊头做的hash表
+    ngx_hash_t                       hide_headers_hash;					/*	默认不转发到客户端的头域列表 "ngx_http_proxy_hide_headers"
+																		 *	对从被代理服务器传来的不进行转发的一些特殊头做的hash表(ngx_http_proxy_merge_loc_conf()函数中创建的hash表)
+																		 *	指令"proxy_pass_header"指定的头域和
+																		 */
+
     ngx_array_t                     *hide_headers;						//	指令 "proxy_hide_header" 设置(nginx不对从被代理服务器传来的”Date”, “Server”, “X-Pad”和”X-Accel-…“应答进行转发，这个参数允许隐藏一些其他的头部字段)	
     ngx_array_t                     *pass_headers;						//	指令 "proxy_pass_header" 设置(但是如果上述提到的头部字段必须被转发，可以使用proxy_pass_header指令)
 
@@ -237,7 +241,7 @@ typedef struct {
 
     unsigned                         connection_close:1;			//	?????
     unsigned                         chunked:1;
-} ngx_http_upstream_headers_in_t;
+} ngx_http_upstream_headers_in_t;			//	后端服务器响应
 
 
 typedef struct {
@@ -283,12 +287,12 @@ struct ngx_http_upstream_s {
 	*/
     ngx_http_upstream_conf_t        *conf;
 
-    ngx_http_upstream_headers_in_t   headers_in;
+    ngx_http_upstream_headers_in_t   headers_in;				//	存放后端服务器响应头域
 
     ngx_http_upstream_resolved_t    *resolved;
 
     ngx_buf_t                        buffer;
-    off_t                            length;
+    off_t                            length;					//	ngx_http_upstream_process_headers()
 
     ngx_chain_t                     *out_bufs;
     ngx_chain_t                     *busy_bufs;

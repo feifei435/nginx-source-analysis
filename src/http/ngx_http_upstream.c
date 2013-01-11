@@ -143,7 +143,7 @@ static void ngx_http_upstream_ssl_init_connection(ngx_http_request_t *,
 static void ngx_http_upstream_ssl_handshake(ngx_connection_t *c);
 #endif
 
-//	后端服务器发送来的请求头
+//	预定义后端服务器响应的指定头域的操作方式
 ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] = {
 
     { ngx_string("Status"),
@@ -1934,6 +1934,7 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     umcf = ngx_http_get_module_main_conf(r, ngx_http_upstream_module);
 
+	//	???
     if (u->headers_in.x_accel_redirect
         && !(u->conf->ignore_headers & NGX_HTTP_UPSTREAM_IGN_XA_REDIRECT))
     {
@@ -1984,7 +1985,7 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return NGX_DONE;
     }
 
-    part = &u->headers_in.headers.part;
+    part = &u->headers_in.headers.part;				//	后端服务器反馈的响应头
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
@@ -1999,12 +2000,14 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
             i = 0;
         }
 
+		//	查找-不转发到客户端的头域列表中是否含有后端反馈的头域
         if (ngx_hash_find(&u->conf->hide_headers_hash, h[i].hash,
                           h[i].lowcase_key, h[i].key.len))
         {
             continue;
         }
 
+		//	查找-预定义后端服务器响应的指定头域的操作方式hash表，找到后将继续查找
         hh = ngx_hash_find(&umcf->headers_in_hash, h[i].hash,
                            h[i].lowcase_key, h[i].key.len);
 
@@ -2018,6 +2021,7 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
             continue;
         }
 
+		//	设置后端服务器反馈的头域到传递给客户端的反馈的响应域中（参数3等于0说明不需要将 ngx_http_headers_out_t中指针变量赋值）
         if (ngx_http_upstream_copy_header_line(r, &h[i], 0) != NGX_OK) {
             ngx_http_upstream_finalize_request(r, u,
                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -2033,12 +2037,12 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
         r->headers_out.date->hash = 0;
     }
 
-    r->headers_out.status = u->headers_in.status_n;
-    r->headers_out.status_line = u->headers_in.status_line;
+    r->headers_out.status = u->headers_in.status_n;						//	设置返回给客户端的状态码 == 后端服务器反馈的状态码(整数)
+    r->headers_out.status_line = u->headers_in.status_line;				//	设置返回给客户端的状态码 == 后端服务器反馈的状态码(字符串)
 
-    r->headers_out.content_length_n = u->headers_in.content_length_n;
+    r->headers_out.content_length_n = u->headers_in.content_length_n;	//	???
 
-    u->length = u->headers_in.content_length_n;
+    u->length = u->headers_in.content_length_n;							//	???
 
     return NGX_OK;
 }
@@ -3175,6 +3179,7 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
 }
 
 
+//	设置头域到后端服务器反馈的头域结构体中
 static ngx_int_t
 ngx_http_upstream_process_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -3525,7 +3530,7 @@ ngx_http_upstream_process_transfer_encoding(ngx_http_request_t *r,
     return NGX_OK;
 }
 
-
+//	拷贝后端反馈的头域给客户端的响应反馈头域中
 static ngx_int_t
 ngx_http_upstream_copy_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -3539,6 +3544,7 @@ ngx_http_upstream_copy_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
 
     *ho = *h;
 
+	//	如果指定了offest，将ngx_http_headers_out_t 中对应的变量指针指向r->headers_out.headers数组中对应的位置
     if (offset) {
         ph = (ngx_table_elt_t **) ((char *) &r->headers_out + offset);
         *ph = ho;
@@ -4660,7 +4666,7 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
         return NGX_ERROR;
     }
 
-	//	2. 对 hide_headers 数组中的字段进行赋值
+	//	2. 添加默认的hide header(default_hide_headers)，到 hide_headers 数组中
     for (h = default_hide_headers; h->len; h++) {
         hk = ngx_array_push(&hide_headers);
         if (hk == NULL) {
@@ -4673,7 +4679,7 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
     }
 
 
-	//	3. 添加自定义的 conf->hide_headers 到  hide_headers 数组中
+	//	3. 添加自定义的 conf->hide_headers 到 hide_headers 数组中
     if (conf->hide_headers != NGX_CONF_UNSET_PTR) {
 
         h = conf->hide_headers->elts;
@@ -4704,7 +4710,11 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
     }
 
 
-	//	4. 如果 conf->pass_headers 中指定了 hide_headers 数组中有的header，将此header置为空
+	/*	
+	 *	4. 如果 conf->pass_headers 中指定了 hide_headers 数组中有的header，将此header置为空
+	 *		即:	指令"proxy_pass_header"指定的头域与指令"proxy_hide_header"指定的头域相同， 
+	 *			那么指令"proxy_pass_header"指定的头域将替换掉指令"proxy_hide_header"指定的头域
+	 */
     if (conf->pass_headers != NGX_CONF_UNSET_PTR) {
 
         h = conf->pass_headers->elts;
