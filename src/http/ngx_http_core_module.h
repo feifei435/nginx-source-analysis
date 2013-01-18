@@ -352,9 +352,9 @@ struct ngx_http_core_loc_conf_s {
     ngx_hash_t    types_hash;
     ngx_str_t     default_type;								//	指令 "default_type" 指定的正文的类型，默认是text/plain
 
-    off_t         client_max_body_size;    /* client_max_body_size 指令指定允许客户端连接的最大请求实体大小，它出现在请求头部的Content-Length字段 */
-    off_t         directio;                /* directio */
-    off_t         directio_alignment;      /* 指令 "directio_alignment" 指定在使用direct io时的对齐长度 */
+    off_t         client_max_body_size;						//  指令 "client_max_body_size" 指定允许客户端连接的最大请求实体大小，它出现在请求头部的Content-Length字段
+    off_t         directio;									//	指令 "directio"				指定是否开启DIRECT_IO, 默认是关闭的；如果未指定off时，此值保存direct_io的大小
+    off_t         directio_alignment;						//	指令 "directio_alignment"	指定在使用direct io时的对齐长度
 
     size_t        client_body_buffer_size; /* client_body_buffer_size */
     size_t        send_lowat;              /* send_lowat */
@@ -392,11 +392,13 @@ struct ngx_http_core_loc_conf_s {
 
 	ngx_flag_t    client_body_in_single_buffer;     // client_body_in_singe_buffer 指定是否将客户端连接请求完整的放入一个缓冲区，当使用变量$request_body时推荐使用这个指令以减少复制操作。
 													//	如果无法将一个请求放入单个缓冲区，将会被放入磁盘。
-    ngx_flag_t    internal;                // internal指令指定某个location只能被“内部的”请求调用，外部的调用请求会返回”Not found” (404)
-    ngx_flag_t    sendfile;                // sendfile指令将会在发送文件时，使用sendfile()系统调用
+    ngx_flag_t    internal;										 // 指令 "internal"		指定某个location只能被“内部的”请求调用，外部的调用请求会返回”Not found” (404)
+    ngx_flag_t    sendfile;										 // 指令 "sendfile"		指定在发送时是否使用sendfile()系统调用
+
 #if (NGX_HAVE_FILE_AIO)
     ngx_flag_t    aio;                     /* aio */
 #endif
+
     ngx_flag_t    tcp_nopush;              /* tcp_nopush */
     ngx_flag_t    tcp_nodelay;             /* tcp_nodelay */
     ngx_flag_t    reset_timedout_connection; /* reset_timedout_connection */

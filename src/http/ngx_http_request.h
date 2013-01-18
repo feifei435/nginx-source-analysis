@@ -508,7 +508,7 @@ struct ngx_http_request_s {
     unsigned                          filter_finalize:1;			//	仅在 ngx_http_filter_finalize_request（）函数中调用
     unsigned                          post_action:1;
     unsigned                          request_complete:1;
-    unsigned                          request_output:1;				//	?????
+    unsigned                          request_output:1;				//	作用？？？？？？？在函数 ngx_http_copy_filter()中有设置
     unsigned                          header_sent:1;
     unsigned                          expect_tested:1;				//	??????(ngx_http_subrequest() 函数中设置)
     unsigned                          root_tested:1;
@@ -519,7 +519,7 @@ struct ngx_http_request_s {
 
     unsigned                          main_filter_need_in_memory:1;		//	???
     unsigned                          filter_need_in_memory:1;
-    unsigned                          filter_need_temporary:1;
+    unsigned                          filter_need_temporary:1;			//	 ngx_http_charset_filter_module.c 文件中有设置, 此字段将影响 ngx_output_chain_ctx_t ->need_in_temp 的值
     unsigned                          allow_ranges:1;
 
 #if (NGX_STAT_STUB)

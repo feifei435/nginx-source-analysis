@@ -54,14 +54,16 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
          */
 
         if (in == NULL) {
-            return ctx->output_filter(ctx->filter_ctx, in);
+            return ctx->output_filter(ctx->filter_ctx, in);				//	ngx_http_next_filter
         }
 
         if (in->next == NULL
-#if (NGX_SENDFILE_LIMIT)
+
+#if (NGX_SENDFILE_LIMIT)			//	此宏貌似没有定义
             && !(in->buf->in_file && in->buf->file_last > NGX_SENDFILE_LIMIT)
 #endif
-            && ngx_output_chain_as_is(ctx, in->buf))
+		
+            && ngx_output_chain_as_is(ctx, in->buf))		//	检查是否需要合并buf
         {
             return ctx->output_filter(ctx->filter_ctx, in);
         }
@@ -69,7 +71,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
     /* add the incoming buf to the chain ctx->in */
     if (in) {
-        if (ngx_output_chain_add_copy(ctx->pool, &ctx->in, in) == NGX_ERROR) {
+        if (ngx_output_chain_add_copy(ctx->pool, &ctx->in, in) == NGX_ERROR) {			//	将in中的数据合并到ctx->in尾部
             return NGX_ERROR;
         }
     }
@@ -86,6 +88,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
         }
 #endif
 
+		//	循环
         while (ctx->in) {
 
             /*
@@ -112,7 +115,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
                 ngx_debug_point();
 
-                ctx->in = ctx->in->next;
+                ctx->in = ctx->in->next;			//	继续查看下一个
 
                 continue;
             }
@@ -133,8 +136,10 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
                 continue;
             }
 
+
             if (ctx->buf == NULL) {
 
+				//	为文件申请一个buf, ctx->buf指向的是新申请的
                 rc = ngx_output_chain_align_file_buf(ctx, bsize);
 
                 if (rc == NGX_ERROR) {
@@ -163,6 +168,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
                 }
             }
 
+			//	拷贝 ctx->in->buf 中的数据到 ctx->buf
             rc = ngx_output_chain_copy_buf(ctx);
 
             if (rc == NGX_ERROR) {
@@ -179,10 +185,13 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
             /* delete the completed buf from the ctx->in chain */
 
-            if (ngx_buf_size(ctx->in->buf) == 0) {
+			//	此处获取缓冲数据大小时由于在 ngx_output_chain_copy_buf（）函数中已经将解析完的偏移指针指向了解析后的地址，所以这里等于0；
+			//	并将ctx->in指针指向下一个节点
+            if (ngx_buf_size(ctx->in->buf) == 0) {			
                 ctx->in = ctx->in->next;
             }
 
+			//	拼装输出chain链（变量 *out 指向此链的head）
             cl = ngx_alloc_chain_link(ctx->pool);
             if (cl == NULL) {
                 return NGX_ERROR;
@@ -193,6 +202,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
             *last_out = cl;
             last_out = &cl->next;
             ctx->buf = NULL;
+
         }	//	while end
 
         if (out == NULL && last != NGX_NONE) {
@@ -204,7 +214,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
             return last;
         }
 
-        last = ctx->output_filter(ctx->filter_ctx, out);
+        last = ctx->output_filter(ctx->filter_ctx, out);				//	ngx_http_next_filter
 
         if (last == NGX_ERROR || last == NGX_DONE) {
             return last;
@@ -244,7 +254,7 @@ ngx_output_chain_as_is(ngx_output_chain_ctx_t *ctx, ngx_buf_t *buf)
 
 #endif
 
-    if (!sendfile) {
+    if (!sendfile) {		//	不使用sendfile时
 
         if (!ngx_buf_in_memory(buf)) {
             return 0;
@@ -253,10 +263,12 @@ ngx_output_chain_as_is(ngx_output_chain_ctx_t *ctx, ngx_buf_t *buf)
         buf->in_file = 0;
     }
 
+	//	???????????
     if (ctx->need_in_memory && !ngx_buf_in_memory(buf)) {
         return 0;
     }
 
+	//	????????????
     if (ctx->need_in_temp && (buf->memory || buf->mmap)) {
         return 0;
     }
@@ -279,7 +291,7 @@ ngx_output_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain,
 
     ll = chain;
 
-	//	找到chain链表的最后一个
+	//	找到chain链表的最后一个（chain = &ctx->in）
     for (cl = *chain; cl; cl = cl->next) {
         ll = &cl->next;
     }
@@ -326,13 +338,13 @@ ngx_output_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain,
 
 #else
         cl->buf = in->buf;
-        in = in->next;
+        in = in->next;				//	将in指向参数in的next元素，目的用于判断是否参数in是否还有数据
 
 #endif
 
         cl->next = NULL;
-        *ll = cl;
-        ll = &cl->next;				//	将ll指向刚申请的cl的下一个元素
+        *ll = cl;					//	将刚申请的chain挂载到参数 chain 的末尾
+        ll = &cl->next;				//	将ll指向刚申请的cl的下一个元素（因为上步已经将cl挂载到了&ctx->in的尾部，所以当再次循环时ll必须指向了&ctx->in的尾部）
     }
 
     return NGX_OK;
@@ -352,9 +364,10 @@ ngx_output_chain_align_file_buf(ngx_output_chain_ctx_t *ctx, off_t bsize)
         return NGX_DECLINED;
     }
 
+	//	使用directio
     ctx->directio = 1;
 
-    size = (size_t) (in->file_pos - (in->file_pos & ~(ctx->alignment - 1)));				//	???
+    size = (size_t) (in->file_pos - (in->file_pos & ~(ctx->alignment - 1)));				//	?????
 
     if (size == 0) {
 
@@ -372,6 +385,7 @@ ngx_output_chain_align_file_buf(ngx_output_chain_ctx_t *ctx, off_t bsize)
         }
     }
 
+	//	申请一个buf，大小等于size
     ctx->buf = ngx_create_temp_buf(ctx->pool, size);
     if (ctx->buf == NULL) {
         return NGX_ERROR;
@@ -480,7 +494,7 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
     size = ngx_buf_size(src);
     size = ngx_min(size, dst->end - dst->pos);
 
-    sendfile = ctx->sendfile & !ctx->directio;
+    sendfile = ctx->sendfile & !ctx->directio;				//	是否使用sendfile检查
 
 #if (NGX_SENDFILE_LIMIT)
 
@@ -492,11 +506,13 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
 
 	//	需要拷贝的buf在内存中
     if (ngx_buf_in_memory(src)) {
+
+		//	拷贝 ctx->in->buf 中的数据到 ctx->buf
         ngx_memcpy(dst->pos, src->pos, (size_t) size);
         src->pos += (size_t) size;
         dst->last += (size_t) size;
 
-        if (src->in_file) {
+        if (src->in_file) {		//	数据在文件中
 
             if (sendfile) {
                 dst->in_file = 1;
@@ -505,7 +521,7 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
                 dst->file_last = src->file_pos + size;
 
             } else {
-                dst->in_file = 0;
+                dst->in_file = 0;	//	不使用sendfile时
             }
 
             src->file_pos += size;
@@ -514,6 +530,8 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
             dst->in_file = 0;
         }
 
+
+		//	ctx->in->buf 中的数据解析完后
         if (src->pos == src->last) {
             dst->flush = src->flush;
             dst->last_buf = src->last_buf;
