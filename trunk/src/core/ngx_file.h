@@ -21,7 +21,7 @@ struct ngx_file_s {
     off_t                      offset;
     off_t                      sys_offset;
 
-    ngx_log_t                 *log;
+    ngx_log_t                 *log;					//	使用的Log指针
 
 #if (NGX_HAVE_FILE_AIO)
     ngx_event_aio_t           *aio;

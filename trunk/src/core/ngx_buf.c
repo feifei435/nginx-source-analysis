@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 
 /* 
- *	[analy]	在内存池上创建buf，并设置相关域
+ *	在内存池上创建buf，并设置相关域
  */
 ngx_buf_t *
 ngx_create_temp_buf(ngx_pool_t *pool, size_t size)

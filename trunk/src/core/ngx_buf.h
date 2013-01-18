@@ -31,7 +31,7 @@ struct ngx_buf_s {
 
 
     /* the buf's content could be changed */
-    unsigned         temporary:1;
+    unsigned         temporary:1;			//	临时使用的buf
 
     /*
      * the buf's content is in a memory cache or in a read only memory
@@ -88,29 +88,32 @@ struct ngx_output_chain_ctx_s {
     ngx_chain_t                 *busy;		//	这个保存了已经发送完毕的buf，也就是每次我们从in中将buf读取完毕后，确定数据已经取完，
 											//	此时就会将这个chain拷贝到busy中。然后将比较老的busy buf拷贝到free中
 
-	//	是否使用sendfile，是否使用directio等等
-    unsigned                     sendfile:1;	//	ngx_http_copy_filter()函数中根据c->sendfile来设置
-    unsigned                     directio:1;
+
+    unsigned                     sendfile:1;			//	ngx_http_copy_filter()函数中根据c->sendfile来设置
+    unsigned                     directio:1;			//	是否使用directio
+
 #if (NGX_HAVE_ALIGNED_DIRECTIO)
     unsigned                     unaligned:1;
 #endif
-    unsigned                     need_in_memory:1;
-    unsigned                     need_in_temp:1;
+
+	unsigned                     need_in_memory:1;		//	r->main_filter_need_in_memory 和 r->filter_need_in_memory 根据两个值来进行设置
+    unsigned                     need_in_temp:1;		//	根据 r->filter_need_temporary 字段进行赋值（在函数ngx_http_copy_filter()有设置） 
+
 #if (NGX_HAVE_FILE_AIO)
     unsigned                     aio:1;
 
     ngx_output_chain_aio_pt      aio_handler;
 #endif
 
-    off_t                        alignment;
+    off_t                        alignment;			//	clcf->directio_alignment 指定
 
     ngx_pool_t                  *pool;				//	当前buffer链使用的内存池
     ngx_int_t                    allocated;			//	每次从pool中重新alloc一个buf这个值都会相应加一  
-    ngx_bufs_t                   bufs;
+    ngx_bufs_t                   bufs;				//	缓冲区使用的buf个数和大小
     ngx_buf_tag_t                tag;				//	这个用来标记当前那个模块使用这个chain  
 
-    ngx_output_chain_filter_pt   output_filter;		//	一个回调函数，用来过滤输出
-    void                        *filter_ctx;
+    ngx_output_chain_filter_pt   output_filter;		//	一个回调函数，用来过滤输出(ngx_http_copy_filter()函数中设置为 ctx->output_filter = ngx_http_next_filter;)
+    void                        *filter_ctx;		//	在函数 ngx_http_copy_filter() 中被设置为request (ctx->filter_ctx = r;)
 };
 
 
@@ -131,9 +134,10 @@ typedef struct {
 //	缓冲的数据是否仅存在内存中
 #define ngx_buf_in_memory_only(b)   (ngx_buf_in_memory(b) && !b->in_file)
 
+//	????????????
 #define ngx_buf_special(b)                                                   \
     ((b->flush || b->last_buf || b->sync)                                    \			//	
-     && !ngx_buf_in_memory(b) && !b->in_file)											//	不在内存同时也不在文件中
+     && !ngx_buf_in_memory(b) && !b->in_file)											//	不在内存 && 不在文件中
 
 #define ngx_buf_sync_only(b)                                                 \
     (b->sync                                                                 \
