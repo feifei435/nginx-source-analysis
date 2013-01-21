@@ -24,7 +24,7 @@
  * so we limit it to 2G-1 bytes.
  */
 
-#define NGX_SENDFILE_LIMIT  2147483647L
+#define NGX_SENDFILE_LIMIT  2147483647L					//	约等于2G
 
 
 #if (IOV_MAX > 64)
@@ -33,6 +33,12 @@
 #define NGX_HEADERS  IOV_MAX
 #endif
 
+
+/*
+ *	sent:	在本轮发送中已经成功发送的数据大小
+ *	send:	本轮发送中要发送的数据大小
+ *	prev_send: 本轮发送中上次发送的数据大小
+ */
 
 ngx_chain_t *
 ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
@@ -68,7 +74,7 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
     }
 
 
-    send = 0;
+    send = 0;			
 
 	//	拼装io向量数组
     header.elts = headers;
@@ -90,6 +96,7 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
         /* create the iovec and coalesce the neighbouring bufs */
 
+		//	遍历要发送的chain链
         for (cl = in;
              cl && header.nelts < IOV_MAX && send < limit;
              cl = cl->next)
@@ -121,18 +128,18 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             }
 #endif
 
-            if (!ngx_buf_in_memory_only(cl->buf)) {
+            if (!ngx_buf_in_memory_only(cl->buf)) {			//	数据不在内存中
                 break;
             }
 
-            size = cl->buf->last - cl->buf->pos;
+            size = cl->buf->last - cl->buf->pos;			//	获取未发送的数据大小
 
-            if (send + size > limit) {
+            if (send + size > limit) {						//	当要发送数据的总和大于limit限制，仅允许发送剩余大小
                 size = limit - send;
             }
 
-            if (prev == cl->buf->pos) {
-                iov->iov_len += (size_t) size;
+            if (prev == cl->buf->pos) {				
+                iov->iov_len += (size_t) size;			//	????
 
             } else {
                 iov = ngx_array_push(&header);
@@ -145,7 +152,7 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             }
 
             prev = cl->buf->pos + (size_t) size;
-            send += size;
+            send += size;									//	计算要发送的数据大小
         }
 
         /* set TCP_CORK if there is a header before a file */
@@ -215,18 +222,23 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
         /* get the file buf */
 
-        if (header.nelts == 0 && cl && cl->buf->in_file && send < limit) {
+		//	如果chain链表中既有内存buf又有文件buf， 并且内存buf存在于文件Buf之前，将先发送内存buf后，在发送文件buf
+        if (header.nelts == 0 
+			&& cl 
+			&& cl->buf->in_file				//	发送的数据在文件中
+			&& send < limit
+		) {
             file = cl->buf;
 
             /* coalesce the neighbouring file bufs */
 
             do {
-                size = cl->buf->file_last - cl->buf->file_pos;
+                size = cl->buf->file_last - cl->buf->file_pos;			//	获取文件的大小
 
                 if (send + size > limit) {
                     size = limit - send;
 
-                    aligned = (cl->buf->file_pos + size + ngx_pagesize - 1)
+                    aligned = (cl->buf->file_pos + size + ngx_pagesize - 1)			//	?????
                                & ~((off_t) ngx_pagesize - 1);
 
                     if (aligned <= cl->buf->file_last) {
@@ -234,10 +246,10 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                     }
                 }
 
-                file_size += (size_t) size;
+                file_size += (size_t) size;				//	统计文件的大小
                 send += size;
                 fprev = cl->buf->file_pos + size;
-                cl = cl->next;
+                cl = cl->next;							//	检查后续的chain链是否缓存在文件中，如果是继续拼装数据
 
             } while (cl
                      && cl->buf->in_file
@@ -246,6 +258,8 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                      && fprev == cl->buf->file_pos);
         }
 
+
+		//	在文件中使用sendfile()
         if (file) {
 #if 1
             if (file_size == 0) {
@@ -291,7 +305,10 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                            "sendfile: %d, @%O %O:%uz",
                            rc, file->file_pos, sent, file_size);
 
-        } else {
+        } else {	
+
+			//	不在文件中使用聚集写writev()
+
             rc = writev(c->fd, header.elts, header.nelts);
 
             if (rc == -1) {
@@ -315,17 +332,19 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                                "writev() not ready");
             }
 
-            sent = rc > 0 ? rc : 0;
+            sent = rc > 0 ? rc : 0;					//	返回写成功的字节数
 
             ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "writev: %O", sent);
         }
 
+		//	有时不能一次将chain链中的数据一次发送出去需要多次发送，此时检查本次发送是否完成
         if (send - prev_send == sent) {
             complete = 1;
         }
 
-        c->sent += sent;
+        c->sent += sent;				//	计算成功发送的数据大小
 
+		//	遍历所有chain，更新chain状态
         for (cl = in; cl; cl = cl->next) {
 
             if (ngx_buf_special(cl->buf)) {
@@ -338,7 +357,7 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
             size = ngx_buf_size(cl->buf);
 
-            if (sent >= size) {
+            if (sent >= size) {				//	sent的值有可能等于n1+n2...nN的总和，如果sent大于当前size说明此chain链节点已经发送完成
                 sent -= size;
 
                 if (ngx_buf_in_memory(cl->buf)) {
@@ -352,30 +371,32 @@ ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                 continue;
             }
 
-            if (ngx_buf_in_memory(cl->buf)) {
+			//	chain链中有未完全发送成功，将继续发送
+
+            if (ngx_buf_in_memory(cl->buf)) {		//	数据在内存中，更新buf的pos域
                 cl->buf->pos += (size_t) sent;
             }
 
-            if (cl->buf->in_file) {
+            if (cl->buf->in_file) {					//	数据在文件中，更新file_buf的pos域
                 cl->buf->file_pos += sent;
             }
 
             break;
         }
 
-        if (eintr) {
+        if (eintr) {				//	如果本次被信号中断，再次运行
             continue;
         }
 
-        if (!complete) {
+        if (!complete) {			//	complete等于0表明系统负载过大，将直接返回未完成的chain
             wev->ready = 0;
             return cl;
         }
 
-        if (send >= limit || cl == NULL) {
+        if (send >= limit || cl == NULL) {		//	????
             return cl;
         }
 
-        in = cl;
+        in = cl;		//	更新in, 准备处理下一个chain
     }	//	end for
 }

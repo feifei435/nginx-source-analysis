@@ -119,11 +119,11 @@ struct ngx_output_chain_ctx_s {
 
 typedef struct {
     ngx_chain_t                 *out;
-    ngx_chain_t                **last;
-    ngx_connection_t            *connection;
-    ngx_pool_t                  *pool;
+    ngx_chain_t                **last;			
+    ngx_connection_t            *connection;		//	与后端使用的connection
+    ngx_pool_t                  *pool;				//	使用的内存池	
     off_t                        limit;
-} ngx_chain_writer_ctx_t;					/* [analy] 这个主要是用在upstream模块 */
+} ngx_chain_writer_ctx_t;							/* 这个主要是用在upstream模块 */
 
 
 #define NGX_CHAIN_ERROR     (ngx_chain_t *) NGX_ERROR

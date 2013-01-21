@@ -54,7 +54,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
          */
 
         if (in == NULL) {
-            return ctx->output_filter(ctx->filter_ctx, in);				//	ngx_http_next_filter
+            return ctx->output_filter(ctx->filter_ctx, in);				//	ngx_http_next_filter 或 ngx_chain_writer
         }
 
         if (in->next == NULL
@@ -71,7 +71,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
     /* add the incoming buf to the chain ctx->in */
     if (in) {
-        if (ngx_output_chain_add_copy(ctx->pool, &ctx->in, in) == NGX_ERROR) {			//	将in中的数据合并到ctx->in尾部
+        if (ngx_output_chain_add_copy(ctx->pool, &ctx->in, in) == NGX_ERROR) {			//	将in中的数据拼接到ctx->in尾部
             return NGX_ERROR;
         }
     }
@@ -88,7 +88,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
         }
 #endif
 
-		//	循环
+		//	循环处理ctx->in中的数据
         while (ctx->in) {
 
             /*
@@ -214,7 +214,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
             return last;
         }
 
-        last = ctx->output_filter(ctx->filter_ctx, out);				//	ngx_http_next_filter
+        last = ctx->output_filter(ctx->filter_ctx, out);				//	ngx_http_next_filter 或 ngx_chain_writer
 
         if (last == NGX_ERROR || last == NGX_DONE) {
             return last;
@@ -223,7 +223,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
         ngx_chain_update_chains(ctx->pool, &ctx->free, &ctx->busy, &out,
                                 ctx->tag);
         last_out = &out;
-    }
+    }	//	end for
 }
 
 /*
@@ -627,18 +627,20 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
     return NGX_OK;
 }
 
-
+//	貌似就upstream模块使用到了
 ngx_int_t
 ngx_chain_writer(void *data, ngx_chain_t *in)
 {
-    ngx_chain_writer_ctx_t *ctx = data;
+    ngx_chain_writer_ctx_t *ctx = data;					//	获取upstream使用的writer上下文， 在ngx_http_upstream_init_request()函数中设置
 
     off_t              size;
     ngx_chain_t       *cl;
     ngx_connection_t  *c;
 
-    c = ctx->connection;
+    c = ctx->connection;								//	获取与后端服务器的connection
 
+
+	//	遍历发送的chain链， 将新申请的chain串起来，挂接到 ctx->out的尾部
     for (size = 0; in; in = in->next) {
 
 #if 1
@@ -653,6 +655,7 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
                        "chain writer buf fl:%d s:%uO",
                        in->buf->flush, ngx_buf_size(in->buf));
 
+		//	获取一个chain结构(为什么重新获取chain结构？？？？)
         cl = ngx_alloc_chain_link(ctx->pool);
         if (cl == NULL) {
             return NGX_ERROR;
@@ -660,7 +663,7 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
 
         cl->buf = in->buf;
         cl->next = NULL;
-        *ctx->last = cl;
+        *ctx->last = cl;					//	将新申请的chain串起来， 直接会挂接到 ctx->out的尾部
         ctx->last = &cl->next;
     }
 
@@ -679,11 +682,12 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
         size += ngx_buf_size(cl->buf);
     }
 
-    if (size == 0 && !c->buffered) {
+    if (size == 0 && !c->buffered) {			//	????
         return NGX_OK;
     }
 
-    ctx->out = c->send_chain(c, ctx->out, ctx->limit);
+	//	发送数据
+    ctx->out = c->send_chain(c, ctx->out, ctx->limit);				//	ngx_linux_sendfile_chain()
 
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
                    "chain writer out: %p", ctx->out);
@@ -700,5 +704,7 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
         }
     }
 
+
+	//	这里表明还有数据未发送成功
     return NGX_AGAIN;
 }

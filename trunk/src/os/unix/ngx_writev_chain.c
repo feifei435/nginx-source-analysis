@@ -38,6 +38,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
     wev = c->write;
 
+	//	?????
     if (!wev->ready) {
         return in;
     }
