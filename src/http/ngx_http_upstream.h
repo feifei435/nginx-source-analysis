@@ -271,9 +271,9 @@ struct ngx_http_upstream_s {
 
     ngx_event_pipe_t                *pipe;
 
-    ngx_chain_t                     *request_bufs;				//	create_request 中进行拼装的请求chain
+    ngx_chain_t                     *request_bufs;				//	create_request 中进行拼装的请求chain（e.g. ngx_http_proxy_create_request()函数中设置）
 
-    ngx_output_chain_ctx_t           output;
+    ngx_output_chain_ctx_t           output;					//	upstream向后端发送数据时，管理buf的结构体
     ngx_chain_writer_ctx_t           writer;
 
 	/*	

@@ -126,7 +126,7 @@ struct ngx_connection_s {
     ngx_recv_pt         recv;				//	ngx_unix_recv()
     ngx_send_pt         send;				//	ngx_unix_send()
     ngx_recv_chain_pt   recv_chain;			//	ngx_readv_chain
-    ngx_send_chain_pt   send_chain;			//	ngx_writev_chain()
+    ngx_send_chain_pt   send_chain;			//	ngx_linux_sendfile_chain(){此版本是系统支持sendfile情况使用} | ngx_writev_chain()
 	
 	ngx_extend_misc_t   extendBackup;
 

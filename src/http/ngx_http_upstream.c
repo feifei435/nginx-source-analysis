@@ -524,12 +524,13 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	设置在ngx_output_chain()函数中使用的chain管理结构
     u->output.alignment = clcf->directio_alignment;
     u->output.pool = r->pool;
     u->output.bufs.num = 1;
     u->output.bufs.size = clcf->client_body_buffer_size;
-    u->output.output_filter = ngx_chain_writer;
-    u->output.filter_ctx = &u->writer;
+    u->output.output_filter = ngx_chain_writer;						//	这里注册的函数将在 ngx_http_upstream_send_request() 函数中调用
+    u->output.filter_ctx = &u->writer;								//	ngx_output_chain() -> ctx->output_filter 时会使用到
 
     u->writer.pool = r->pool;
 
@@ -657,6 +658,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
 found:
 
+	//	负载均衡函数初始化
     if (uscf->peer.init(r, uscf) != NGX_OK) {			//	将调用 ngx_http_upstream_init_round_robin_peer（），在函数 ngx_http_upstream_init_round_robin（）中设置
 		ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1142,7 +1144,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
     u->state->response_sec = tp->sec;
     u->state->response_msec = tp->msec;
 
-	//	发起物理连接后端
+	//	向后端服务器发起物理连接
     rc = ngx_event_connect_peer(&u->peer);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1169,18 +1171,22 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     /* rc == NGX_OK || rc == NGX_AGAIN */
 
-    c = u->peer.connection;
+    c = u->peer.connection;			//	获取与后端使用的connection
 
-    c->data = r;
+    c->data = r;					//	将客户端对应的请求信息挂到后端服务器的connection上
 
 	//	注册connection的读写handler(与后端服务器的connection， 读写事件的注册在ngx_event_connect_peer()函数中进行的)
     c->write->handler = ngx_http_upstream_handler;
     c->read->handler = ngx_http_upstream_handler;
 
-	//	注册读写函数
+	//	注册读写函数, 会在 ngx_http_upstream_handler()函数中调用
     u->write_event_handler = ngx_http_upstream_send_request_handler;
     u->read_event_handler = ngx_http_upstream_process_header;
 
+	/*	
+	 *	由于在ngx_event_connect_peer()函数中设置了 c->sendfile = 1， 如果与客户端使用的发送方式也为sendfile，
+	 *	那么与后端发送的数据将使用sendfile方式
+     */
     c->sendfile &= r->connection->sendfile;
     u->output.sendfile = c->sendfile;
 
@@ -1206,11 +1212,13 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     /* init or reinit the ngx_output_chain() and ngx_chain_writer() contexts */
 
+	//	设置向后端发送数据使用的context(ngx_chain_writer()函数中使用)
     u->writer.out = NULL;
-    u->writer.last = &u->writer.out;
-    u->writer.connection = c;
+    u->writer.last = &u->writer.out;				//	这里很重要的哦！！将会在 ngx_chain_writer()函数中将要发送的chain链挂接到 u->writer.out 上
+    u->writer.connection = c;					
     u->writer.limit = 0;
 
+	//	如果已经向后端服务器发送过请求，将重新初始化请求buf
     if (u->request_sent) {
         if (ngx_http_upstream_reinit(r, u) != NGX_OK) {
             ngx_http_upstream_finalize_request(r, u,
@@ -1219,6 +1227,8 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
     }
 
+
+	//	?????????
     if (r->request_body
         && r->request_body->buf
         && r->request_body->temp_file
@@ -1264,6 +1274,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
 #endif
 
+	//	向后端服务器发送请求
     ngx_http_upstream_send_request(r, u);
 }
 

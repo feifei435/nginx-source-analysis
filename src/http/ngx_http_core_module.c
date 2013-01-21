@@ -1487,7 +1487,7 @@ ngx_http_update_location_config(ngx_http_request_t *r)
         }
     }
 
-	//	设置此连接是否使用sendfile系统调用发送数据，首先系统支持sendfile，
+	//	设置此连接是否使用sendfile系统调用发送数据，首先系统支持sendfile(在ngx_linux_io定义时指定)
 	//	并且配置文件中sendfile指令是打开状态（默认未开启）
     if ((ngx_io.flags & NGX_IO_SENDFILE) && clcf->sendfile) {
         r->connection->sendfile = 1;

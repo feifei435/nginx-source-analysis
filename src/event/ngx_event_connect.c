@@ -89,7 +89,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     c->recv_chain = ngx_recv_chain;
     c->send_chain = ngx_send_chain;
 
-    c->sendfile = 1;
+    c->sendfile = 1;					//	与后端服务器通信，默认使用sendfile方式， 具体发送时使用哪种方式根据数据而定
 
     c->log_error = pc->log_error;
 

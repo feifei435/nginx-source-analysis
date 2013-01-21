@@ -577,6 +577,15 @@ ngx_http_proxy_handler() 被调用时
 				|-- ngx_http_upstream_connect();	
 					|-- ngx_event_connect_peer()
 					|-- ngx_http_upstream_send_request()
+						|-- ngx_output_chain()		
+							|-- ngx_chain_writer()	
+								|-- ngx_linux_sendfile_chain()
+									|-- sendfile
+									|-- writev
+			
+			
+
+					
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
 	

@@ -215,6 +215,7 @@ ngx_chain_update_chains(ngx_pool_t *p, ngx_chain_t **free, ngx_chain_t **busy,
     while (*busy) {
         cl = *busy;
 
+		//	缓冲区内还有数据
         if (ngx_buf_size(cl->buf) != 0) {
             break;
         }
