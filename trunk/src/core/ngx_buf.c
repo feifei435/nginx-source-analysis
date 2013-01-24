@@ -164,8 +164,8 @@ ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 }
 
 /* 
- *	[analy]	当参数 **free 指向的链表中有空闲的chain时，将在此链表中取出一个
- *			否则将检查 pool->chain 是否有空闲的chain，有空闲的将取出空闲的chain。否则重新申请一个chain
+ *	当参数 **free 指向的链表中有空闲的chain时，将在此链表中取出一个
+ *	否则将检查 pool->chain 中是否有空闲的chain，有空闲的将取出空闲的chain。否则重新申请一个chain
  */
 ngx_chain_t *
 ngx_chain_get_free_buf(ngx_pool_t *p, ngx_chain_t **free)
@@ -194,7 +194,9 @@ ngx_chain_get_free_buf(ngx_pool_t *p, ngx_chain_t **free)
     return cl;
 }
 
-
+/*
+ *	更新chain节点， 将**out中已使用完的chain挂载到**free，未使用完的继续指向**busy
+ */
 void
 ngx_chain_update_chains(ngx_pool_t *p, ngx_chain_t **free, ngx_chain_t **busy,
     ngx_chain_t **out, ngx_buf_tag_t tag)
@@ -215,11 +217,12 @@ ngx_chain_update_chains(ngx_pool_t *p, ngx_chain_t **free, ngx_chain_t **busy,
     while (*busy) {
         cl = *busy;
 
-		//	缓冲区内还有数据
+		//	缓冲区内还有数据， 说明有未发送完的数据
         if (ngx_buf_size(cl->buf) != 0) {
             break;
         }
 
+		//	????
         if (cl->buf->tag != tag) {
             *busy = cl->next;
             ngx_free_chain(p, cl);
@@ -229,8 +232,8 @@ ngx_chain_update_chains(ngx_pool_t *p, ngx_chain_t **free, ngx_chain_t **busy,
         cl->buf->pos = cl->buf->start;
         cl->buf->last = cl->buf->start;
 
-        *busy = cl->next;
-        cl->next = *free;
-        *free = cl;
+        *busy = cl->next;					//	准备检查下一个节点
+        cl->next = *free;					//	当前已经使用完的chain节点，指向了*free构成了一个单向链表
+        *free = cl;							//	free指向了当前节点
     }
 }

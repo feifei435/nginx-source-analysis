@@ -400,7 +400,7 @@ struct ngx_http_core_loc_conf_s {
 #endif
 
     ngx_flag_t    tcp_nopush;              /* tcp_nopush */
-    ngx_flag_t    tcp_nodelay;             /* tcp_nodelay */
+    ngx_flag_t    tcp_nodelay;             // 指令 "tcp_nodelay" 指定是否关闭Nagle算法
     ngx_flag_t    reset_timedout_connection; /* reset_timedout_connection */
     ngx_flag_t    server_name_in_redirect; /* server_name_in_redirect */
     ngx_flag_t    port_in_redirect;        /* port_in_redirect */

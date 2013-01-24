@@ -582,9 +582,23 @@ ngx_http_proxy_handler() 被调用时
 								|-- ngx_linux_sendfile_chain()
 									|-- sendfile
 									|-- writev
+									
+									
+									
+					|-- 处理后端服务器发送的反馈
+					|-- ngx_http_upstream_process_header()
+						|-- ngx_http_proxy_process_status_line
+							|-- ngx_http_proxy_process_header
 			
 			
-
+ngx_http_upstream_process_non_buffered_downstream()
+	|-- ngx_http_upstream_process_non_buffered_request(r, 1);
+	
+ngx_http_upstream_process_non_buffered_upstream()
+	|-- ngx_http_upstream_process_non_buffered_request(r, 0);
+	
+	
+	
 					
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	
