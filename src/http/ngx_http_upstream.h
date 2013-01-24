@@ -64,7 +64,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_hash_t                       headers_in_hash;			//	ngx_http_upstream_headers_in 静态数组的hash表（预定义后端服务器响应的指定头域的操作方式的hash表）
+    ngx_hash_t                       headers_in_hash;			//	ngx_http_upstream_headers_in[] 静态数组的hash表（预定义后端服务器响应的指定头域的操作方式的hash表）
     ngx_array_t                      upstreams;                 //	ngx_http_upstream_srv_conf_t
 } ngx_http_upstream_main_conf_t;
 
@@ -129,7 +129,7 @@ typedef struct {
     ngx_msec_t                       timeout;							//	?????????	
 
     size_t                           send_lowat;						//	指令"proxy_send_lowat" 设置
-    size_t                           buffer_size;						//	指令"proxy_buffer_size" 设置
+    size_t                           buffer_size;						//	接收后端服务器反馈的缓冲区大小，指令"proxy_buffer_size" 设置
 
     size_t                           busy_buffers_size;
     size_t                           max_temp_file_size;
@@ -144,7 +144,7 @@ typedef struct {
     ngx_uint_t                       ignore_headers;
     ngx_uint_t                       next_upstream;
     ngx_uint_t                       store_access;						//	指令 "proxy_store_access" 指定创建文件和目录的相关权限
-    ngx_flag_t                       buffering;							//	指令 "proxy_buffering" 设置
+    ngx_flag_t                       buffering;							//	指令 "proxy_buffering" 设置， 默认值on
     ngx_flag_t                       pass_request_headers;				//	指令 "proxy_pass_request_headers " 设置. 初始为on
     ngx_flag_t                       pass_request_body;					//	指令 "proxy_pass_request_body" 设置
 
@@ -197,11 +197,11 @@ typedef struct {
 
 typedef struct {
     ngx_str_t                        name;
-    ngx_http_header_handler_pt       handler;
+    ngx_http_header_handler_pt       handler;				//	当接收到后端服务器反馈的请求头时将逐一进行解析，并设置到u->headers_in结构中 (在函数 ngx_http_proxy_process_header() 中有调用)
     ngx_uint_t                       offset;
-    ngx_http_header_handler_pt       copy_handler;
+    ngx_http_header_handler_pt       copy_handler;			//	将u->headers_in结构中头域设置到r->headers_out(在函数 ngx_http_upstream_process_headers() 中调用)
     ngx_uint_t                       conf;
-    ngx_uint_t                       redirect;  /* unsigned   redirect:1; */
+    ngx_uint_t                       redirect;				/* unsigned   redirect:1; */
 } ngx_http_upstream_header_t;
 
 
@@ -223,8 +223,8 @@ typedef struct {
     ngx_table_elt_t                 *x_accel_limit_rate;
 
     ngx_table_elt_t                 *content_type;
-    ngx_table_elt_t                 *content_length;
-
+    ngx_table_elt_t                 *content_length;				//	指向后端服务器反馈的响应头中的"content_length"头域
+	
     ngx_table_elt_t                 *last_modified;
     ngx_table_elt_t                 *location;
     ngx_table_elt_t                 *accept_ranges;
@@ -235,7 +235,7 @@ typedef struct {
     ngx_table_elt_t                 *content_encoding;
 #endif
 
-    off_t                            content_length_n;
+    off_t                            content_length_n;				//	"content_length"头域的整数形式， 与字段 "*content_length" 表达含义相同
 
     ngx_array_t                      cache_control;
 
@@ -291,7 +291,7 @@ struct ngx_http_upstream_s {
 
     ngx_http_upstream_resolved_t    *resolved;
 
-    ngx_buf_t                        buffer;
+    ngx_buf_t                        buffer;					//	保存后端反馈的数据 (在函数 ngx_http_upstream_process_header()中申请)
     off_t                            length;					//	ngx_http_upstream_process_headers()
 
     ngx_chain_t                     *out_bufs;
@@ -334,11 +334,11 @@ struct ngx_http_upstream_s {
     unsigned                         cache_status:3;
 #endif
 
-    unsigned                         buffering:1;
+    unsigned                         buffering:1;					//	缓存后端服务器发来的响应数据；ngx_http_proxy_handler()函数中设置, 根据proxy模块的指令 "proxy_buffering"设置
     unsigned                         keepalive:1;
 
     unsigned                         request_sent:1;				//	是否已经向后端服务器发送过请求，在 ngx_http_upstream_send_request()函数中设置
-    unsigned                         header_sent:1;
+    unsigned                         header_sent:1;					//	后端服务器的响应头是否已经发送给客户端 (ngx_http_upstream_send_response()函数中设置)
 };
 
 

@@ -1595,7 +1595,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
 	//	3. 申请保存后端服务器反馈的Buffer()
     if (u->buffer.start == NULL) {
-        u->buffer.start = ngx_palloc(r->pool, u->conf->buffer_size);
+        u->buffer.start = ngx_palloc(r->pool, u->conf->buffer_size);				//	指令 "proxy_buffer_size" 设置的buffer_size
         if (u->buffer.start == NULL) {
             ngx_http_upstream_finalize_request(r, u,
                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1607,7 +1607,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         u->buffer.end = u->buffer.start + u->conf->buffer_size;
         u->buffer.temporary = 1;
 
-        u->buffer.tag = u->output.tag;
+        u->buffer.tag = u->output.tag;				//	设置使用的模块标记
 
         if (ngx_list_init(&u->headers_in.headers, r->pool, 8,
                           sizeof(ngx_table_elt_t))
@@ -1717,7 +1717,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
     }
 
 
-	//	??????????
+	//	将后端服务器反馈的响应头设置到反馈的客户端的响应头结构体中(	u->headers_in.headers --> r->headers_out )
     if (ngx_http_upstream_process_headers(r, u) != NGX_OK) {
         return;
     }
@@ -1934,6 +1934,9 @@ ngx_http_upstream_test_connect(ngx_connection_t *c)
 }
 
 
+/*
+ *	将后端服务器反馈的响应头(u->headers_in.headers)设置到反馈到客户端的响应头(r->headers_out)中
+ */
 static ngx_int_t
 ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -1946,7 +1949,7 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     umcf = ngx_http_get_module_main_conf(r, ngx_http_upstream_module);
 
-	//	???
+	//	？？？？？？？？？？
     if (u->headers_in.x_accel_redirect
         && !(u->conf->ignore_headers & NGX_HTTP_UPSTREAM_IGN_XA_REDIRECT))
     {
@@ -2012,14 +2015,14 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
             i = 0;
         }
 
-		//	查找-不转发到客户端的头域列表中是否含有后端反馈的头域
+		//	查找-后端反馈的头域中是否存在于 "不转发到客户端的头域列表中"
         if (ngx_hash_find(&u->conf->hide_headers_hash, h[i].hash,
                           h[i].lowcase_key, h[i].key.len))
         {
             continue;
         }
 
-		//	查找-预定义后端服务器响应的指定头域的操作方式hash表，找到后将继续查找
+		//	查找 --- 已定义的头域列表（此表是将后端服务器反馈的头域拷贝到准备传递给客户端的反馈头域列表中）
         hh = ngx_hash_find(&umcf->headers_in_hash, h[i].hash,
                            h[i].lowcase_key, h[i].key.len);
 
@@ -2033,6 +2036,7 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
             continue;
         }
 
+		//	如果后端服务器反馈的头域未在指定的头域列表中( ngx_http_upstream_headers_in ),			
 		//	设置后端服务器反馈的头域到传递给客户端的反馈的响应域中（参数3等于0说明不需要将 ngx_http_headers_out_t中指针变量赋值）
         if (ngx_http_upstream_copy_header_line(r, &h[i], 0) != NGX_OK) {
             ngx_http_upstream_finalize_request(r, u,
@@ -2049,12 +2053,12 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
         r->headers_out.date->hash = 0;
     }
 
-    r->headers_out.status = u->headers_in.status_n;						//	设置返回给客户端的状态码 == 后端服务器反馈的状态码(整数)
-    r->headers_out.status_line = u->headers_in.status_line;				//	设置返回给客户端的状态码 == 后端服务器反馈的状态码(字符串)
+    r->headers_out.status = u->headers_in.status_n;						//	返回给客户端的状态码 == 后端服务器反馈的状态码(整数)
+    r->headers_out.status_line = u->headers_in.status_line;				//	返回给客户端的状态码 == 后端服务器反馈的状态码(字符串)
 
     r->headers_out.content_length_n = u->headers_in.content_length_n;	//	???
 
-    u->length = u->headers_in.content_length_n;							//	???
+    u->length = u->headers_in.content_length_n;							//	设置
 
     return NGX_OK;
 }
@@ -2138,7 +2142,7 @@ ngx_http_upstream_process_body_in_memory(ngx_http_request_t *r,
     }
 }
 
-
+//	向客户端发送数据
 static void
 ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -2149,6 +2153,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
     ngx_connection_t          *c;
     ngx_http_core_loc_conf_t  *clcf;
 
+	//	1. 向客户端发送后端服务器的响应头， 未将后端服务器的响应头缓存。
     rc = ngx_http_send_header(r);
 
     if (rc == NGX_ERROR || rc > NGX_OK || r->post_action) {
@@ -2156,8 +2161,9 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return;
     }
 
-    c = r->connection;
+    c = r->connection;				//	获取与客户端的连接connection
 
+	//	？？？？？？？
     if (r->header_only) {
 
         if (u->cacheable || u->store) {
@@ -2177,7 +2183,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
     }
 
-    u->header_sent = 1;
+    u->header_sent = 1;		//	设置后端服务器响应头已发送标记
 
     if (r->request_body && r->request_body->temp_file) {
         ngx_pool_run_cleanup_file(r->pool, r->request_body->temp_file->file.fd);
@@ -2186,6 +2192,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	不缓存后端服务器的响应body部分
     if (!u->buffering) {
 
         if (u->input_filter == NULL) {
@@ -2195,16 +2202,17 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         }
 
         u->read_event_handler = ngx_http_upstream_process_non_buffered_upstream;
-        r->write_event_handler =
-                             ngx_http_upstream_process_non_buffered_downstream;
+        r->write_event_handler = ngx_http_upstream_process_non_buffered_downstream;
 
         r->limit_rate = 0;
 
-        if (u->input_filter_init(u->input_filter_ctx) == NGX_ERROR) {
+        if (u->input_filter_init(u->input_filter_ctx) == NGX_ERROR) {			//	proxy_handler()中有设置 ngx_http_proxy_input_filter_init()
             ngx_http_upstream_finalize_request(r, u, 0);
             return;
         }
 
+
+		//	检查是否需要关闭Nagle算法
         if (clcf->tcp_nodelay && c->tcp_nodelay == NGX_TCP_NODELAY_UNSET) {
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "tcp_nodelay");
 
@@ -2222,6 +2230,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
             c->tcp_nodelay = NGX_TCP_NODELAY_SET;
         }
 
+		//	???????????
         n = u->buffer.last - u->buffer.pos;
 
         if (n) {
@@ -2229,7 +2238,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
             u->state->response_length += n;
 
-            if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {
+            if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {			//	ngx_http_proxy_non_buffered_copy_filter()
                 ngx_http_upstream_finalize_request(r, u, 0);
                 return;
             }
@@ -2240,6 +2249,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
             u->buffer.pos = u->buffer.start;
             u->buffer.last = u->buffer.start;
 
+			//	发送一个特殊的Buf数据
             if (ngx_http_send_special(r, NGX_HTTP_FLUSH) == NGX_ERROR) {
                 ngx_http_upstream_finalize_request(r, u, 0);
                 return;
@@ -2437,6 +2447,9 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 }
 
 
+/*
+ *	向客户端发送数据
+ */
 static void
 ngx_http_upstream_process_non_buffered_downstream(ngx_http_request_t *r)
 {
@@ -2464,6 +2477,9 @@ ngx_http_upstream_process_non_buffered_downstream(ngx_http_request_t *r)
 }
 
 
+/*
+ *	向服务器取数据
+ */
 static void
 ngx_http_upstream_process_non_buffered_upstream(ngx_http_request_t *r,
     ngx_http_upstream_t *u)
@@ -2500,11 +2516,15 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
     ngx_http_core_loc_conf_t  *clcf;
 
     u = r->upstream;
-    downstream = r->connection;
-    upstream = u->peer.connection;
+    downstream = r->connection;					//	客户端
+    upstream = u->peer.connection;				//	后端服务器
 
     b = &u->buffer;
 
+	/*	
+	 *	do_write==1，向客户端发送数据
+	 *	do_write==0，向服务器端读取数据
+	 */
     do_write = do_write || u->length == 0;
 
     for ( ;; ) {
@@ -2542,7 +2562,7 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
 
         if (size && upstream->read->ready) {
 
-            n = upstream->recv(upstream, b->last, size);
+            n = upstream->recv(upstream, b->last, size);				//	ngx_unix_recv()
 
             if (n == NGX_AGAIN) {
                 break;
@@ -2563,7 +2583,7 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
         }
 
         break;
-    }
+    }	//	for
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
