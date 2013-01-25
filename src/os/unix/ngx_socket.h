@@ -41,6 +41,15 @@ int ngx_blocking(ngx_socket_t s);
 int ngx_tcp_nopush(ngx_socket_t s);
 int ngx_tcp_push(ngx_socket_t s);
 
+
+/*
+这几个选项都对网络连接的行为具有重要的作用。
+
+许多UNIX系统都实现了TCP_NODELAY选?项，但是，TCP_CORK则是Linux系统所独有的 而且相对较新；它首先在内核版本2.4上得以实现。
+
+此外，其他UNIX系统版本也有功能类似的选项，值得注意的是，在某种由BSD派生的系统上的 TCP_NOPUSH选项其实就是TCP_CORK的一部分具体实现。
+
+*/
 #if (NGX_LINUX)
 
 #define ngx_tcp_nopush_n   "setsockopt(TCP_CORK)"
