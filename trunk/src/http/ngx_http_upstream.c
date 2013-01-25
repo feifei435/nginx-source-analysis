@@ -143,7 +143,11 @@ static void ngx_http_upstream_ssl_init_connection(ngx_http_request_t *,
 static void ngx_http_upstream_ssl_handshake(ngx_connection_t *c);
 #endif
 
-//	预定义后端服务器响应的指定头域的操作方式
+/*	
+ *	预定义后端服务器响应的指定头域的操作方式
+ *	1. handler:			解析后端服务器响应的反馈头（如果响应头中有定义的头域）
+ *	2. copy_handler:	将u->headers_in结构中头域设置到r->headers_out(将后端服务器反馈的头域，赋值到预反馈客户端的头域中)
+ */
 ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] = {
 
     { ngx_string("Status"),
@@ -255,7 +259,7 @@ ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] = {
                  ngx_http_upstream_process_charset, 0,
                  ngx_http_upstream_copy_header_line, 0, 0 },
 
-    { ngx_string("Transfer-Encoding"),
+    { ngx_string("Transfer-Encoding"),								//	后端服务器的传输编码
                  ngx_http_upstream_process_transfer_encoding, 0,
                  ngx_http_upstream_ignore_header_line, 0, 0 },
 
@@ -2230,13 +2234,13 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
             c->tcp_nodelay = NGX_TCP_NODELAY_SET;
         }
 
-		//	???????????
+		//	后端服务器反馈的数据大小
         n = u->buffer.last - u->buffer.pos;
 
         if (n) {
-            u->buffer.last = u->buffer.pos;
+            u->buffer.last = u->buffer.pos;			//	reset缓冲区(为什么reset？？？？)
 
-            u->state->response_length += n;
+            u->state->response_length += n;			//	???
 
             if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {			//	ngx_http_proxy_non_buffered_copy_filter()
                 ngx_http_upstream_finalize_request(r, u, 0);
@@ -2532,7 +2536,7 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
         if (do_write) {
 
             if (u->out_bufs || u->busy_bufs) {
-                rc = ngx_http_output_filter(r, u->out_bufs);
+                rc = ngx_http_output_filter(r, u->out_bufs);				//	向客户端发送数据(经过所有的filter模块)
 
                 if (rc == NGX_ERROR) {
                     ngx_http_upstream_finalize_request(r, u, 0);
@@ -3528,7 +3532,9 @@ ngx_http_upstream_process_charset(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_OK;
 }
 
-
+/*
+ *	解析后端服务器反馈的"Connection: close"头域
+ */
 static ngx_int_t
 ngx_http_upstream_process_connection(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -3545,7 +3551,9 @@ ngx_http_upstream_process_connection(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_OK;
 }
 
-
+/*
+ *	解析后端服务器反馈的"Transfer-Encoding"头域
+ */
 static ngx_int_t
 ngx_http_upstream_process_transfer_encoding(ngx_http_request_t *r,
     ngx_table_elt_t *h, ngx_uint_t offset)
@@ -3556,8 +3564,8 @@ ngx_http_upstream_process_transfer_encoding(ngx_http_request_t *r,
                          (u_char *) "chunked", 7 - 1)
         != NULL)
     {
-        r->upstream->headers_in.chunked = 1;
-    }
+        r->upstream->headers_in.chunked = 1;			//	后端服务器反馈的是Transfer-Encoding: chunked
+    }	
 
     return NGX_OK;
 }

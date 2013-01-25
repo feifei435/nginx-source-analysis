@@ -1543,7 +1543,7 @@ ngx_http_proxy_input_filter_init(void *data)
         u->length = 0;
         u->keepalive = !u->headers_in.connection_close;
 
-    } else if (u->headers_in.chunked) {
+    } else if (u->headers_in.chunked) {								//	后端服务器使用的是chunked编码
         /* chunked */
 
         u->pipe->input_filter = ngx_http_proxy_chunked_filter;
@@ -2045,6 +2045,7 @@ ngx_http_proxy_non_buffered_copy_filter(void *data, ssize_t bytes)
 
     u = r->upstream;
 
+	//	遍历 u->out_bufs, 找到尾结点， ll指向尾结点
     for (cl = u->out_bufs, ll = &u->out_bufs; cl; cl = cl->next) {
         ll = &cl->next;
     }
@@ -2054,25 +2055,25 @@ ngx_http_proxy_non_buffered_copy_filter(void *data, ssize_t bytes)
         return NGX_ERROR;
     }
 
-    *ll = cl;
+    *ll = cl;				//	将申请的chain挂接到 u->out_bufs 的尾结点
 
     cl->buf->flush = 1;
     cl->buf->memory = 1;
 
-    b = &u->buffer;
+    b = &u->buffer;			//	后端服务器反馈的数据
 
-    cl->buf->pos = b->last;
-    b->last += bytes;
-    cl->buf->last = b->last;
-    cl->buf->tag = u->output.tag;
+    cl->buf->pos = b->last;				//	由于在外边已经reset缓冲区
+    b->last += bytes;					//	这里将缓冲区的last指针向后移动bytes字节
+    cl->buf->last = b->last;			//	设置缓冲去的laset指针
+    cl->buf->tag = u->output.tag;		//	设置缓冲模块标记
 
     if (u->length == -1) {
         return NGX_OK;
     }
 
-    u->length -= bytes;
+    u->length -= bytes;					//	???
 
-    if (u->length == 0) {
+    if (u->length == 0) {				//	???
         u->keepalive = !u->headers_in.connection_close;
     }
 

@@ -229,7 +229,7 @@ typedef struct {
     ngx_table_elt_t                 *location;
     ngx_table_elt_t                 *accept_ranges;
     ngx_table_elt_t                 *www_authenticate;
-    ngx_table_elt_t                 *transfer_encoding;
+    ngx_table_elt_t                 *transfer_encoding;				//	"Transfer-Encoding" 有此头域时
 
 #if (NGX_HTTP_GZIP)
     ngx_table_elt_t                 *content_encoding;
@@ -239,8 +239,8 @@ typedef struct {
 
     ngx_array_t                      cache_control;
 
-    unsigned                         connection_close:1;			//	?????
-    unsigned                         chunked:1;
+    unsigned                         connection_close:1;			//	后端服务器反馈的Connection: close;					ngx_http_upstream_process_connection()函数中设置
+    unsigned                         chunked:1;						//	后端服务器反馈的Transfer-Encoding: chunked;			ngx_http_upstream_process_transfer_encoding()函数中设置
 } ngx_http_upstream_headers_in_t;			//	后端服务器响应
 
 
@@ -335,7 +335,7 @@ struct ngx_http_upstream_s {
 #endif
 
     unsigned                         buffering:1;					//	缓存后端服务器发来的响应数据；ngx_http_proxy_handler()函数中设置, 根据proxy模块的指令 "proxy_buffering"设置
-    unsigned                         keepalive:1;
+    unsigned                         keepalive:1;					//	与字段 u->headers_in.connection_close 相关
 
     unsigned                         request_sent:1;				//	是否已经向后端服务器发送过请求，在 ngx_http_upstream_send_request()函数中设置
     unsigned                         header_sent:1;					//	后端服务器的响应头是否已经发送给客户端 (ngx_http_upstream_send_response()函数中设置)

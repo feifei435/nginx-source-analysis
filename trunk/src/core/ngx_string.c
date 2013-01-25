@@ -717,6 +717,7 @@ ngx_strcasestrn(u_char *s1, char *s2, size_t n)
  * must be length of the second substring - 1.
  */
 
+//	在 s1 <---> last之间查找 s2
 u_char *
 ngx_strlcasestrn(u_char *s1, u_char *last, u_char *s2, size_t n)
 {
