@@ -207,6 +207,8 @@ ngx_chain_update_chains(ngx_pool_t *p, ngx_chain_t **free, ngx_chain_t **busy,
         *busy = *out;
 
     } else {
+
+		//	如果busy中还有数据， 将out数据挂载到busy尾节点
         for (cl = *busy; cl->next; cl = cl->next) { /* void */ }
 
         cl->next = *out;
@@ -229,6 +231,7 @@ ngx_chain_update_chains(ngx_pool_t *p, ngx_chain_t **free, ngx_chain_t **busy,
             continue;
         }
 
+		//	reset缓冲区
         cl->buf->pos = cl->buf->start;
         cl->buf->last = cl->buf->start;
 

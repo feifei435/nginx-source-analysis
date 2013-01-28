@@ -1669,8 +1669,11 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         u->peer.cached = 0;
 #endif
 
-		/*	对于proxy模块在函数 ngx_http_proxy_handler() 中注册ngx_http_proxy_process_status_line()
-			在ngx_http_proxy_process_status_line()函数中注册 ngx_http_proxy_process_header() */
+		/*	
+		 *	>>>>>>>>	解析状态行和头域	<<<<<<<
+		 *	对于proxy模块在函数 ngx_http_proxy_handler() 中注册ngx_http_proxy_process_status_line()
+		 *	在ngx_http_proxy_process_status_line()函数中注册 ngx_http_proxy_process_header() 
+		 */
         rc = u->process_header(r);
 
         if (rc == NGX_AGAIN) {
@@ -1703,7 +1706,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     /* rc == NGX_OK */
 
-	/**** 后端服务器的命令行和请求头已经解析完毕 ****/
+	/**** 后端服务器的命令行和响应头域已经解析完毕 ****/
 
     if (u->headers_in.status_n > NGX_HTTP_SPECIAL_RESPONSE) {
 
@@ -1721,7 +1724,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
     }
 
 
-	//	将后端服务器反馈的响应头设置到反馈的客户端的响应头结构体中(	u->headers_in.headers --> r->headers_out )
+	//	将后端服务器反馈的响应头设置到反馈到客户端的响应头结构体中(	u->headers_in.headers --> r->headers_out )
     if (ngx_http_upstream_process_headers(r, u) != NGX_OK) {
         return;
     }
@@ -2146,7 +2149,7 @@ ngx_http_upstream_process_body_in_memory(ngx_http_request_t *r,
     }
 }
 
-//	向客户端发送数据
+//	向客户端发送数据(后端响应的头域直接发送，Body部分要接收后才能发送)
 static void
 ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -2205,8 +2208,8 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
             u->input_filter_ctx = r;
         }
 
-        u->read_event_handler = ngx_http_upstream_process_non_buffered_upstream;
-        r->write_event_handler = ngx_http_upstream_process_non_buffered_downstream;
+        u->read_event_handler = ngx_http_upstream_process_non_buffered_upstream;		//	注册读取后端服务器响应的handler
+        r->write_event_handler = ngx_http_upstream_process_non_buffered_downstream;		//	注册向客户端发送数据的handler
 
         r->limit_rate = 0;
 
@@ -2234,7 +2237,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
             c->tcp_nodelay = NGX_TCP_NODELAY_SET;
         }
 
-		//	后端服务器反馈的数据大小
+		//	后端服务器反馈的body数据大小（由于缓冲区大小有限，可能需要再次读取后端服务器才能将所有的body部分读完整）
         n = u->buffer.last - u->buffer.pos;
 
         if (n) {
@@ -2250,10 +2253,14 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
             ngx_http_upstream_process_non_buffered_downstream(r);
 
         } else {
+
+			//	后端服务器没有发送body部分，需要向后端服务器获取
+
+			//	如果后端服务器将响应头和响应body分开发送，直接reset缓冲区(因为头域解析完毕数据已经不需要)
             u->buffer.pos = u->buffer.start;
             u->buffer.last = u->buffer.start;
 
-			//	发送一个特殊的Buf数据
+			//	发送一个特殊的Buf数据？？？？？
             if (ngx_http_send_special(r, NGX_HTTP_FLUSH) == NGX_ERROR) {
                 ngx_http_upstream_finalize_request(r, u, 0);
                 return;
@@ -2482,7 +2489,7 @@ ngx_http_upstream_process_non_buffered_downstream(ngx_http_request_t *r)
 
 
 /*
- *	向服务器取数据
+ *	向后端服务器取数据
  */
 static void
 ngx_http_upstream_process_non_buffered_upstream(ngx_http_request_t *r,
@@ -2528,11 +2535,14 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
 	/*	
 	 *	do_write==1，向客户端发送数据
 	 *	do_write==0，向服务器端读取数据
+	 *	u->length什么时候等于0？ u->length是保存后端服务器非chunked编码情况下body的长度("content_length"头的值),
+	 *	u->length等于0说明后端服务器反馈的body已经接收完毕，不需要在向服务器获取
 	 */
-    do_write = do_write || u->length == 0;
+    do_write = do_write || u->length == 0;						
 
     for ( ;; ) {
 
+		//	向客户端发送数据
         if (do_write) {
 
             if (u->out_bufs || u->busy_bufs) {
@@ -2547,6 +2557,7 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
                                         &u->out_bufs, u->output.tag);
             }
 
+			//	检查是否有未发送完的数据
             if (u->busy_bufs == NULL) {
 
                 if (u->length == 0
@@ -2557,13 +2568,14 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
                     return;
                 }
 
-                b->pos = b->start;
+                b->pos = b->start;					//	reset缓冲区
                 b->last = b->start;
             }
         }
 
         size = b->end - b->last;
 
+		//	接收后端服务器数据缓冲区还有空间，并且后端服务器的读事件已经准备好， 开始读取数据
         if (size && upstream->read->ready) {
 
             n = upstream->recv(upstream, b->last, size);				//	ngx_unix_recv()
@@ -2573,15 +2585,15 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
             }
 
             if (n > 0) {
-                u->state->response_length += n;
+                u->state->response_length += n;			//	???
 
-                if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {
+                if (u->input_filter(u->input_filter_ctx, n) == NGX_ERROR) {				//	拷贝后端服务器反馈的数据到客户端的缓冲区中	(proxy模块调用 ngx_http_proxy_non_buffered_copy_filter)
                     ngx_http_upstream_finalize_request(r, u, 0);
                     return;
                 }
             }
 
-            do_write = 1;
+            do_write = 1;				//	向客户端的写数据
 
             continue;
         }
@@ -2591,6 +2603,7 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//	????
     if (downstream->data == r) {
         if (ngx_handle_write_event(downstream->write, clcf->send_lowat)
             != NGX_OK)
@@ -2599,20 +2612,21 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
             return;
         }
     }
-
-    if (downstream->write->active && !downstream->write->ready) {
+	
+    if (downstream->write->active && !downstream->write->ready) {		//	客户端不可写， 将根据指令 "send_timeout" 指定的时间添加计时器
         ngx_add_timer(downstream->write, clcf->send_timeout);
 
-    } else if (downstream->write->timer_set) {
+    } else if (downstream->write->timer_set) {							//	客户端的写事件已经添加到定时器中， 将它删除掉
         ngx_del_timer(downstream->write);
     }
 
+	//	对后端服务器的读事件进行监听 (添加后端服务器的读事件到epoll队列中)
     if (ngx_handle_read_event(upstream->read, 0) != NGX_OK) {
         ngx_http_upstream_finalize_request(r, u, 0);
         return;
     }
 
-    if (upstream->read->active && !upstream->read->ready) {
+    if (upstream->read->active && !upstream->read->ready) {					//	后端服务器的读事件不可读， 将根据指令 "proxy_read_timeout" 添加
         ngx_add_timer(upstream->read, u->conf->read_timeout);
 
     } else if (upstream->read->timer_set) {
