@@ -62,7 +62,7 @@ struct ngx_event_s {
     unsigned         complete:1;
 
     unsigned         eof:1;
-    unsigned         error:1;
+    unsigned         error:1;							//	recv后发生了异常；(ngx_unix_recv()函数中设置)
 
     unsigned         timedout:1;						//	说明此事件超时(ngx_event_find_timer()函数中设置)
     unsigned         timer_set:1;						//	说明此事件已经加入到定时器中(ngx_event_add_timer()函数中设置)

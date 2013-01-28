@@ -365,7 +365,7 @@ struct ngx_http_core_loc_conf_s {
     size_t        read_ahead;              /* read_ahead */
 
     ngx_msec_t    client_body_timeout;     /* client_body_timeout */
-    ngx_msec_t    send_timeout;            /* send_timeout */
+    ngx_msec_t    send_timeout;            //	指令 "send_timeout" 默认60s
     ngx_msec_t    keepalive_timeout;       /* keepalive_timeout指令的第一个参数使用此字段，服务器主动关闭连接的超时时间， 默认是75000
 													参数的第一个值指定了客户端与服务器长连接的超时时间，超过这个时间，服务器将关闭连接。
 													参数的第二个值（可选）指定了应答头中Keep-Alive: timeout=time的time值，这个值可以使一些浏览器知道什么时候关闭连接，

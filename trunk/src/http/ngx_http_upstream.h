@@ -292,7 +292,7 @@ struct ngx_http_upstream_s {
     ngx_http_upstream_resolved_t    *resolved;
 
     ngx_buf_t                        buffer;					//	保存后端反馈的数据 (在函数 ngx_http_upstream_process_header()中申请)
-    off_t                            length;					//	ngx_http_upstream_process_headers()
+    off_t                            length;					//	后端服务器反馈的"u->headers_in.content_length_n"长度，非chunked编码时！（ngx_http_upstream_process_headers()中设置）
 
     ngx_chain_t                     *out_bufs;
     ngx_chain_t                     *busy_bufs;
