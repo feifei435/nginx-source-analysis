@@ -72,7 +72,7 @@ typedef struct {
 
     ngx_flag_t                     redirect;							//	ngx_http_proxy_merge_loc_conf()函数中设置
 
-    ngx_uint_t                     http_version;						//	指令"proxy_http_version "设置，默认1.0
+    ngx_uint_t                     http_version;						//	向后端发送请求时，请求头中的HTTP协议版本；指令"proxy_http_version "设置，默认1.0
 
     ngx_uint_t                     headers_hash_max_size;				//	指令"proxy_headers_hash_max_size"设置
     ngx_uint_t                     headers_hash_bucket_size;			//	指令"proxy_headers_hash_bucket_size"设置
@@ -554,7 +554,7 @@ ngx_module_t  ngx_http_proxy_module = {
 static char  ngx_http_proxy_version[] = " HTTP/1.0" CRLF;
 static char  ngx_http_proxy_version_11[] = " HTTP/1.1" CRLF;
 
-
+//	发送到后端服务器的头域
 static ngx_keyval_t  ngx_http_proxy_headers[] = {
     { ngx_string("Host"), ngx_string("$proxy_host") },
     { ngx_string("Connection"), ngx_string("close") },
@@ -1030,9 +1030,11 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     }
 
 
-	//	指令 "proxy_pass_request_headers" 定义client端的request是否可以通过proxy
-	//	这里将client端的request-header与指令"proxy_set_header"和系统自定义的header比较
-	//	如果没有在"proxy_set_header"和系统自定义中将向后端发送服务器直接发送此头
+	/*	计算长度
+	 *	指令 "proxy_pass_request_headers" 定义client端的request是否可以通过proxy
+	 *	这里将client端的request-header与指令"proxy_set_header"和系统自定义的header比较
+	 *	如果没有在"proxy_set_header"和系统自定义表中将向后端服务器直接发送此头 
+	 */
     if (plcf->upstream.pass_request_headers) {
         part = &r->headers_in.headers.part;				//	获取client的请求头
         header = part->elts;	
@@ -3155,7 +3157,7 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
 
 #endif
 
-	//	指令"proxy_set_header" - "这个指令允许将发送到被代理服务器的请求头重新定义或者增加一些字段"
+	//	指令"proxy_set_header" - "允许将发送到被代理服务器的请求头重新定义或者增加一些字段"
 	//	如果指令"proxy_set_header"设置了相应的头，则将这些头存放在 headers_merged 数组中
     src = conf->headers_source->elts;
     for (i = 0; i < conf->headers_source->nelts; i++) {
@@ -3168,8 +3170,11 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
         *s = src[i];
     }
 
-	//	检查系统预定义的proxy_header是否与指令"proxy_set_header"设置的头部域相同，
-	//	如果相同将增加系统定义的proxy_header到 headers_merged 数组中
+	/*	
+	 *	指令"proxy_set_header"设置的头域如果在系统已定义的列表中（ngx_http_proxy_headers数组）, 将忽略系统定义的头域
+	 *	检查系统预定义的proxy_header（ngx_http_proxy_headers数组）是否与指令"proxy_set_header"设置的头部域相同，
+	 *	如果不相同将增加系统定义的proxy_header到 headers_merged 数组中 
+	 */
     while (h->key.len) {
 
         src = headers_merged.elts;

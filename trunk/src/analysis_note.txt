@@ -599,6 +599,16 @@ ngx_http_upstream_process_non_buffered_upstream()
 	
 	
 	
+static void	ngx_http_upstream_process_non_buffered_downstream(ngx_http_request_t *r);	
+static void	ngx_http_upstream_process_non_buffered_upstream(ngx_http_request_t *r, ngx_http_upstream_t *u);	
+static void	ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r, ngx_uint_t do_write);
+	
+static void ngx_http_upstream_process_downstream(ngx_http_request_t *r);
+static void ngx_http_upstream_process_upstream(ngx_http_request_t *r, ngx_http_upstream_t *u);
+static void ngx_http_upstream_process_request(ngx_http_request_t *r);
+	
+	
+	
 					
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	

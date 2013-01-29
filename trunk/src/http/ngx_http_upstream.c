@@ -524,6 +524,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         return;
     }
 
+	//	根据指令 "proxy_bind" 等相关指令设置，在向后端服务器发送请求前，绑定的本地IP和端口信息
     u->peer.local = u->conf->local;
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
@@ -1472,7 +1473,10 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
         ngx_add_timer(c->write, u->conf->send_timeout);
 
 
-		//	添加写事件到epoll事件监控队列中，这里为什么需要设置发送缓冲区的阀值？？？
+		/*	
+			添加写事件到epoll事件监控队列中并设置发送缓冲的低潮阀值，这里为什么需要设置发送缓冲的低潮的阀值？
+			当向后端服务器的发送缓冲区的剩余空间大于 u->conf->send_lowat 时，返回可写。
+		*/
         if (ngx_handle_write_event(c->write, u->conf->send_lowat) != NGX_OK) {
             ngx_http_upstream_finalize_request(r, u,
                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -2043,6 +2047,7 @@ ngx_http_upstream_process_headers(ngx_http_request_t *r, ngx_http_upstream_t *u)
             continue;
         }
 
+		//	未在已定义的头域列表中时，默认处理方式；
 		//	如果后端服务器反馈的头域未在指定的头域列表中( ngx_http_upstream_headers_in ),			
 		//	设置后端服务器反馈的头域到传递给客户端的反馈的响应域中（参数3等于0说明不需要将 ngx_http_headers_out_t中指针变量赋值）
         if (ngx_http_upstream_copy_header_line(r, &h[i], 0) != NGX_OK) {
@@ -2241,6 +2246,9 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         n = u->buffer.last - u->buffer.pos;
 
         if (n) {
+
+			/**	如果已经接收到了后端服务器的数据，将向客户端发送 */
+
             u->buffer.last = u->buffer.pos;			//	reset缓冲区(为什么reset？？？？)
 
             u->state->response_length += n;			//	???
@@ -2254,7 +2262,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
         } else {
 
-			//	后端服务器没有发送body部分，需要向后端服务器获取
+			/**	后端服务器没有发送body部分，需要向后端服务器获取 */
 
 			//	如果后端服务器将响应头和响应body分开发送，直接reset缓冲区(因为头域解析完毕数据已经不需要)
             u->buffer.pos = u->buffer.start;

@@ -55,8 +55,8 @@ struct ngx_peer_connection_s {
 #if (NGX_THREADS)
     ngx_atomic_t                    *lock;
 #endif
-
-    ngx_addr_t                      *local;
+ 
+    ngx_addr_t                      *local;					//	向后端服务器发送请求前，绑定本地IP和端口的信息；指令 "proxy_bind" 设置 （ngx_http_upstream_init_request()函数中设置）
 
     int                              rcvbuf;
 

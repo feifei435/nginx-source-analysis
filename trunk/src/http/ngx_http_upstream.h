@@ -162,7 +162,7 @@ typedef struct {
     ngx_array_t                     *hide_headers;						//	指令 "proxy_hide_header" 设置(nginx不对从被代理服务器传来的”Date”, “Server”, “X-Pad”和”X-Accel-…“应答进行转发，这个参数允许隐藏一些其他的头部字段)	
     ngx_array_t                     *pass_headers;						//	指令 "proxy_pass_header" 设置(但是如果上述提到的头部字段必须被转发，可以使用proxy_pass_header指令)
 
-    ngx_addr_t                      *local;								//	指令 "proxy_bind" 设置
+    ngx_addr_t                      *local;								//	向后端发送请求前，绑定本地IP和端口信息；指令 "proxy_bind" 设置，ngx_http_upstream_init_request()函数中设置
 
 #if (NGX_HTTP_CACHE)
     ngx_shm_zone_t                  *cache;
@@ -182,7 +182,7 @@ typedef struct {
     ngx_array_t                     *store_lengths;
     ngx_array_t                     *store_values;
 
-    signed                           store:2;					//	指令"proxy_store"是否开启了
+    signed                           store:2;							//	指令"proxy_store"是否开启了
     unsigned                         intercept_404:1;
     unsigned                         change_buffering:1;
 
@@ -269,7 +269,7 @@ struct ngx_http_upstream_s {
 
     ngx_peer_connection_t            peer;						//	此结构用于保存与后端服务器通信的变量
 
-    ngx_event_pipe_t                *pipe;
+    ngx_event_pipe_t                *pipe;						//	(e.g. 创建在ngx_http_proxy_handler()函数中)
 
     ngx_chain_t                     *request_bufs;				//	create_request 中进行拼装的请求chain（e.g. ngx_http_proxy_create_request()函数中设置）
 
