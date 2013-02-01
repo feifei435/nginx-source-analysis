@@ -28,6 +28,7 @@ typedef struct {
     time_t                          accessed;
     time_t                          checked;
 
+//	失败次数上限值和失败时间阈值  
     ngx_uint_t                      max_fails;					//	指向 ngx_http_upstream_server_t --> max_fails
     time_t                          fail_timeout;				//	指向 ngx_http_upstream_server_t --> fail_timeout
 
@@ -43,7 +44,7 @@ typedef struct {
 typedef struct ngx_http_upstream_rr_peers_s  ngx_http_upstream_rr_peers_t;
 
 struct ngx_http_upstream_rr_peers_s {
-    ngx_uint_t                      single;					//	是否只有单个服务器	/* unsigned  single:1; */
+    ngx_uint_t                      single;					//	是否只有单个服务器，如果仅有单个服务器将不进行轮询方式处理（在函数ngx_http_upstream_get_round_robin_peer()中有用到）	/* unsigned  single:1; */
     ngx_uint_t                      number;					//	所管理的后端服务器个数（多个IP的服务器将会被解析成多个 ngx_http_upstream_rr_peer_t ）
     ngx_uint_t                      last_cached;
 
@@ -59,8 +60,8 @@ struct ngx_http_upstream_rr_peers_s {
 
 
 typedef struct {
-    ngx_http_upstream_rr_peers_t   *peers;
-    ngx_uint_t                      current;
+    ngx_http_upstream_rr_peers_t   *peers;				//	指向正在使用的负载均衡的列表
+    ngx_uint_t                      current;	
     uintptr_t                      *tried;
     uintptr_t                       data;
 } ngx_http_upstream_rr_peer_data_t;

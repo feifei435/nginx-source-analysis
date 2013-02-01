@@ -37,15 +37,15 @@ typedef void (*ngx_event_save_peer_session_pt)(ngx_peer_connection_t *pc,
 struct ngx_peer_connection_s {
     ngx_connection_t                *connection;			//	与后端连接使用的connection，连接池中的(ngx_event_connect_peer()函数中设置)
 
-    struct sockaddr                 *sockaddr;
-    socklen_t                        socklen;
-    ngx_str_t                       *name;
+    struct sockaddr                 *sockaddr;				//	ngx_http_upstream_rr_peer_t的sockaddr；	在函数 ngx_http_upstream_get_round_robin_peer() 中设置
+    socklen_t                        socklen;				//	ngx_http_upstream_rr_peer_t的socklen；	在函数 ngx_http_upstream_get_round_robin_peer() 中设置
+    ngx_str_t                       *name;					//	ngx_http_upstream_rr_peer_t的name；		在函数 ngx_http_upstream_get_round_robin_peer() 中设置
 
-    ngx_uint_t                       tries;
+    ngx_uint_t                       tries;					//	???
 
     ngx_event_get_peer_pt            get;					//	不同模块采用不同的方式 ngx_http_upstream_get_ip_hash_peer() 和 ngx_http_upstream_get_round_robin_peer()
     ngx_event_free_peer_pt           free;
-	void                            *data;					//	存放多个模块 ngx_http_upstream_rr_peer_data_t 、ngx_http_upstream_keepalive_peer_data_t、ngx_http_upstream_rr_peer_data_t
+	void                            *data;					//	保存负载均衡模块使用的数据；存放多个模块 ngx_http_upstream_rr_peer_data_t 、ngx_http_upstream_keepalive_peer_data_t、ngx_http_upstream_rr_peer_data_t
 
 #if (NGX_SSL)
     ngx_event_set_peer_session_pt    set_session;
