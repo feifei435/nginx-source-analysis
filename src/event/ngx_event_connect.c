@@ -22,7 +22,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     ngx_event_t       *rev, *wev;
     ngx_connection_t  *c;
 
-	//	1. 这里将处理负载均衡
+	//	1. 获取可以使用的服务器信息，这里处理负载均衡				//	pc->data 在函数 ngx_http_upstream_init_round_robin_peer() 中设置 
     rc = pc->get(pc, pc->data);				//	ngx_http_upstream_get_round_robin_peer() { 在函数 ngx_http_upstream_init_round_robin_peer() 中设置 }
     if (rc != NGX_OK) {
         return rc;
