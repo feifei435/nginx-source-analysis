@@ -79,7 +79,7 @@ typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r,
 typedef struct {
     ngx_http_upstream_init_pt        init_upstream;			//	使用负载均衡的类型，默认采用 ngx_http_upstream_init_round_robin（）
     ngx_http_upstream_init_peer_pt   init;					//	使用的负载均衡类型的初始化函数
-    void                            *data;					//	us->peer.data = peers; 指向的是 ngx_http_upstream_rr_peers_t（函数 ngx_http_upstream_init_round_robin()中设置）
+    void                            *data;					//	指向负载均衡使用的管理结构	；us->peer.data = peers; 指向的是 ngx_http_upstream_rr_peers_t（函数 ngx_http_upstream_init_round_robin()中设置）
 } ngx_http_upstream_peer_t;
 
 
@@ -90,8 +90,8 @@ typedef struct {
     ngx_uint_t                       max_fails;			//	server 指令指定了 max_fails
     time_t                           fail_timeout;		//	server 指令指定了 fail_timeout
 
-    unsigned                         down:1;			//	server 指令指定了 down
-    unsigned                         backup:1;			//	server 指令指定了 backup
+    unsigned                         down:1;			//	标识此服务器处于离线状态（server 指令指定了 down）
+    unsigned                         backup:1;			//	标识此服务器为备份服务器（server 指令指定了 backup）
 } ngx_http_upstream_server_t;
 
 
@@ -139,10 +139,10 @@ typedef struct {
     size_t                           max_temp_file_size_conf;			//  指令 "proxy_max_temp_file_size" 设置 
     size_t                           temp_file_write_size_conf;			//	指令 "proxy_temp_file_write_size" 设置 
 
-    ngx_bufs_t                       bufs;								//	指令 "proxy_buffers" 设置
+    ngx_bufs_t                       bufs;								//	指令 "proxy_buffers" 设置（默认是8个大小4K或8K，在函数ngx_http_upstream_send_response()中设置）
 
     ngx_uint_t                       ignore_headers;
-    ngx_uint_t                       next_upstream;
+    ngx_uint_t                       next_upstream;						//	确认何种情况下将请求转发至下一个服务器； 指令 "proxy_next_upstream"， ngx_http_proxy_next_upstream_masks
     ngx_uint_t                       store_access;						//	指令 "proxy_store_access" 指定创建文件和目录的相关权限
     ngx_flag_t                       buffering;							//	指令 "proxy_buffering" 设置， 默认值on
     ngx_flag_t                       pass_request_headers;				//	指令 "proxy_pass_request_headers " 设置. 初始为on

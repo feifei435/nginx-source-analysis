@@ -1822,13 +1822,13 @@ ngx_sort(void *base, size_t n, size_t size,
         ngx_memcpy(p, p1, size);
 
         for (p2 = p1;
-             p2 > (u_char *) base && cmp(p2 - size, p) > 0;
+             p2 > (u_char *) base && cmp(p2 - size, p) > 0;				//	cmp()函数返回大于0时，将后一个元素提前
              p2 -= size)
         {
-            ngx_memcpy(p2, p2 - size, size);
+            ngx_memcpy(p2, p2 - size, size);		//	1 --> 2
         }
 
-        ngx_memcpy(p2, p, size);
+        ngx_memcpy(p2, p, size);					//	2 --> 1
     }
 
     ngx_free(p);

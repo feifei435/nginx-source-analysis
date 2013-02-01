@@ -967,21 +967,21 @@ ngx_http_upstream_handler(ngx_event_t *ev)
     ngx_http_run_posted_requests(c);
 }
 
-
+//	?????????
 static void
 ngx_http_upstream_rd_check_broken_connection(ngx_http_request_t *r)
 {
     ngx_http_upstream_check_broken_connection(r, r->connection->read);
 }
 
-
+//	?????????
 static void
 ngx_http_upstream_wr_check_broken_connection(ngx_http_request_t *r)
 {
     ngx_http_upstream_check_broken_connection(r, r->connection->write);
 }
 
-
+//	?????????
 static void
 ngx_http_upstream_check_broken_connection(ngx_http_request_t *r,
     ngx_event_t *ev)
@@ -1058,7 +1058,7 @@ ngx_http_upstream_check_broken_connection(ngx_http_request_t *r,
 
 #endif
 
-    n = recv(c->fd, buf, 1, MSG_PEEK);
+    n = recv(c->fd, buf, 1, MSG_PEEK);					//	预读客户端的的socket缓冲区中1个字节的数据
 
     err = ngx_socket_errno;
 
@@ -1714,6 +1714,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     if (u->headers_in.status_n > NGX_HTTP_SPECIAL_RESPONSE) {
 
+		//	???
         if (r->subrequest_in_memory) {
             u->buffer.last = u->buffer.pos;
         }
@@ -4483,7 +4484,7 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-//	增加 ngx_http_upstream_srv_conf_s 到 ngx_http_upstream_main_conf_t中upstreams数组中
+//	增加 ngx_http_upstream_srv_conf_t 到 ngx_http_upstream_main_conf_t中upstreams数组中
 ngx_http_upstream_srv_conf_t *
 ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 {

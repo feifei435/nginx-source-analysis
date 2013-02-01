@@ -25,7 +25,7 @@ static void ngx_http_upstream_empty_save_session(ngx_peer_connection_t *pc,
 #endif
 
 /*
- *	[analy]	 
+ *			初始化服务器负载均衡表
  *			参数2: us -> ngx_http_upstream_main_conf_t 的 upstreams数组中的元素
  */
 ngx_int_t
@@ -67,6 +67,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
         n = 0;
 
+		//	对每个服务器的server进行赋值，由于域名可能对应多个IP，每个IP对应一个server
         for (i = 0; i < us->servers->nelts; i++) {
             for (j = 0; j < server[i].naddrs; j++) {
                 if (server[i].backup) {
@@ -85,17 +86,19 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             }
         }
 
+		//	保存负载均衡实用的管理结构地址
         us->peer.data = peers;
 
+		//	权重大的值，排放在前边
         ngx_sort(&peers->peer[0], (size_t) n,
                  sizeof(ngx_http_upstream_rr_peer_t),
-                 ngx_http_upstream_cmp_servers);
+                 ngx_http_upstream_cmp_servers);			
 
         /* backup servers */
 
         n = 0;
 
-		//	统计backup后端服务器
+		//	统计backup后端服务器个数
         for (i = 0; i < us->servers->nelts; i++) {
             if (!server[i].backup) {
                 continue;
@@ -139,7 +142,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             }
         }
 
-        peers->next = backup;				//	将backup服务器挂载到正常负载的服务器后边
+        peers->next = backup;				//	将backup服务器挂载到正常负载服务器后边
 
         ngx_sort(&backup->peer[0], (size_t) n,
                  sizeof(ngx_http_upstream_rr_peer_t),
@@ -202,7 +205,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     return NGX_OK;
 }
 
-
+//	权重大的值，排放在前边
 static ngx_int_t
 ngx_http_upstream_cmp_servers(const void *one, const void *two)
 {
@@ -215,7 +218,7 @@ ngx_http_upstream_cmp_servers(const void *one, const void *two)
 }
 
 /*  
- *	[analy]	负载均衡rr的初始化
+ *	负载均衡rr的初始化
  */
 ngx_int_t
 ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
@@ -226,6 +229,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
 
     rrp = r->upstream->peer.data;
 
+	//	
     if (rrp == NULL) {
         rrp = ngx_palloc(r->pool, sizeof(ngx_http_upstream_rr_peer_data_t));
         if (rrp == NULL) {
@@ -235,13 +239,12 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
         r->upstream->peer.data = rrp;	//	设置 ngx_http_upstream_rr_peer_data_t
     }
 
-    rrp->peers = us->peer.data;			//	获取后端服务器的管理表
+    rrp->peers = us->peer.data;			//	获取后端服务器的管理表(负载均衡模块使用的管理表)
     rrp->current = 0;
 
-    n = rrp->peers->number;			//	获取的后端服务器的正常列表个数
+    n = rrp->peers->number;				//	获取的后端服务器的正常列表个数
 
 	//	当存在backup后端服务器列表时，比较backup后端服务器列表个数是否大于正常后端服务器个数
-	//	大于时，将赋值给
     if (rrp->peers->next && rrp->peers->next->number > n) {
         n = rrp->peers->next->number;
     }
@@ -262,6 +265,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
     r->upstream->peer.tries = rrp->peers->number;
+
 #if (NGX_HTTP_SSL)
     r->upstream->peer.set_session =
                                ngx_http_upstream_set_round_robin_peer_session;
@@ -351,6 +355,7 @@ ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
     rrp->peers = peers;
     rrp->current = 0;
 
+	//??????????
     if (rrp->peers->number <= 8 * sizeof(uintptr_t)) {
         rrp->tried = &rrp->data;
         rrp->data = 0;
@@ -479,7 +484,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
                                   pc->tries);
                     goto failed;
                 }
-            }
+            }		//	end for
 
             peer->current_weight--;
 
@@ -541,6 +546,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
         rrp->tried[n] |= m;
     }
 
+	//	设置 ngx_peer_connection_t
     pc->sockaddr = peer->sockaddr;
     pc->socklen = peer->socklen;
     pc->name = &peer->name;
@@ -615,9 +621,10 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peers_t *peers)
                 continue;
             }
 
+			//	1. 找到权重大于0的服务器
             n = i;
 
-            while (i < peers->number - 1) {
+            while (i < peers->number - 1) {			//	非最后一个服务器，进入循环
 
                 i++;
 
@@ -646,7 +653,7 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peers_t *peers)
             return 0;
         }
 
-		//	重新设置当前权重
+		//	重新设置初始权重
         for (i = 0; i < peers->number; i++) {
             peer[i].current_weight = peer[i].weight;
         }
