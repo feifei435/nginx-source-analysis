@@ -41,7 +41,7 @@ struct ngx_peer_connection_s {
     socklen_t                        socklen;				//	ngx_http_upstream_rr_peer_t的socklen；	在函数 ngx_http_upstream_get_round_robin_peer() 中设置
     ngx_str_t                       *name;					//	ngx_http_upstream_rr_peer_t的name；		在函数 ngx_http_upstream_get_round_robin_peer() 中设置
 
-    ngx_uint_t                       tries;					//	???
+    ngx_uint_t                       tries;					//	tries = 后端服务器IP个数， 在 ngx_http_upstream_init_round_robin_peer() 中设置
 
     ngx_event_get_peer_pt            get;					//	不同模块采用不同的方式 ngx_http_upstream_get_ip_hash_peer() 和 ngx_http_upstream_get_round_robin_peer()
     ngx_event_free_peer_pt           free;

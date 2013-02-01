@@ -229,7 +229,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
 
     rrp = r->upstream->peer.data;
 
-	//	
+	//	设置负载均衡RR实用的数据结构
     if (rrp == NULL) {
         rrp = ngx_palloc(r->pool, sizeof(ngx_http_upstream_rr_peer_data_t));
         if (rrp == NULL) {
@@ -264,7 +264,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
 
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
-    r->upstream->peer.tries = rrp->peers->number;
+    r->upstream->peer.tries = rrp->peers->number;									//	设置尝试连接的服务器个数
 
 #if (NGX_HTTP_SSL)
     r->upstream->peer.set_session =
@@ -385,7 +385,7 @@ ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
 ngx_int_t
 ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
 {
-    ngx_http_upstream_rr_peer_data_t  *rrp = data;
+    ngx_http_upstream_rr_peer_data_t  *rrp = data;			
 
     time_t                         now;
     uintptr_t                      m;
@@ -439,6 +439,8 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
             i = pc->tries;
 
             for ( ;; ) {
+
+				//	获取权重最高的服务器
                 rrp->current = ngx_http_upstream_get_peer(rrp->peers);
 
                 ngx_log_debug2(NGX_LOG_DEBUG_HTTP, pc->log, 0,
@@ -546,7 +548,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
         rrp->tried[n] |= m;
     }
 
-	//	设置 ngx_peer_connection_t
+	//	确定后端服务器的IP和端口信息，设置 ngx_peer_connection_t
     pc->sockaddr = peer->sockaddr;
     pc->socklen = peer->socklen;
     pc->name = &peer->name;
@@ -604,7 +606,9 @@ failed:
     return NGX_BUSY;
 }
 
-//	从所有的服务器中选出权值最高的服务器。如果所有server当前权重都为0，那么将所有server的当前权重恢复到设定权重值。
+/*
+ *	从所有的服务器中选出权值最高的服务器。如果所有server当前权重都为0，那么将所有server的当前权重恢复到设定权重值。
+ */
 static ngx_uint_t
 ngx_http_upstream_get_peer(ngx_http_upstream_rr_peers_t *peers)
 {
