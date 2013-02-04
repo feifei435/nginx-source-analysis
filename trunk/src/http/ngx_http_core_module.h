@@ -357,7 +357,7 @@ struct ngx_http_core_loc_conf_s {
     off_t         directio_alignment;						//	指令 "directio_alignment"	指定在使用direct io时的对齐长度
 
     size_t        client_body_buffer_size; /* client_body_buffer_size */
-    size_t        send_lowat;              /* send_lowat */
+    size_t        send_lowat;								/* send_lowat */
     size_t        postpone_output;         /* postpone_output		延迟发送的阀值，默认1460 */
     size_t        limit_rate;              // limit_rate 指令限制将应答传送到客户端的速度，单位为字节/秒
     size_t        limit_rate_after;        /* limit_rate_after */
@@ -374,9 +374,10 @@ struct ngx_http_core_loc_conf_s {
 
     ngx_msec_t    lingering_time;          /* lingering_time 指令指定，参数指定的时间单位为秒，在内存中存放的是毫秒（msec) */
     ngx_msec_t    lingering_timeout;       /* lingering_timeout 指令指定, 参数指定的时间单位为秒，在内存中存放的是毫秒（msec)  */
-    ngx_msec_t    resolver_timeout;        /* resolver_timeout */
 
-    ngx_resolver_t  *resolver;             /* resolver */
+
+    ngx_msec_t    resolver_timeout;        //	指令 "resolver_timeout" 默认30s
+    ngx_resolver_t  *resolver;             //	指令 "resolver" 被使用时，申请的结构空间
 
     time_t        keepalive_header;        // keepalive_timeout指令的第二个参数使用
 										   // 决定是否在响应头中发送包含timeout=time的值

@@ -64,7 +64,7 @@ typedef struct {
     ngx_file_t                 file;
     off_t                      offset;
     ngx_path_t                *path;
-    ngx_pool_t                *pool;
+    ngx_pool_t                *pool;					//	使用的内存池
     char                      *warn;
 
     ngx_uint_t                 access;

@@ -2360,16 +2360,17 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->output_filter = (ngx_event_pipe_output_filter_pt) ngx_http_output_filter;
     p->output_ctx = r;
-    p->tag = u->output.tag;
+    p->tag = u->output.tag;								//	使用的模块标记
     p->bufs = u->conf->bufs;
     p->busy_size = u->conf->busy_buffers_size;
-    p->upstream = u->peer.connection;
-    p->downstream = c;
-    p->pool = r->pool;
-    p->log = c->log;
+    p->upstream = u->peer.connection;					//	后端服务器连接
+    p->downstream = c;									//	客户端连接
+    p->pool = r->pool;									//	使用的内存池
+    p->log = c->log;									//	使用的日志
 
-    p->cacheable = u->cacheable || u->store;
+    p->cacheable = u->cacheable || u->store;			//	???
 
+	//	????
     p->temp_file = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
     if (p->temp_file == NULL) {
         ngx_http_upstream_finalize_request(r, u, 0);
@@ -2378,7 +2379,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->temp_file->file.fd = NGX_INVALID_FILE;
     p->temp_file->file.log = c->log;
-    p->temp_file->path = u->conf->temp_path;
+    p->temp_file->path = u->conf->temp_path;			//	??????????
     p->temp_file->pool = r->pool;
 
     if (p->cacheable) {
@@ -2390,20 +2391,20 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
                              "to a temporary file";
     }
 
-    p->max_temp_file_size = u->conf->max_temp_file_size;
+    p->max_temp_file_size = u->conf->max_temp_file_size;			//	临时文件大小上限
     p->temp_file_write_size = u->conf->temp_file_write_size;
 
-    p->preread_bufs = ngx_alloc_chain_link(r->pool);
+    p->preread_bufs = ngx_alloc_chain_link(r->pool);				//	申请一个chain
     if (p->preread_bufs == NULL) {
         ngx_http_upstream_finalize_request(r, u, 0);
         return;
     }
 
-    p->preread_bufs->buf = &u->buffer;
+    p->preread_bufs->buf = &u->buffer;								//	指向保存后端服务器数据的缓冲区
     p->preread_bufs->next = NULL;
     u->buffer.recycled = 1;
 
-    p->preread_size = u->buffer.last - u->buffer.pos;
+    p->preread_size = u->buffer.last - u->buffer.pos;				//	后端服务器已经反馈的Body数据部分大小
 
     if (u->cacheable) {
 
@@ -2453,13 +2454,14 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->length = -1;
 
-    if (u->input_filter_init
+    if (u->input_filter_init								//	proxy模块时设置ngx_http_proxy_input_filter_init()
         && u->input_filter_init(p->input_ctx) != NGX_OK)
     {
         ngx_http_upstream_finalize_request(r, u, 0);
         return;
     }
 
+	//	注册在buffering时，读写后端服务器和客户端数据时的handler
     u->read_event_handler = ngx_http_upstream_process_upstream;
     r->write_event_handler = ngx_http_upstream_process_downstream;
 
@@ -2711,7 +2713,8 @@ ngx_http_upstream_process_downstream(ngx_http_request_t *r)
 
     c->log->action = "sending to client";
 
-    if (wev->timedout) {
+	//	客户端写超时
+    if (wev->timedout) {		
 
         if (wev->delayed) {
 
@@ -2769,18 +2772,20 @@ ngx_http_upstream_process_upstream(ngx_http_request_t *r,
 {
     ngx_connection_t  *c;
 
-    c = u->peer.connection;
+    c = u->peer.connection;		//	后端服务器
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http upstream process upstream");
 
     c->log->action = "reading upstream";
 
-    if (c->read->timedout) {
+    if (c->read->timedout) {				//	检查超时
         u->pipe->upstream_error = 1;
         ngx_connection_error(c, NGX_ETIMEDOUT, "upstream timed out");
 
     } else {
+
+
         if (ngx_event_pipe(u->pipe, 0) == NGX_ABORT) {
             ngx_http_upstream_finalize_request(r, u, 0);
             return;

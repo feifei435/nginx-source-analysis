@@ -55,32 +55,32 @@ struct ngx_event_pipe_s {
     unsigned           upstream_blocked:1;
     unsigned           downstream_done:1;
     unsigned           downstream_error:1;
-    unsigned           cyclic_temp_file:1;
+    unsigned           cyclic_temp_file:1;				//	是否循环写临时文件
 
     ngx_int_t          allocated;
     ngx_bufs_t         bufs;
-    ngx_buf_tag_t      tag;
+    ngx_buf_tag_t      tag;								//	模块标记
 
     ssize_t            busy_size;
 
     off_t              read_length;
     off_t              length;
 
-    off_t              max_temp_file_size;
+    off_t              max_temp_file_size;				//	临时文件大小的上限（u->conf->max_temp_file_size）
     ssize_t            temp_file_write_size;
 
     ngx_msec_t         read_timeout;
     ngx_msec_t         send_timeout;
     ssize_t            send_lowat;
 
-    ngx_pool_t        *pool;
-    ngx_log_t         *log;
+    ngx_pool_t        *pool;							//	使用的内存池
+    ngx_log_t         *log;								//	使用的日志
 
     ngx_chain_t       *preread_bufs;
     size_t             preread_size;
     ngx_buf_t         *buf_to_file;
 
-    ngx_temp_file_t   *temp_file;
+    ngx_temp_file_t   *temp_file;						//	函数ngx_http_upstream_send_response ()中申请
 
     /* STUB */ int     num;
 };

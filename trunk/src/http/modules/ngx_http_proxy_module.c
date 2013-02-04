@@ -640,7 +640,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-	//	2. 申请proxy模块的空间并设置到request结构的ctx上
+	//	2. 申请proxy模块使用的上下文空间并设置到request结构的ctx上
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_ctx_t));
     if (ctx == NULL) {
         return NGX_ERROR;
@@ -766,7 +766,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
     url.url.data = proxy.data + add;
     url.default_port = port;
     url.uri_part = 1;
-    url.no_resolve = 1;
+    url.no_resolve = 1;						//	不解析域名（即不调用gethostbyname）
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {
         if (url.err) {
@@ -2748,7 +2748,7 @@ ngx_http_proxy_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
 
-    size = conf->upstream.buffer_size;
+    size = conf->upstream.buffer_size;					//	接收后端服务器反馈的缓冲区大小
     if (size < conf->upstream.bufs.size) {
         size = conf->upstream.bufs.size;
     }
@@ -2789,6 +2789,7 @@ ngx_http_proxy_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                               prev->upstream.temp_file_write_size_conf,
                               NGX_CONF_UNSET_SIZE);
 
+	//	
     if (conf->upstream.temp_file_write_size_conf == NGX_CONF_UNSET_SIZE) {
         conf->upstream.temp_file_write_size = 2 * size;
     } else {
