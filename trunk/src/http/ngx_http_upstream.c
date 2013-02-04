@@ -2431,7 +2431,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
      * event_pipe would do u->buffer.last += p->preread_size
      * as though these bytes were read
      */
-    u->buffer.last = u->buffer.pos;
+    u->buffer.last = u->buffer.pos;									//	这里为什么要复位last？？？
 
     if (u->conf->cyclic_temp_file) {
 

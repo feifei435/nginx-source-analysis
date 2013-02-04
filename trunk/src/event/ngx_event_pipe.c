@@ -274,7 +274,7 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
                 break;
             }
 
-			//	从后端服务器接收数据
+			//	从后端服务器接收数据(数据存放于chain中)
             n = p->upstream->recv_chain(p->upstream, chain);				//	ngx_readv_chain
 
             ngx_log_debug1(NGX_LOG_DEBUG_EVENT, p->log, 0,
@@ -304,17 +304,18 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
                 p->upstream_eof = 1;
                 break;
             }
-        }
+        } // END IF
 
-        p->read_length += n;			//	已从后端服务器读取的数据大小
-        cl = chain;
+        p->read_length += n;			//	已从后端服务器读取的数据大小累计
+        cl = chain;						//	已从后端服务器读取的数据缓冲
         p->free_raw_bufs = NULL;
 
         while (cl && n > 0) {
 
             ngx_event_pipe_remove_shadow_links(cl->buf);
 
-            size = cl->buf->end - cl->buf->last;
+			//	检查buf的剩余空间时
+            size = cl->buf->end - cl->buf->last;			//	这里注意在函数ngx_http_upstream_send_response()中有对 cl->buf->last 字段复位
 
             if (n >= size) {
                 cl->buf->last = cl->buf->end;
@@ -331,7 +332,7 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
                 ngx_free_chain(p->pool, ln);
 
             } else {
-                cl->buf->last += n;
+                cl->buf->last += n;				//	这里将last指针向后偏移已读字节
                 n = 0;
             }
         }
@@ -342,7 +343,7 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
             ln->next = p->free_raw_bufs;
             p->free_raw_bufs = cl;
         }
-    }
+    }	//	end for
 
 #if (NGX_DEBUG)
 

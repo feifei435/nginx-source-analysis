@@ -813,7 +813,12 @@ done:
 }
 
 /* 
- *	[analy]   按行解析请求头，每次解析一行
+ *	按行解析请求头，每次解析一行
+ *	返回值：
+ *	NGX_HTTP_PARSE_INVALID_HEADER		无效的头
+ *	NGX_AGAIN							数据不全，需要再次进行解析
+ *	NGX_OK								当前行已经解析完毕
+ *	NGX_HTTP_PARSE_HEADER_DONE			已解析完毕
  */
 ngx_int_t
 ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
