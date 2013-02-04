@@ -187,6 +187,8 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
 
             } else if (p->allocated < p->bufs.num) {
 
+				//	当已申请的缓冲buf，不足p->bufs.num个时，申请临时buf，然后使chain指向申请的buf
+
                 /* allocate a new buf if it's still allowed */
 
                 b = ngx_create_temp_buf(p->pool, p->bufs.size);
@@ -314,15 +316,18 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
 
             ngx_event_pipe_remove_shadow_links(cl->buf);
 
-			//	检查buf的剩余空间时
+			//	buf的剩余空间(recv数据时，不会对buf的last等标记进行设置)
             size = cl->buf->end - cl->buf->last;			//	这里注意在函数ngx_http_upstream_send_response()中有对 cl->buf->last 字段复位
 
+			//	当从后端接收到的数据大于等于当前缓冲的剩余空间时
             if (n >= size) {
+
+
                 cl->buf->last = cl->buf->end;
 
                 /* STUB */ cl->buf->num = p->num++;
 
-                if (p->input_filter(p, cl->buf) == NGX_ERROR) {
+                if (p->input_filter(p, cl->buf) == NGX_ERROR) {				//	u->pipe->input_filter = ngx_http_proxy_copy_filter;(在函数ngx_http_proxy_handler（）中有设置)
                     return NGX_ABORT;
                 }
 
@@ -644,7 +649,11 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
             }
         }
 
-        rc = p->output_filter(p->output_ctx, out);
+		/*	向客户端发送数据
+		 *	p->output_filter = ngx_http_output_filter 
+		 *	p->output_ctx	 = request(客户端请求）
+		 */
+        rc = p->output_filter(p->output_ctx, out);						
 
         ngx_chain_update_chains(p->pool, &p->free, &p->busy, &out, p->tag);
 
@@ -680,8 +689,8 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
             }
 
             cl->buf->shadow = NULL;
-        }
-    }
+        }				//	end for (cl = p->free; cl; cl = cl->next)
+    }		//	end for
 
     return NGX_OK;
 }
@@ -1022,6 +1031,6 @@ ngx_event_pipe_drain_chains(ngx_event_pipe_t *p)
             cl->next = p->free;
             p->free = cl;
             cl = tl;
-        }
-    }
+        }	//	while
+    }	//	for
 }

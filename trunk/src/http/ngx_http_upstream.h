@@ -168,7 +168,7 @@ typedef struct {
     ngx_addr_t                      *local;								//	向后端发送请求前，绑定本地IP和端口信息；指令 "proxy_bind" 设置，ngx_http_upstream_init_request()函数中设置
 
 #if (NGX_HTTP_CACHE)
-    ngx_shm_zone_t                  *cache;
+    ngx_shm_zone_t                  *cache;								//	指令 "proxy_cache", 默认off=NULL(函数ngx_http_proxy_cache（）中设置)
 
     ngx_uint_t                       cache_min_uses;					//	指令 "proxy_cache_min_uses" 设置
     ngx_uint_t                       cache_use_stale;					//	指令 "proxy_cache_use_stale" 设置
@@ -182,10 +182,10 @@ typedef struct {
     ngx_array_t                     *no_cache;							//	指令 "proxy_no_cache" 设置
 #endif
 
-    ngx_array_t                     *store_lengths;
+    ngx_array_t                     *store_lengths;						//	指令 "proxy_store" 参数中使用了变量
     ngx_array_t                     *store_values;
 
-    signed                           store:2;							//	指令"proxy_store"是否开启了
+    signed                           store:2;							//	off=0、on=1、			指令"proxy_store"是否开启了
     unsigned                         intercept_404:1;
     unsigned                         change_buffering:1;
 
@@ -194,7 +194,7 @@ typedef struct {
     ngx_flag_t                       ssl_session_reuse;
 #endif
 
-    ngx_str_t                        module;					//	使用的模块名字("fastcgi"、"proxy"、"scgi"、"uwsgi")
+    ngx_str_t                        module;							//	使用的模块名字("fastcgi"、"proxy"、"scgi"、"uwsgi")
 } ngx_http_upstream_conf_t;
 
 
@@ -329,8 +329,8 @@ struct ngx_http_upstream_s {
 
     ngx_http_cleanup_pt             *cleanup;						//	指向r->cleanup循环单链表中申请的处理upstream模块用的， ngx_http_upstream_init_request（）在函数中申请
 
-    unsigned                         store:1;
-    unsigned                         cacheable:1;
+    unsigned                         store:1;						//	当指令 "proxy_store" 开启时，此值为1（在函数ngx_http_upstream_init_request（）中设置）
+    unsigned                         cacheable:1;					//	???
     unsigned                         accel:1;
     unsigned                         ssl:1;
 #if (NGX_HTTP_CACHE)

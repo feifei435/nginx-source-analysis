@@ -168,6 +168,13 @@ ngx_readv_chain(ngx_connection_t *c, ngx_chain_t *chain)
 
 #else /* ! NGX_HAVE_KQUEUE */
 
+/*
+	返回值：
+			=0 			- 已读取到结尾
+			>0	 		- 读取到的数据
+			NGX_AGAIN	- 
+			NGX_ERROR	-
+ */
 ssize_t
 ngx_readv_chain(ngx_connection_t *c, ngx_chain_t *chain)
 {

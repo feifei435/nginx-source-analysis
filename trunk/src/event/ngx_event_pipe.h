@@ -45,25 +45,25 @@ struct ngx_event_pipe_s {
     ngx_event_pipe_output_filter_pt   output_filter;
     void                             *output_ctx;
 
-    unsigned           read:1;
-    unsigned           cacheable:1;
+    unsigned           read:1;							//	是否已经从后端服务器读取到数据
+    unsigned           cacheable:1;						//	proxy_cache与proxy_store开启其中一个 p->cacheable就等于1
     unsigned           single_buf:1;
     unsigned           free_bufs:1;
     unsigned           upstream_done:1;
-    unsigned           upstream_error:1;
-    unsigned           upstream_eof:1;
-    unsigned           upstream_blocked:1;
+    unsigned           upstream_error:1;				//	从后端服务器读取数据失败或超时
+    unsigned           upstream_eof:1;					//	已从后端服务器读取完毕数据
+    unsigned           upstream_blocked:1;				//	???
     unsigned           downstream_done:1;
-    unsigned           downstream_error:1;
+    unsigned           downstream_error:1;				//	向客户端发送数据出错
     unsigned           cyclic_temp_file:1;				//	是否循环写临时文件
 
-    ngx_int_t          allocated;
-    ngx_bufs_t         bufs;
+    ngx_int_t          allocated;						//	已分配的缓冲区个数，与字段 bufs 相关
+    ngx_bufs_t         bufs;							//	缓冲区个数和大小（ u->conf->bufs ）
     ngx_buf_tag_t      tag;								//	模块标记
 
     ssize_t            busy_size;
 
-    off_t              read_length;
+    off_t              read_length;						//	已从后端服务器读取的数据大小累计
     off_t              length;
 
     off_t              max_temp_file_size;				//	临时文件大小的上限（u->conf->max_temp_file_size）
