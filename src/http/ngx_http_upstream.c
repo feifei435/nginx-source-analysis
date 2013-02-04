@@ -481,7 +481,8 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
 #if (NGX_HTTP_CACHE)
 
-    if (u->conf->cache) {
+	//	开启cache情况（即指令"proxy_cache" 打开状态）
+    if (u->conf->cache) {		
         ngx_int_t  rc;
 
         rc = ngx_http_upstream_cache(r, u);
@@ -505,8 +506,10 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
 #endif
 
+	//	是否开启了 "proxy_store"
     u->store = (u->conf->store || u->conf->store_lengths);
 
+	//????????????
     if (!u->store && !r->post_action && !u->conf->ignore_client_abort) {
         r->read_event_handler = ngx_http_upstream_rd_check_broken_connection;
         r->write_event_handler = ngx_http_upstream_wr_check_broken_connection;
@@ -2361,14 +2364,14 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
     p->output_filter = (ngx_event_pipe_output_filter_pt) ngx_http_output_filter;
     p->output_ctx = r;
     p->tag = u->output.tag;								//	使用的模块标记
-    p->bufs = u->conf->bufs;
+    p->bufs = u->conf->bufs;							//	指令 "proxy_buffers" 设置
     p->busy_size = u->conf->busy_buffers_size;
     p->upstream = u->peer.connection;					//	后端服务器连接
     p->downstream = c;									//	客户端连接
     p->pool = r->pool;									//	使用的内存池
     p->log = c->log;									//	使用的日志
 
-    p->cacheable = u->cacheable || u->store;			//	???
+    p->cacheable = u->cacheable || u->store;			//	proxy_cache与proxy_store开启其中一个 p->cacheable就等于1
 
 	//	????
     p->temp_file = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
@@ -2431,7 +2434,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
      * event_pipe would do u->buffer.last += p->preread_size
      * as though these bytes were read
      */
-    u->buffer.last = u->buffer.pos;									//	这里为什么要复位last？？？
+    u->buffer.last = u->buffer.pos;				//	这里为什么要复位last？？？目的是便于在ngx_event_pipe_read_upstream（）函数中的代码清晰，在此函数中会再次将last指针偏移
 
     if (u->conf->cyclic_temp_file) {
 
@@ -2452,7 +2455,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
     p->send_timeout = clcf->send_timeout;
     p->send_lowat = clcf->send_lowat;
 
-    p->length = -1;
+    p->length = -1;											//	length的作用？？？
 
     if (u->input_filter_init								//	proxy模块时设置ngx_http_proxy_input_filter_init()
         && u->input_filter_init(p->input_ctx) != NGX_OK)

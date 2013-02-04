@@ -52,7 +52,7 @@ struct ngx_buf_s {
     unsigned         last_shadow:1;
     unsigned         temp_file:1;		//	是否是临时文件中的缓冲
 
-    /* STUB */ int   num;
+    /* STUB */ int   num;				//	??????????
 };
 
 //	buffer链

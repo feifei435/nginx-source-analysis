@@ -1579,7 +1579,7 @@ ngx_http_proxy_copy_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
     ngx_chain_t         *cl;
     ngx_http_request_t  *r;
 
-    if (buf->pos == buf->last) {
+    if (buf->pos == buf->last) {			//	????
         return NGX_OK;
     }
 
@@ -1590,6 +1590,7 @@ ngx_http_proxy_copy_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
         ngx_free_chain(p->pool, cl);
 
     } else {
+
         b = ngx_alloc_buf(p->pool);
         if (b == NULL) {
             return NGX_ERROR;
@@ -1597,7 +1598,7 @@ ngx_http_proxy_copy_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
     }
 
     ngx_memcpy(b, buf, sizeof(ngx_buf_t));
-    b->shadow = buf;
+    b->shadow = buf;								//	???
     b->tag = p->tag;
     b->last_shadow = 1;
     b->recycled = 1;
@@ -3879,6 +3880,7 @@ ngx_http_proxy_store(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+	//	指令"proxy_store"设置off
     if (ngx_strcmp(value[1].data, "off") == 0) {
         plcf->upstream.store = 0;
         return NGX_CONF_OK;
@@ -3894,6 +3896,8 @@ ngx_http_proxy_store(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #endif
 
+
+	//	指令"proxy_store"设置on
     if (ngx_strcmp(value[1].data, "on") == 0) {
         plcf->upstream.store = 1;
         return NGX_CONF_OK;
