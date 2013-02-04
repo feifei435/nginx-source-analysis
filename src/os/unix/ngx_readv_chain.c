@@ -226,7 +226,7 @@ ngx_readv_chain(ngx_connection_t *c, ngx_chain_t *chain)
         } else if (n > 0) {
 
             if (n < size && !(ngx_event_flags & NGX_USE_GREEDY_EVENT)) {
-                rev->ready = 0;
+                rev->ready = 0;			//	????
             }
 
             return n;
