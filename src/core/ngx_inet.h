@@ -87,7 +87,7 @@ typedef struct {
     unsigned                  listen:1;					//	是否为指监听类的设置
     unsigned                  uri_part:1;
     unsigned                  no_resolve:1;				//	根据情况决定是否解析域名（将域名解析到IP地址）
-    unsigned                  one_addr:1;
+    unsigned                  one_addr:1;				//	等于1时，仅有一个IP地址
 
     unsigned                  no_port:1;				//	标识url中没有显示指定端口(为1时没有指定)
     unsigned                  wildcard:1;				//	标识是否使用通配符（e.g. listen *:8000;）
@@ -95,7 +95,7 @@ typedef struct {
     socklen_t                 socklen;						//	sizeof(struct sockaddr_in)
     u_char                    sockaddr[NGX_SOCKADDRLEN];	//	sockaddr_in结构指向它
 
-    ngx_addr_t               *addrs;					//	指向ngx_addr_t的数组，元素个数是字段naddrs。每个域名的IP对应的结构，函数中赋值（ngx_inet_resolve_host()）
+    ngx_addr_t               *addrs;					//	数组大小是naddrs字段；每个元素对应域名的IP地址信息(struct sockaddr_in)，在函数中赋值（ngx_inet_resolve_host()）
     ngx_uint_t                naddrs;					//	url对应的IP地址个数,IP格式的地址将默认为1
 
     char                     *err;						//	错误信息字符串

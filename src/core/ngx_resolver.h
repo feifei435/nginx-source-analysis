@@ -85,7 +85,7 @@ typedef struct {
     ngx_int_t                 ident;
 
     /* simple round robin DNS peers balancer */
-    ngx_array_t               udp_connections;
+    ngx_array_t               udp_connections;					//	array of ngx_udp_connection_t
     ngx_uint_t                last_connection;
 
     ngx_rbtree_t              name_rbtree;
@@ -102,7 +102,7 @@ typedef struct {
 
     time_t                    resend_timeout;
     time_t                    expire;
-    time_t                    valid;
+    time_t                    valid;							//	指令 "resolver" 指定valid参数时间为秒
 
     ngx_uint_t                log_level;
 } ngx_resolver_t;

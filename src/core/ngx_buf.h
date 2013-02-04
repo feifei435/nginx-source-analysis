@@ -27,7 +27,7 @@ struct ngx_buf_s {
     u_char          *end;           /* end of buffer */
     ngx_buf_tag_t    tag;
     ngx_file_t      *file;			//	对应文件结构指针
-    ngx_buf_t       *shadow;
+    ngx_buf_t       *shadow;		//???
 
 
     /* the buf's content could be changed */

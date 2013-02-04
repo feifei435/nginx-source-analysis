@@ -106,6 +106,7 @@ ngx_resolver_create(ngx_conf_t *cf, ngx_str_t *names, ngx_uint_t n)
         return NULL;
     }
 
+	//	清理函数
     cln->handler = ngx_resolver_cleanup;
 
     r = ngx_calloc(sizeof(ngx_resolver_t), cf->log);
@@ -122,7 +123,8 @@ ngx_resolver_create(ngx_conf_t *cf, ngx_str_t *names, ngx_uint_t n)
         }
     }
 
-    cln->data = r;
+	//	清理的数据
+    cln->data = r;	
 
     r->event = ngx_calloc(sizeof(ngx_event_t), cf->log);
     if (r->event == NULL) {

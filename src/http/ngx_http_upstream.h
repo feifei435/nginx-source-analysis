@@ -132,11 +132,14 @@ typedef struct {
     size_t                           buffer_size;						//	接收后端服务器反馈的缓冲区大小，指令"proxy_buffer_size" 设置
 
     size_t                           busy_buffers_size;
-    size_t                           max_temp_file_size;
-    size_t                           temp_file_write_size;
+    size_t                           max_temp_file_size;				/*	
+																			如果字段“max_temp_file_size_conf“被设置，本字段将根据“max_temp_file_size_conf“取值 
+																			未设置时，将使用默认值1024 * 1024 * 1024;
+																		*/
+    size_t                           temp_file_write_size;				//	???
 
     size_t                           busy_buffers_size_conf;			//	指令 "proxy_busy_buffers_size" 设置
-    size_t                           max_temp_file_size_conf;			//  指令 "proxy_max_temp_file_size" 设置 
+    size_t                           max_temp_file_size_conf;			//  临时文件大小的上限；buffering后端服务器反馈的数据时，后端服务器反馈的数据不能完全放入缓存中时，将写入临时文件，指令 "proxy_max_temp_file_size" 设置 
     size_t                           temp_file_write_size_conf;			//	指令 "proxy_temp_file_write_size" 设置 
 
     ngx_bufs_t                       bufs;								//	指令 "proxy_buffers" 设置（默认是8个大小4K或8K，在函数ngx_http_upstream_send_response()中设置）
@@ -289,7 +292,7 @@ struct ngx_http_upstream_s {
 
     ngx_http_upstream_headers_in_t   headers_in;				//	存放后端服务器响应头域
 
-    ngx_http_upstream_resolved_t    *resolved;
+    ngx_http_upstream_resolved_t    *resolved;					//	ngx_http_proxy_eval()函数中创建
 
     ngx_buf_t                        buffer;					//	保存后端反馈的数据 (在函数 ngx_http_upstream_process_header()中申请)
     off_t                            length;					//	后端服务器反馈的"u->headers_in.content_length_n"长度，非chunked编码时！（ngx_http_upstream_process_headers()中设置）

@@ -13,7 +13,9 @@ static ngx_int_t ngx_parse_unix_domain_url(ngx_pool_t *pool, ngx_url_t *u);
 static ngx_int_t ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u);
 static ngx_int_t ngx_parse_inet6_url(ngx_pool_t *pool, ngx_url_t *u);
 
-
+/*
+ *	与系统inet_addr相同，将字符串格式的IP转换为整数形式的IP
+ */
 in_addr_t
 ngx_inet_addr(u_char *text, size_t len)
 {
@@ -41,9 +43,11 @@ ngx_inet_addr(u_char *text, size_t len)
             continue;
         }
 
+		//	如果不是IP地址格式，将直接返回
         return INADDR_NONE;
     }
 
+	//	n不等于3说明IP地址格式不是***.***.***.***
     if (n != 3) {
         return INADDR_NONE;
     }
@@ -648,6 +652,9 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 	
     args = ngx_strlchr(host, last, '?');	//	是否有args
 
+	/* "www.tjj.com/index?u=http%3A%2F%2Fwww.sina.com.cn%2F&n=%E6%96%B0%E6%B5%AA&q=0&i=1359862835154" */
+
+
 	//	url中指定了args
     if (args) {
         if (uri == NULL) {
@@ -911,7 +918,12 @@ ngx_parse_inet6_url(ngx_pool_t *pool, ngx_url_t *u)
 #endif
 }
 
+/*
+	设置url对应的信息
+	u->naddrs
+	u->addrs
 
+ */
 ngx_int_t
 ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 {
@@ -947,6 +959,8 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
         }
 
         if (u->one_addr == 0) {
+
+			//	统计IP个数
             for (i = 0; h->h_addr_list[i] != NULL; i++) { /* void */ }
 
         } else {
@@ -962,7 +976,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
         u->naddrs = i;		//	域名对应的ip地址个数
 
-        for (i = 0; i < u->naddrs; i++) {					//	循环对
+        for (i = 0; i < u->naddrs; i++) {					
 
             sin = ngx_pcalloc(pool, sizeof(struct sockaddr_in));
             if (sin == NULL) {
