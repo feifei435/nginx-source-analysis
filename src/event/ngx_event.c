@@ -41,8 +41,12 @@ sig_atomic_t          ngx_event_timer_alarm;				//	Ö¸Áî"timer_resolution"ÉèÖÃºó£
 	
 static ngx_uint_t     ngx_event_max_module;
 
-ngx_uint_t            ngx_event_flags;
-ngx_event_actions_t   ngx_event_actions;					/* [analy]	Ö¸Ïò¸÷IO¸´ÓÃÄ£¿éµÄactions½á¹¹Ìå£¬¶ÔIOÊÂ¼þ¸÷ÖÖ²Ù×÷µÄ·â×°	*/
+ngx_uint_t            ngx_event_flags;						/*	my system is 1100100(NGX_USE_AIO_EVENT|) 
+																0x20	- 100000		NGX_USE_GREEDY_EVENT
+																0x40	- 1000000		NGX_USE_EPOLL_EVENT
+																0x04	- 100			NGX_USE_CLEAR_EVENT															
+															*/
+ngx_event_actions_t   ngx_event_actions;					// Ö¸Ïò¸÷IO¸´ÓÃÄ£¿éµÄactions½á¹¹Ìå£¬¶ÔIOÊÂ¼þ¸÷ÖÖ²Ù×÷µÄ·â×°
 
 
 static ngx_atomic_t   connection_counter = 1;

@@ -42,7 +42,7 @@ struct ngx_buf_s {
     /* the buf's content is mmap()ed and must not be changed */
     unsigned         mmap:1;			//	内存中的文件映射
 
-    unsigned         recycled:1;		//	被回收
+    unsigned         recycled:1;		//	循环利用的
     unsigned         in_file:1;			//	文件缓冲(等于1时，标识要发送的数据在文件中)
     unsigned         flush:1;			//	被清除
     unsigned         sync:1;			//	异步
@@ -161,7 +161,7 @@ ngx_chain_t *ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs);
 ngx_chain_t *ngx_alloc_chain_link(ngx_pool_t *pool);
 
 /* 
- *	[analy] 挂载cl到pool->chain的单向循环链表上，顺序是按照后释放在前的原则
+ *	挂载cl到pool->chain的单向循环链表上，顺序是按照后释放在前的原则
  */
 #define ngx_free_chain(pool, cl)                                             \
     cl->next = pool->chain;                                                  \
