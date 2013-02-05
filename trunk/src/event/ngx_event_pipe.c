@@ -173,12 +173,14 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
             }
 #endif
 
+			//	如果 p->free_raw_bufs 不为空，说明还有可用的缓冲区，此时将读取后端服务器的数据存放于chain中
             if (p->free_raw_bufs) {
 
                 /* use the free bufs if they exist */
 
                 chain = p->free_raw_bufs;
-                if (p->single_buf) {
+
+                if (p->single_buf) {	//	aio走这里
                     p->free_raw_bufs = p->free_raw_bufs->next;
                     chain->next = NULL;
                 } else {
@@ -282,10 +284,11 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
             ngx_log_debug1(NGX_LOG_DEBUG_EVENT, p->log, 0,
                            "pipe recv chain: %z", n);
 
+			//	如果p->free_raw_bufs中有值，挂载到chain尾部
             if (p->free_raw_bufs) {
                 chain->next = p->free_raw_bufs;
-            }
-            p->free_raw_bufs = chain;
+			}
+			p->free_raw_bufs = chain;
 
             if (n == NGX_ERROR) {
                 p->upstream_error = 1;
@@ -302,6 +305,7 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
 
             p->read = 1;
 
+			//	n==0, 说明数据已经接收完毕或服务器端关闭
             if (n == 0) {
                 p->upstream_eof = 1;
                 break;
@@ -314,27 +318,28 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
 
         while (cl && n > 0) {
 
+			//	????
             ngx_event_pipe_remove_shadow_links(cl->buf);
 
-			//	buf的剩余空间(recv数据时，不会对buf的last等标记进行设置)
+			//	buf的剩余空间(recv数据中，不会对buf的last等标记进行设置)
             size = cl->buf->end - cl->buf->last;			//	这里注意在函数ngx_http_upstream_send_response()中有对 cl->buf->last 字段复位
 
-			//	当从后端接收到的数据大于等于当前缓冲的剩余空间时
+			//	当从后端接收到的数据大于等于当前缓冲的剩余空间时，设置当前缓冲的last标记（在recv时已经将数据拷贝到缓冲区了，此时仅是将标记置位）
             if (n >= size) {
-
 
                 cl->buf->last = cl->buf->end;
 
-                /* STUB */ cl->buf->num = p->num++;
+                /* STUB */ cl->buf->num = p->num++;			//	???
 
+				//	当前buf已满，将cl->buf拷贝到p->in, 并建立buf的映像。
                 if (p->input_filter(p, cl->buf) == NGX_ERROR) {				//	u->pipe->input_filter = ngx_http_proxy_copy_filter;(在函数ngx_http_proxy_handler（）中有设置)
                     return NGX_ABORT;
                 }
 
-                n -= size;
-                ln = cl;
-                cl = cl->next;
-                ngx_free_chain(p->pool, ln);
+                n -= size;		//	剩余数据大小
+                ln = cl;			
+                cl = cl->next;	//	指向下一个节点
+                ngx_free_chain(p->pool, ln);	//	移除当前节点
 
             } else {
                 cl->buf->last += n;				//	这里将last指针向后偏移已读字节
@@ -342,10 +347,14 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
             }
         }
 
+		/*	如果cl还存在，则说明我们开始设置的chain，只有一部分被使用了，因此将这些chain保存到free_raw_bufs中。
+			可以看到如果chain只有一部分被使用，然后当再次循环，则使用的chain会直接使用free_raw_bufs,也就是我们前一
+			次没有使用完全的chain */
         if (cl) {
+
             for (ln = cl; ln->next; ln = ln->next) { /* void */ }
 
-            ln->next = p->free_raw_bufs;
+            ln->next = p->free_raw_bufs;				//	free_raw_bufs指向了什么地方，查看代码发现被赋值为NULL？？
             p->free_raw_bufs = cl;
         }
     }	//	end for
@@ -416,9 +425,10 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
 
             p->free_raw_bufs = cl->next;
 
-            /* STUB */ cl->buf->num = p->num++;
+            /* STUB */ cl->buf->num = p->num++;			
 
-            if (p->input_filter(p, cl->buf) == NGX_ERROR) {
+			//	拷贝cl->buf中的数据到p->in中
+            if (p->input_filter(p, cl->buf) == NGX_ERROR) {			//	ngx_http_proxy_copy_filter
                  return NGX_ABORT;
             }
 
@@ -450,6 +460,7 @@ ngx_event_pipe_read_upstream(ngx_event_pipe_t *p)
         }
     }
 
+	//	如果开启了缓存数据，将数据写入到临时文件中
     if (p->cacheable && p->in) {
         if (ngx_event_pipe_write_chain_to_temp_file(p) == NGX_ABORT) {
             return NGX_ABORT;
@@ -478,6 +489,8 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
     flushed = 0;
 
     for ( ;; ) {
+
+		//	????
         if (p->downstream_error) {
             return ngx_event_pipe_drain_chains(p);
         }
@@ -547,7 +560,7 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
             break;
         }
 
-        if (downstream->data != p->output_ctx
+        if (downstream->data != p->output_ctx						//	   downstream->data = r 和 p->output_ctx = r;
             || !downstream->write->ready
             || downstream->write->delayed)
         {
@@ -630,7 +643,7 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
                 out = cl;
             }
             ll = &cl->next;
-        }
+        }	//	END FOR
 
     flush:
 
@@ -655,6 +668,7 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
 		 */
         rc = p->output_filter(p->output_ctx, out);						
 
+		//	update chain,将已经完全发送的chain保存到free，还没发送的保存到busy.
         ngx_chain_update_chains(p->pool, &p->free, &p->busy, &out, p->tag);
 
         if (rc == NGX_ERROR) {

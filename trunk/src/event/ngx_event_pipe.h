@@ -31,7 +31,7 @@ struct ngx_event_pipe_s {
     ngx_chain_t      **last_in;
 
     ngx_chain_t       *out;
-    ngx_chain_t       *free;
+    ngx_chain_t       *free;					//	ngx_event_pipe_write_to_downstream()向客户端发送完数据时，会将已发送完的chain挂载到free上。
     ngx_chain_t       *busy;
 
     /*
@@ -49,7 +49,7 @@ struct ngx_event_pipe_s {
     unsigned           cacheable:1;						//	proxy_cache与proxy_store开启其中一个 p->cacheable就等于1
     unsigned           single_buf:1;
     unsigned           free_bufs:1;
-    unsigned           upstream_done:1;
+    unsigned           upstream_done:1;					//	说明后端服务器的body数据部分已经全部接收完毕
     unsigned           upstream_error:1;				//	从后端服务器读取数据失败或超时
     unsigned           upstream_eof:1;					//	已从后端服务器读取完毕数据
     unsigned           upstream_blocked:1;				//	???
@@ -61,10 +61,10 @@ struct ngx_event_pipe_s {
     ngx_bufs_t         bufs;							//	缓冲区个数和大小（ u->conf->bufs ）
     ngx_buf_tag_t      tag;								//	模块标记
 
-    ssize_t            busy_size;
+    ssize_t            busy_size;						//	u->conf->busy_buffers_size；与 指令"proxy_busy_buffers_size"、指令"proxy_buffers"、指令"proxy_buffer_size" 有关
 
     off_t              read_length;						//	已从后端服务器读取的数据大小累计
-    off_t              length;
+    off_t              length;							//	剩余未从后端服务器接收的数据大小。注：大多数情况是后端服务器反馈数据的body大小，如果后端反馈的编码时chunked，则为-1；在函数 ngx_http_proxy_input_filter_init()中被修改
 
     off_t              max_temp_file_size;				//	临时文件大小的上限（u->conf->max_temp_file_size）
     ssize_t            temp_file_write_size;

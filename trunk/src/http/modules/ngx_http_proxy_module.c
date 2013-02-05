@@ -1579,11 +1579,13 @@ ngx_http_proxy_copy_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
     ngx_chain_t         *cl;
     ngx_http_request_t  *r;
 
-    if (buf->pos == buf->last) {			//	????
+    if (buf->pos == buf->last) {			//	pos等于last 说明数据已经解析或发送完毕
         return NGX_OK;
     }
 
-    if (p->free) {
+	/*	p->free中有空闲的chain时，取出一个空闲的chain并将它放入pool->chain链表中，
+	 */
+    if (p->free) {							//	ngx_event_pipe_write_to_downstream（）函数中已发送到客户端的数据会挂载到free上。
         cl = p->free;
         b = cl->buf;
         p->free = cl->next;
@@ -1591,20 +1593,22 @@ ngx_http_proxy_copy_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
 
     } else {
 
+		//	申请一个buf
         b = ngx_alloc_buf(p->pool);
         if (b == NULL) {
             return NGX_ERROR;
         }
     }
 
+	//	拷贝参数buf的管理结构到申请的buf上，他们共享数据内存空间
     ngx_memcpy(b, buf, sizeof(ngx_buf_t));
-    b->shadow = buf;								//	???
-    b->tag = p->tag;
-    b->last_shadow = 1;
-    b->recycled = 1;
+    b->shadow = buf;								//	两个buf相互关联，成为对方的影子，新申请的buf是参数buf的影子
+    b->tag = p->tag;								//	模块标记
+    b->last_shadow = 1;								//	暂时理解为“影子缓冲”???????????
+    b->recycled = 1;								//	循环使用
     buf->shadow = b;
 
-    cl = ngx_alloc_chain_link(p->pool);
+    cl = ngx_alloc_chain_link(p->pool);				//	由于当p->free不为空时，会将其中的空闲chain扔到p->chain中，所以在上边拷贝和赋值时针对新获取的chain->buf设置的
     if (cl == NULL) {
         return NGX_ERROR;
     }
@@ -1619,14 +1623,18 @@ ngx_http_proxy_copy_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
     } else {
         p->in = cl;
     }
-    p->last_in = &cl->next;
 
-    if (p->length == -1) {
+    p->last_in = &cl->next;		//	指向p->in链表中最后一个节点
+
+    if (p->length == -1) {		//	why????
         return NGX_OK;
     }
 
-    p->length -= b->last - b->pos;
+	/*	后端服务器body部分剩余大小
+		当缓冲区内的数据已经被发送到客户端时，buf的pos和last标记相等 */
+    p->length -= b->last - b->pos;			
 
+	//	p->length等于0，说明后端服务器解析全部接收完毕
     if (p->length == 0) {
         r = p->input_ctx;
         p->upstream_done = 1;

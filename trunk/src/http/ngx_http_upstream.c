@@ -2455,7 +2455,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
     p->send_timeout = clcf->send_timeout;
     p->send_lowat = clcf->send_lowat;
 
-    p->length = -1;											//	length的作用？？？
+    p->length = -1;											//	length的作用？？？p->length的值会被input_filter_init（）函数修改
 
     if (u->input_filter_init								//	proxy模块时设置ngx_http_proxy_input_filter_init()
         && u->input_filter_init(p->input_ctx) != NGX_OK)

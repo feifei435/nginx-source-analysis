@@ -131,11 +131,12 @@ typedef struct {
     size_t                           send_lowat;						//	指令"proxy_send_lowat" 设置
     size_t                           buffer_size;						//	接收后端服务器反馈的缓冲区大小，指令"proxy_buffer_size" 设置
 
-    size_t                           busy_buffers_size;
-    size_t                           max_temp_file_size;				/*	
-																			如果字段“max_temp_file_size_conf“被设置，本字段将根据“max_temp_file_size_conf“取值 
-																			未设置时，将使用默认值1024 * 1024 * 1024;
-																		*/
+    size_t                           busy_buffers_size;					/*	如果指令 "proxy_busy_buffers_size" 未指定，它的值是指令 "proxy_buffer_size" 和 "proxy_buffers" 中最大值的两倍。
+																			否则，它的值等于指令 "proxy_busy_buffers_size" 的值 */
+
+    size_t                           max_temp_file_size;				/*	如果字段“max_temp_file_size_conf“被设置，本字段将根据“max_temp_file_size_conf“取值 
+																			未设置时，将使用默认值1024 * 1024 * 1024; */
+
     size_t                           temp_file_write_size;				//	???
 
     size_t                           busy_buffers_size_conf;			//	指令 "proxy_busy_buffers_size" 设置
