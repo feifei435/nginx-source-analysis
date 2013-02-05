@@ -156,7 +156,7 @@ typedef struct {
     ngx_flag_t                       intercept_errors;					//	指令 "proxy_intercept_errors" 设置
     ngx_flag_t                       cyclic_temp_file;
 
-    ngx_path_t                      *temp_path;							//	指令 "proxy_temp_path" 设置
+    ngx_path_t                      *temp_path;							//	指令 "proxy_temp_path" 设置，默认指向 ngx_http_proxy_temp_path
 
     ngx_hash_t                       hide_headers_hash;					/*	默认不转发到客户端的头域列表 "ngx_http_proxy_hide_headers"
 																		 *	对从被代理服务器传来的不进行转发的一些特殊头做的hash表(ngx_http_proxy_merge_loc_conf()函数中创建的hash表)
