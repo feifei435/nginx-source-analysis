@@ -38,11 +38,11 @@ struct ngx_file_s {
 typedef time_t (*ngx_path_manager_pt) (void *data);
 typedef void (*ngx_path_loader_pt) (void *data);
 
-
+//	ngx_conf_set_path_slot()函数中设置
 typedef struct {
     ngx_str_t                  name;				//	路径的名称
-    size_t                     len;					//	???????
-    size_t                     level[3];
+    size_t                     len;					//	子目录文件名称长度大小（e.g. /ABC/sub1/sub2/sub3/ --> 3+1+3+1+3+1=12
+    size_t                     level[3];			//	3级子目录，每个子目录的名称长度
 
 //	对应的回调，以及回调数据
     ngx_path_manager_pt        manager;
@@ -70,7 +70,7 @@ typedef struct {
     ngx_uint_t                 access;
 
     unsigned                   log_level:8;
-    unsigned                   persistent:1;
+    unsigned                   persistent:1;			//	说明临时文件是否一直存在于文件系统中
     unsigned                   clean:1;
 } ngx_temp_file_t;
 

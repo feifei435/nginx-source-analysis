@@ -52,6 +52,7 @@ ngx_event_pipe(ngx_event_pipe_t *p, ngx_int_t do_write)
 
         p->log->action = "reading upstream";
 
+		//	从后端服务器获取数据
         if (ngx_event_pipe_read_upstream(p) == NGX_ABORT) {
             return NGX_ABORT;
         }
@@ -525,11 +526,13 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
                 ngx_log_debug0(NGX_LOG_DEBUG_EVENT, p->log, 0,
                                "pipe write downstream flush in");
 
+				//	????
                 for (cl = p->in; cl; cl = cl->next) {
                     cl->buf->recycled = 0;
                 }
 
-                rc = p->output_filter(p->output_ctx, p->in);
+				//	向客户端发送数据
+                rc = p->output_filter(p->output_ctx, p->in);		//	ngx_http_output_filter()
 
                 if (rc == NGX_ERROR) {
                     p->downstream_error = 1;
@@ -718,6 +721,7 @@ ngx_event_pipe_write_chain_to_temp_file(ngx_event_pipe_t *p)
     ngx_uint_t    prev_last_shadow;
     ngx_chain_t  *cl, *tl, *next, *out, **ll, **last_out, **last_free, fl;
 
+	//	如果有响应头域，将头域和数据Body挂载到out；否则out仅指向数据Body
     if (p->buf_to_file) {
         fl.buf = p->buf_to_file;
         fl.next = p->in;
@@ -727,6 +731,7 @@ ngx_event_pipe_write_chain_to_temp_file(ngx_event_pipe_t *p)
         out = p->in;
     }
 
+	//	未开启缓存
     if (!p->cacheable) {
 
         size = 0;

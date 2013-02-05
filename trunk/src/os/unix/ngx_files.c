@@ -138,6 +138,7 @@ ngx_open_tempfile(u_char *name, ngx_uint_t persistent, ngx_uint_t access)
     fd = open((const char *) name, O_CREAT|O_EXCL|O_RDWR,
               access ? access : 0600);
 
+	//	文件创建成功时，persistent=0,说明文件不允许在磁盘中长期存在，将unlink掉文件
     if (fd != -1 && !persistent) {
         unlink((const char *) name);
     }

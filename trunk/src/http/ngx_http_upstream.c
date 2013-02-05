@@ -2382,11 +2382,11 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->temp_file->file.fd = NGX_INVALID_FILE;
     p->temp_file->file.log = c->log;
-    p->temp_file->path = u->conf->temp_path;			//	??????????
+    p->temp_file->path = u->conf->temp_path;			//	指令 "proxy_temp_path" 设置
     p->temp_file->pool = r->pool;
 
     if (p->cacheable) {
-        p->temp_file->persistent = 1;
+        p->temp_file->persistent = 1;					//	开启缓存时，临时文件将一直存在于磁盘中
 
     } else {
         p->temp_file->log_level = NGX_LOG_WARN;
@@ -2409,8 +2409,10 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->preread_size = u->buffer.last - u->buffer.pos;				//	后端服务器已经反馈的Body数据部分大小
 
+	//	如果开启了缓存，
     if (u->cacheable) {
 
+		//	缓存到文件的buf，这里应该是缓存后端服务器的响应行和头域
         p->buf_to_file = ngx_calloc_buf(r->pool);
         if (p->buf_to_file == NULL) {
             ngx_http_upstream_finalize_request(r, u, 0);

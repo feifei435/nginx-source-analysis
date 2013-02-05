@@ -20,6 +20,8 @@ ngx_write_chain_to_temp_file(ngx_temp_file_t *tf, ngx_chain_t *chain)
     ngx_int_t  rc;
 
     if (tf->file.fd == NGX_INVALID_FILE) {
+
+		//	创建临时文件
         rc = ngx_create_temp_file(&tf->file, tf->path, tf->pool,
                                   tf->persistent, tf->clean, tf->access);
 
@@ -46,7 +48,8 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
     ngx_pool_cleanup_t       *cln;
     ngx_pool_cleanup_file_t  *clnf;
 
-    file->name.len = path->name.len + 1 + path->len + 10;
+	//	计算文件名称长度(路径长度+“/”+子目录的长度+文件名长度（10）)
+    file->name.len = path->name.len + 1 + path->len + 10;			//	路径名称是不包括“/”结尾的，
 
     file->name.data = ngx_pnalloc(pool, file->name.len + 1);
     if (file->name.data == NULL) {
@@ -59,8 +62,10 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
     }
 #endif
 
+	//	拷贝路径名称
     ngx_memcpy(file->name.data, path->name.data, path->name.len);
 
+	//	获取随机数
     n = (uint32_t) ngx_next_temp_number(0);
 
     cln = ngx_pool_cleanup_add(pool, sizeof(ngx_pool_cleanup_file_t));
@@ -69,23 +74,28 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
     }
 
     for ( ;; ) {
+
+		//	生成文件名
         (void) ngx_sprintf(file->name.data + path->name.len + 1 + path->len,
                            "%010uD%Z", n);
 
+		//	生成子目录名
         ngx_create_hashed_filename(path, file->name.data, file->name.len);
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, file->log, 0,
                        "hashed path: %s", file->name.data);
 
+		//	创建临时文件
         file->fd = ngx_open_tempfile(file->name.data, persistent, access);
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, file->log, 0,
                        "temp fd:%d", file->fd);
 
+		//	文件创建成功
         if (file->fd != NGX_INVALID_FILE) {
 
             cln->handler = clean ? ngx_pool_delete_file : ngx_pool_cleanup_file;
-            clnf = cln->data;
+            clnf = cln->data;		//	已经在函数ngx_pool_cleanup_add（）中申请空间
 
             clnf->fd = file->fd;
             clnf->name = file->name.data;
@@ -96,6 +106,7 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
 
         err = ngx_errno;
 
+		//	如果文件已经存在，将继续创建文件
         if (err == NGX_EEXIST) {
             n = (uint32_t) ngx_next_temp_number(1);
             continue;
@@ -111,10 +122,16 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
         if (ngx_create_path(file, path) == NGX_ERROR) {
             return NGX_ERROR;
         }
-    }
+    }		//	END FOR
 }
 
-
+/*
+ *	根据hash文件名称生成子目录名称
+ *	规则：	
+ *		随机文件名称：00000123456
+ *		子目录名称（1、2、3级目录位数分别是2|1|2）：/56/4/23/
+ *		子目录的生成规则是从随机文件名称的末尾开始截取指令指定的位数
+ */
 void
 ngx_create_hashed_filename(ngx_path_t *path, u_char *file, size_t len)
 {
@@ -272,8 +289,8 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     path->len = 0;
     path->manager = NULL;
     path->loader = NULL;
-    path->conf_file = cf->conf_file->file.name.data;
-    path->line = cf->conf_file->line;
+	path->conf_file = cf->conf_file->file.name.data;
+	path->line = cf->conf_file->line;
 
 	//	检查是否有后续参数， 后续参数均都是level
     for (i = 0, n = 2; n < cf->args->nelts; i++, n++) {
@@ -283,7 +300,7 @@ ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 
         path->level[i] = level;
-        path->len += level + 1;			//	???
+        path->len += level + 1;			//	计算子目录的文件名称长度大小
     }
 
     while (i < 3) {						//	未在指令中显示指定的级别， 设置默认的路径级别为0
@@ -422,7 +439,7 @@ invalid:
 }
 
 /* 
- *	[analy]   增加 ngx_path_t 到 cf->cycle->pathes 数组中
+ *	增加 ngx_path_t 到 cf->cycle->pathes 数组中
  */
 ngx_int_t
 ngx_add_path(ngx_conf_t *cf, ngx_path_t **slot)

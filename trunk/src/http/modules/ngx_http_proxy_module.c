@@ -621,7 +621,7 @@ static ngx_http_variable_t  ngx_http_proxy_vars[] = {
     { ngx_null_string, NULL, NULL, 0, 0, 0 }
 };
 
-
+//	Ä¬ÈÏ"proxy_temp" 1¡¢2¡¢0
 static ngx_path_init_t  ngx_http_proxy_temp_path = {
     ngx_string(NGX_HTTP_PROXY_TEMP_PATH), { 1, 2, 0 }
 };

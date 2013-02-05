@@ -26,9 +26,9 @@ struct ngx_event_pipe_s {
     ngx_connection_t  *upstream;				//	后端服务器
     ngx_connection_t  *downstream;				//	客户端
 
-    ngx_chain_t       *free_raw_bufs;
-    ngx_chain_t       *in;
-    ngx_chain_t      **last_in;
+    ngx_chain_t       *free_raw_bufs;			//	
+    ngx_chain_t       *in;						//	保存从后端读取到准备要发送的数据链
+    ngx_chain_t      **last_in;					//	指向in的数据链尾端
 
     ngx_chain_t       *out;
     ngx_chain_t       *free;					//	ngx_event_pipe_write_to_downstream()向客户端发送完数据时，会将已发送完的chain挂载到free上。
