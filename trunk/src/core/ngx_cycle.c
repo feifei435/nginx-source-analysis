@@ -1285,7 +1285,7 @@ ngx_reopen_files(ngx_cycle_t *cycle, ngx_uid_t user)
 }
 
 /* 
- *	[analy]	添加一个到 ngx_shm_zone_t 到 cf->cycle->shared_memory 中
+ *	添加一个到 ngx_shm_zone_t 到 cf->cycle->shared_memory 中
  */
 ngx_shm_zone_t *
 ngx_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name, size_t size, void *tag)

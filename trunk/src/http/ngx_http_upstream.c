@@ -697,11 +697,14 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
             u->method = ngx_http_core_get_method;
         }
 
+
+		//	申请一个 ngx_http_cache_t 结构， 使其指向 r->cache
         if (ngx_http_file_cache_new(r) != NGX_OK) {
             return NGX_ERROR;
         }
 
-        if (u->create_key(r) != NGX_OK) {
+		//	
+        if (u->create_key(r) != NGX_OK) {			//	proxy模块注册的：ngx_http_proxy_create_key
             return NGX_ERROR;
         }
 

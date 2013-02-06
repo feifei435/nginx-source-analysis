@@ -496,6 +496,8 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
             return ngx_event_pipe_drain_chains(p);
         }
 
+
+		//	1. 接收后端服务器出错、后端服务器的响应已经接收完毕、后端服务器断开连接
         if (p->upstream_eof || p->upstream_error || p->upstream_done) {
 
             /* pass the p->out and p->in chains to the output filter */
@@ -504,6 +506,7 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
                 cl->buf->recycled = 0;
             }
 
+			//	p->out指向的是什么数据？？？？
             if (p->out) {
                 ngx_log_debug0(NGX_LOG_DEBUG_EVENT, p->log, 0,
                                "pipe write downstream flush out");
@@ -522,13 +525,14 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
                 p->out = NULL;
             }
 
+			//	p->in指向的是什么数据？？？
             if (p->in) {
                 ngx_log_debug0(NGX_LOG_DEBUG_EVENT, p->log, 0,
                                "pipe write downstream flush in");
 
-				//	????
+				//	为什么要将buf的recycled的标记置0? 在ngx_http_write_filter中会立即将数据发送出去，并且不回收有此标记的buf（循环使用）
                 for (cl = p->in; cl; cl = cl->next) {
-                    cl->buf->recycled = 0;
+                    cl->buf->recycled = 0;			
                 }
 
 				//	向客户端发送数据
@@ -542,6 +546,7 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
                 p->in = NULL;
             }
 
+			//	????
             if (p->cacheable && p->buf_to_file) {
 
                 file.buf = p->buf_to_file;
@@ -563,6 +568,8 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
             break;
         }
 
+
+		//	???
         if (downstream->data != p->output_ctx						//	   downstream->data = r 和 p->output_ctx = r;
             || !downstream->write->ready
             || downstream->write->delayed)
@@ -648,7 +655,7 @@ ngx_event_pipe_write_to_downstream(ngx_event_pipe_t *p)
             ll = &cl->next;
         }	//	END FOR
 
-    flush:
+    flush:	
 
         ngx_log_debug2(NGX_LOG_DEBUG_EVENT, p->log, 0,
                        "pipe write: out:%p, f:%d", out, flush);
@@ -786,6 +793,7 @@ ngx_event_pipe_write_chain_to_temp_file(ngx_event_pipe_t *p)
         p->last_in = &p->in;
     }
 
+	//	写out到临时文件中
     n = ngx_write_chain_to_temp_file(p->temp_file, out);
 
     if (n == NGX_ERROR) {
@@ -793,10 +801,10 @@ ngx_event_pipe_write_chain_to_temp_file(ngx_event_pipe_t *p)
     }
 
     if (p->buf_to_file) {
-        p->temp_file->offset = p->buf_to_file->last - p->buf_to_file->pos;
-        n -= p->buf_to_file->last - p->buf_to_file->pos;
-        p->buf_to_file = NULL;
-        out = out->next;
+        p->temp_file->offset = p->buf_to_file->last - p->buf_to_file->pos;			//	body数据的偏移量
+        n -= p->buf_to_file->last - p->buf_to_file->pos;							//	计算body长度
+        p->buf_to_file = NULL;														
+        out = out->next;															//	后端服务器反馈的Body部分
     }
 
     if (n > 0) {
@@ -816,9 +824,10 @@ ngx_event_pipe_write_chain_to_temp_file(ngx_event_pipe_t *p)
             last_out = &cl->next;
 
         } else {
-            last_out = &p->out;
+            last_out = &p->out;			
         }
 
+		//	获取chain
         cl = ngx_chain_get_free_buf(p->pool, &p->free);
         if (cl == NULL) {
             return NGX_ABORT;
@@ -838,7 +847,7 @@ ngx_event_pipe_write_chain_to_temp_file(ngx_event_pipe_t *p)
         b->in_file = 1;
         b->temp_file = 1;
 
-        *last_out = cl;
+        *last_out = cl;				//	将cl挂载到p->out末端
     }
 
 free:
@@ -850,9 +859,12 @@ free:
         /* void */
     }
 
+
+	//	out指向后端服务器的body部分，
     for (cl = out; cl; cl = next) {
         next = cl->next;
 
+		//	将cl挂载到p->free末端
         cl->next = p->free;
         p->free = cl;
 
@@ -868,9 +880,12 @@ free:
             tl->buf = b->shadow;
             tl->next = NULL;
 
+			//	
             *last_free = tl;
             last_free = &tl->next;
 
+
+			//	???
             b->shadow->pos = b->shadow->start;
             b->shadow->last = b->shadow->start;
 

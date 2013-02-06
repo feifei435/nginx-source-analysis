@@ -31,11 +31,11 @@ struct ngx_http_proxy_rewrite_s {
 
 
 typedef struct {
-    ngx_str_t                      key_start;
-    ngx_str_t                      schema;
-    ngx_str_t                      host_header;
-    ngx_str_t                      port;
-    ngx_str_t                      uri;
+    ngx_str_t                      key_start;				//	
+    ngx_str_t                      schema;					//	"http://" 或 "https://"
+    ngx_str_t                      host_header;				//	url中的host
+    ngx_str_t                      port;					//	端口
+    ngx_str_t                      uri;						//	url中的uri
 } ngx_http_proxy_vars_t;
 
 
@@ -58,14 +58,14 @@ typedef struct {
     ngx_array_t                   *cookie_domains;
     ngx_array_t                   *cookie_paths;
 
-    ngx_str_t                      body_source;			//	指令 "proxy_set_body " 设定
+    ngx_str_t                      body_source;				//	指令 "proxy_set_body " 设定
 
-    ngx_str_t                      method;				//	指令 "proxy_method" 指定发送到后端服务器的发送方式
-    ngx_str_t                      location;			//	所属location层的name字段的值 /hellobaidu
-    ngx_str_t                      url;					//	指向proxy_pass参数部分例如："http://www.baidu.com"
+    ngx_str_t                      method;					//	指令 "proxy_method" 指定发送到后端服务器的发送方式
+    ngx_str_t                      location;				//	所属location层的name字段的值 /hellobaidu
+    ngx_str_t                      url;						//	指向proxy_pass参数部分例如："http://www.baidu.com"
 
 #if (NGX_HTTP_CACHE)
-    ngx_http_complex_value_t       cache_key;
+    ngx_http_complex_value_t       cache_key;				//	存放指令 "proxy_cache_key" 设置的值
 #endif
 
     ngx_http_proxy_vars_t          vars;
@@ -841,6 +841,7 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+	//	检查指令"proxy_cache_key"是否使用了
     if (plcf->cache_key.value.len) {
 
         if (ngx_http_complex_value(r, &plcf->cache_key, key) != NGX_OK) {
@@ -850,6 +851,7 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
         return NGX_OK;
     }
 
+	//	指令 "proxy_cache_key" 未使用时，
     *key = ctx->vars.key_start;
 
     key = ngx_array_push(&r->cache->keys);
@@ -3482,11 +3484,14 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    plcf->vars.schema.len = add;			//	7
-    plcf->vars.schema.data = url->data;		//	http://
-    plcf->vars.key_start = plcf->vars.schema;	//	http://www.baidu.com
+	//	设置proxy模块使用的上下文schema
+    plcf->vars.schema.len = add;				//	7
+    plcf->vars.schema.data = url->data;			//	按照变量add的长度截取字符串； 结果值等于"http://"
+    plcf->vars.key_start = plcf->vars.schema;	/*	key_start的长度会在ngx_http_proxy_set_vars中添加上host的长度，最终key_start指向整个url（http://www.baidu.com/ABC/）
+													貌似key_start未计算uri的长度 */
 
-    ngx_http_proxy_set_vars(&u, &plcf->vars);	//	设置变量vars
+	//	设置proxy使用的变量值
+    ngx_http_proxy_set_vars(&u, &plcf->vars);	
 
     plcf->location = clcf->name;
 
@@ -3896,6 +3901,7 @@ ngx_http_proxy_store(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #if (NGX_HTTP_CACHE)
 
+	//	检查是否开启了"proxy_cache"， "proxy_cache"与"proxy_store"是互斥的
     if (plcf->upstream.cache != NGX_CONF_UNSET_PTR
         && plcf->upstream.cache != NULL)
     {
@@ -3952,10 +3958,12 @@ ngx_http_proxy_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
+	//	与指令"proxy_store"不兼容
     if (plcf->upstream.store > 0 || plcf->upstream.store_lengths) {
         return "is incompatible with \"proxy_store\"";
     }
 
+	//	申请共享内存结构
     plcf->upstream.cache = ngx_shared_memory_add(cf, &value[1], 0,
                                                  &ngx_http_proxy_module);
     if (plcf->upstream.cache == NULL) {
@@ -4070,8 +4078,10 @@ ngx_http_proxy_set_vars(ngx_url_t *u, ngx_http_proxy_vars_t *v)
 		//	url中没有设置端口，或设置的端口与默认端口不一致
         if (u->no_port || u->port == u->default_port) {
 
+			//	设置host
             v->host_header = u->host;
 
+			//	设置端口
             if (u->default_port == 80) {
                 ngx_str_set(&v->port, "80");
 
@@ -4085,6 +4095,7 @@ ngx_http_proxy_set_vars(ngx_url_t *u, ngx_http_proxy_vars_t *v)
             v->port = u->port_text;
         }
 
+		//	v->key_start的	len=schema+host
         v->key_start.len += v->host_header.len;
 
     } else {
@@ -4093,5 +4104,5 @@ ngx_http_proxy_set_vars(ngx_url_t *u, ngx_http_proxy_vars_t *v)
         v->key_start.len += sizeof("unix:") - 1 + u->host.len + 1;
     }
 
-    v->uri = u->uri;
+    v->uri = u->uri;			//	设置uri
 }
