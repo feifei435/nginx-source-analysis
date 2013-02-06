@@ -14,6 +14,7 @@ ngx_atomic_t         *ngx_temp_number = &temp_number;
 ngx_atomic_int_t      ngx_random_number = 123456;
 
 
+//	写chain数据到临时文件中
 ssize_t
 ngx_write_chain_to_temp_file(ngx_temp_file_t *tf, ngx_chain_t *chain)
 {
@@ -35,6 +36,7 @@ ngx_write_chain_to_temp_file(ngx_temp_file_t *tf, ngx_chain_t *chain)
         }
     }
 
+	//	写chain数据到文件中
     return ngx_write_chain_to_file(&tf->file, chain, tf->offset, tf->pool);
 }
 

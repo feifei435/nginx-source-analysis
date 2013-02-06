@@ -63,7 +63,7 @@ ngx_read_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
     return n;
 }
 
-
+//	写数据到文件中
 ssize_t
 ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 {
@@ -74,7 +74,7 @@ ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 
     written = 0;
 
-#if (NGX_HAVE_PWRITE)
+#if (NGX_HAVE_PWRITE)					//	系统支持带偏移的pwrite
 
     for ( ;; ) {
         n = pwrite(file->fd, buf + written, size, offset);
@@ -149,6 +149,7 @@ ngx_open_tempfile(u_char *name, ngx_uint_t persistent, ngx_uint_t access)
 
 #define NGX_IOVS  8
 
+//	写chain数据到文件中
 ssize_t
 ngx_write_chain_to_file(ngx_file_t *file, ngx_chain_t *cl, off_t offset,
     ngx_pool_t *pool)
@@ -161,6 +162,7 @@ ngx_write_chain_to_file(ngx_file_t *file, ngx_chain_t *cl, off_t offset,
 
     /* use pwrite() if there is the only buf in a chain */
 
+	//	如果只有一个buf，直接使用pwrite写到文件中。当有多个buf时，使用聚集写效率更高些。
     if (cl->next == NULL) {
         return ngx_write_file(file, cl->buf->pos,
                               (size_t) (cl->buf->last - cl->buf->pos),
@@ -184,6 +186,8 @@ ngx_write_chain_to_file(ngx_file_t *file, ngx_chain_t *cl, off_t offset,
         /* create the iovec and coalesce the neighbouring bufs */
 
         while (cl && vec.nelts < IOV_MAX) {
+
+			//	？？？？？？？什么情况prev会等于cl->buf->pos
             if (prev == cl->buf->pos) {
                 iov->iov_len += cl->buf->last - cl->buf->pos;
 

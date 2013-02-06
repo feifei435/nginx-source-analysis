@@ -153,6 +153,7 @@ ngx_http_file_cache_new(ngx_http_request_t *r)
 {
     ngx_http_cache_t  *c;
 
+	//	ÉêÇë ngx_http_cache_t ½á¹¹
     c = ngx_pcalloc(r->pool, sizeof(ngx_http_cache_t));
     if (c == NULL) {
         return NGX_ERROR;

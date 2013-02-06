@@ -360,7 +360,7 @@ struct ngx_http_request_s {
     ngx_http_event_handler_pt         write_event_handler;						//	仅在 ngx_http_request_handler（） 中调用
 
 #if (NGX_HTTP_CACHE)
-    ngx_http_cache_t                 *cache;
+    ngx_http_cache_t                 *cache;									//	ngx_http_file_cache_new()函数中赋值
 #endif
 
     ngx_http_upstream_t              *upstream;						//	ngx_http_upstream_create()函数中申请的

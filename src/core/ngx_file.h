@@ -18,8 +18,8 @@ struct ngx_file_s {
     ngx_str_t                  name;				//	文件名称
     ngx_file_info_t            info;				//	文件信息
 
-    off_t                      offset;
-    off_t                      sys_offset;
+    off_t                      offset;				//	已写入文件中的数据偏移量
+    off_t                      sys_offset;			//	已写入文件中的数据偏移量
 
     ngx_log_t                 *log;					//	使用的Log指针
 
@@ -61,17 +61,17 @@ typedef struct {
 
 
 typedef struct {
-    ngx_file_t                 file;
-    off_t                      offset;
-    ngx_path_t                *path;
+    ngx_file_t                 file;					//	临时文件信息
+    off_t                      offset;					//	？？？？
+    ngx_path_t                *path;					//	临时文件存放的目录
     ngx_pool_t                *pool;					//	使用的内存池
     char                      *warn;
 
-    ngx_uint_t                 access;
+    ngx_uint_t                 access;					//	文件的访问权限
 
-    unsigned                   log_level:8;
+    unsigned                   log_level:8;				//	日志等级
     unsigned                   persistent:1;			//	说明临时文件是否一直存在于文件系统中
-    unsigned                   clean:1;
+    unsigned                   clean:1;					//	文件的清理方式（是否将文件在磁盘上删除）
 } ngx_temp_file_t;
 
 
