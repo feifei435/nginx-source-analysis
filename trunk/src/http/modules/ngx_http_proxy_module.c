@@ -35,7 +35,7 @@ typedef struct {
     ngx_str_t                      schema;					//	"http://" 或 "https://"
     ngx_str_t                      host_header;				//	url中的host
     ngx_str_t                      port;					//	端口
-    ngx_str_t                      uri;						//	url中的uri
+    ngx_str_t                      uri;						//	url中的uri（ngx_http_proxy_set_vars()函数中设置）
 } ngx_http_proxy_vars_t;
 
 
@@ -757,6 +757,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
 
     u = r->upstream;
 
+	//	设置schema
     u->schema.len = add;
     u->schema.data = proxy.data;
 
@@ -792,6 +793,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
         }
     }
 
+	//	重新设置 key_start
     ctx->vars.key_start = u->schema;
 
     ngx_http_proxy_set_vars(&url, &ctx->vars);
@@ -851,7 +853,7 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
         return NGX_OK;
     }
 
-	//	指令 "proxy_cache_key" 未使用时，
+	//	指令 "proxy_cache_key" 未使用时，添加schema+host、uri到 r->cache->keys 中
     *key = ctx->vars.key_start;
 
     key = ngx_array_push(&r->cache->keys);
@@ -3445,6 +3447,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
+/****************		未使用变量		****************/
 
 	//	检查URL的格式，只能是“http://”和“https://”
     if (ngx_strncasecmp(url->data, (u_char *) "http://", 7) == 0) {

@@ -325,8 +325,8 @@ struct ngx_http_upstream_s {
     ngx_http_upstream_state_t       *state;							//	指向 r->upstream_states 数组中正在使用的位置， 对它的修改就是对 r->upstream_states的修改
 
     ngx_str_t                        method;
-    ngx_str_t                        schema;
-    ngx_str_t                        uri;							//	在create_request中填充
+    ngx_str_t                        schema;						//	请求的schema，ngx_http_proxy_eval()中设置
+    ngx_str_t                        uri;							//	在create_request中填充；使用变量时ngx_http_proxy_create_key（）函数中也有相应设置
 
     ngx_http_cleanup_pt             *cleanup;						//	指向r->cleanup循环单链表中申请的处理upstream模块用的， ngx_http_upstream_init_request（）在函数中申请
 
