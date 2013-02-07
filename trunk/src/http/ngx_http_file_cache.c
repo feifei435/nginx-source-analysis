@@ -249,10 +249,12 @@ ngx_http_file_cache_open(ngx_http_request_t *r)
 
     c = r->cache;
 
+	//	???
     if (c->waiting) {
         return NGX_AGAIN;
     }
 
+	//	???
     if (c->buf) {
         return ngx_http_file_cache_read(r, c);
     }

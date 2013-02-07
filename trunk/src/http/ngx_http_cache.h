@@ -14,12 +14,12 @@
 #include <ngx_http.h>
 
 
-#define NGX_HTTP_CACHE_MISS          1
+#define NGX_HTTP_CACHE_MISS          1				//	缓存未命中
 #define NGX_HTTP_CACHE_BYPASS        2
 #define NGX_HTTP_CACHE_EXPIRED       3
 #define NGX_HTTP_CACHE_STALE         4
 #define NGX_HTTP_CACHE_UPDATING      5
-#define NGX_HTTP_CACHE_HIT           6
+#define NGX_HTTP_CACHE_HIT           6				//	缓存命中
 #define NGX_HTTP_CACHE_SCARCE        7
 
 #define NGX_HTTP_CACHE_KEY_LEN       16
@@ -71,7 +71,7 @@ struct ngx_http_cache_s {
     off_t                            length;
     off_t                            fs_size;
 
-    ngx_uint_t                       min_uses;
+    ngx_uint_t                       min_uses;					//	u->conf->cache_min_uses, proxy模块使用指令 "proxy_cache_min_uses" 指定
     ngx_uint_t                       error;
     ngx_uint_t                       valid_msec;
 
@@ -80,12 +80,12 @@ struct ngx_http_cache_s {
     ngx_http_file_cache_t           *file_cache;
     ngx_http_file_cache_node_t      *node;
 
-    ngx_msec_t                       lock_timeout;
+    ngx_msec_t                       lock_timeout;				//	u->conf->cache_lock_timeout, proxy模块使用指令 "proxy_cache_lock_timeout" 指定
     ngx_msec_t                       wait_time;
 
     ngx_event_t                      wait_event;
 
-    unsigned                         lock:1;
+    unsigned                         lock:1;					//	u->conf->cache_lock, proxy模块使用指令 "proxy_cache_lock" 指定
     unsigned                         waiting:1;
 
     unsigned                         updated:1;

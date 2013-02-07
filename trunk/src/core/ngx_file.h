@@ -45,8 +45,8 @@ typedef struct {
     size_t                     level[3];			//	3级子目录，每个子目录的名称长度
 
 //	对应的回调，以及回调数据
-    ngx_path_manager_pt        manager;
-    ngx_path_loader_pt         loader;
+    ngx_path_manager_pt        manager;				//	ngx_http_file_cache_set_slot()函数中设置
+    ngx_path_loader_pt         loader;				//	ngx_http_file_cache_set_slot()函数中设置
     void                      *data;
 
     u_char                    *conf_file;			//	配置文件的地址指针

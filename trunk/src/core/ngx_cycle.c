@@ -422,7 +422,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     /* create shared memory */
 
-    part = &cycle->shared_memory.part;
+    part = &cycle->shared_memory.part;													/* [analy]	创建共享内存  */
     shm_zone = part->elts;
 
     for (i = 0; /* void */ ; i++) {
@@ -488,6 +488,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             break;
         }
 
+		//	创建共享内存
         if (ngx_shm_alloc(&shm_zone[i].shm) != NGX_OK) {
             goto failed;
         }

@@ -494,6 +494,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
         r->write_event_handler = ngx_http_request_empty_handler;
 
+		//	在缓存中已经找到, 将直接返回不向后端服务器获取
         if (rc == NGX_DONE) {
             return;
         }
@@ -679,6 +680,15 @@ found:
 
 #if (NGX_HTTP_CACHE)
 
+
+/*
+	返回值：
+			NGX_ERROR
+			NGX_DECLINED
+			NGX_BUSY
+			其他
+*/
+
 static ngx_int_t
 ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -740,9 +750,9 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
         c = r->cache;
 
-        c->min_uses = u->conf->cache_min_uses;
-        c->body_start = u->conf->buffer_size;
-        c->file_cache = u->conf->cache->data;
+        c->min_uses = u->conf->cache_min_uses;			//	最小请求次数后将被缓存
+        c->body_start = u->conf->buffer_size;			//	接收后端服务器反馈数据的大小（指令"proxy_buffer_size" 设置）
+        c->file_cache = u->conf->cache->data;			//	???
 
         c->lock = u->conf->cache_lock;
         c->lock_timeout = u->conf->cache_lock_timeout;

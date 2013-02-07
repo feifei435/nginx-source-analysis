@@ -275,7 +275,7 @@ main(int argc, char *const *argv)
 
     ngx_pid = ngx_getpid();
 	
-	/* [analy]	初始化ngx_log */
+	/* 初始化ngx_log */
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
@@ -291,7 +291,7 @@ main(int argc, char *const *argv)
      * ngx_process_options()
      */
 	
-	/* [analy]	启动时创建内存池 */
+	/* 启动时创建内存池 */
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
