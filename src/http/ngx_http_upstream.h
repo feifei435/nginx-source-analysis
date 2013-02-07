@@ -171,12 +171,12 @@ typedef struct {
 #if (NGX_HTTP_CACHE)
     ngx_shm_zone_t                  *cache;								//	指令 "proxy_cache", 默认off=NULL(函数ngx_http_proxy_cache（）中设置)
 
-    ngx_uint_t                       cache_min_uses;					//	指令 "proxy_cache_min_uses" 设置
+    ngx_uint_t                       cache_min_uses;					//	多少次请求后应答将被缓存默认是1， 指令 "proxy_cache_min_uses" 设置.
     ngx_uint_t                       cache_use_stale;					//	指令 "proxy_cache_use_stale" 设置
     ngx_uint_t                       cache_methods;						//	指令 "proxy_cache_methods" 设置
 
-    ngx_flag_t                       cache_lock;						//	指令 "proxy_cache_lock" 设置
-    ngx_msec_t                       cache_lock_timeout;				//	指令 "proxy_cache_lock_timeout" 设置
+    ngx_flag_t                       cache_lock;						//	指令 "proxy_cache_lock" 设置, 默认是OFF
+    ngx_msec_t                       cache_lock_timeout;				//	指令 "proxy_cache_lock_timeout" 设置，默认是5s
 
     ngx_array_t                     *cache_valid;						//	指令 "proxy_cache_valid" 设置
     ngx_array_t                     *cache_bypass;						//	指令 "proxy_cache_bypass" 设置
@@ -335,7 +335,7 @@ struct ngx_http_upstream_s {
     unsigned                         accel:1;
     unsigned                         ssl:1;
 #if (NGX_HTTP_CACHE)
-    unsigned                         cache_status:3;
+    unsigned                         cache_status:3;				//	????
 #endif
 
     unsigned                         buffering:1;					//	缓存后端服务器发来的响应数据；ngx_http_proxy_handler()函数中设置, 根据proxy模块的指令 "proxy_buffering"设置
