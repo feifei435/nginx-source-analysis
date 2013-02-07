@@ -605,7 +605,7 @@ ngx_feature_test="void *p;
 . auto/feature
 
 
-ngx_feature='mmap("/dev/zero", MAP_SHARED)'							/* [analy]	检查系统/dev/zero的存储映射，未名存储区 */
+ngx_feature='mmap("/dev/zero", MAP_SHARED)'							/* [analy]	检查系统/dev/zero的存储映射，未名存储区(也是匿名映射，只是当MAP_ANON不被支持情况下使用) */
 ngx_feature_name="NGX_HAVE_MAP_DEVZERO"
 ngx_feature_run=yes
 ngx_feature_incs="#include <sys/mman.h>
