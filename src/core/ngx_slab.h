@@ -23,24 +23,24 @@ struct ngx_slab_page_s {
 
 
 typedef struct {
-    ngx_shmtx_sh_t    lock;
+    ngx_shmtx_sh_t    lock;				//	貌似使用文件锁的情况时，不使用此结构
 
-    size_t            min_size;
-    size_t            min_shift;
+    size_t            min_size;			//	?????????
+    size_t            min_shift;		//	????????
 
-    ngx_slab_page_t  *pages;
+    ngx_slab_page_t  *pages;			//	指向共享内存中pages部分
     ngx_slab_page_t   free;
 
     u_char           *start;
-    u_char           *end;
+    u_char           *end;				//	共享内存区域使用的结束
 
-    ngx_shmtx_t       mutex;
+    ngx_shmtx_t       mutex;			//	共享内存使用的互斥对象
 
-    u_char           *log_ctx;
-    u_char            zero;
+    u_char           *log_ctx;			//	???
+    u_char            zero;				//	???
 
-    void             *data;
-    void             *addr;
+    void             *data;				//	e.g. 指向ngx_http_file_cache_sh_t 在函数 ngx_http_file_cache_init（）中设置，指向 file_cache->sh
+    void             *addr;				//	共享内存区的开始地址
 } ngx_slab_pool_t;
 
 

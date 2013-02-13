@@ -28,12 +28,12 @@ typedef struct {
 
 
 typedef struct {
-    DIR                         *dir;
+    DIR                         *dir;						//	目录指针
     struct dirent               *de;
     struct stat                  info;
 
     unsigned                     type:8;
-    unsigned                     valid_info:1;
+    unsigned                     valid_info:1;				//	???
 } ngx_dir_t;
 
 
@@ -268,14 +268,16 @@ ngx_de_info(u_char *name, ngx_dir_t *dir)
 
 #else
 
-#define ngx_de_is_dir(dir)       (S_ISDIR((dir)->info.st_mode))
-#define ngx_de_is_file(dir)      (S_ISREG((dir)->info.st_mode))
-#define ngx_de_is_link(dir)      (S_ISLNK((dir)->info.st_mode))
+#define ngx_de_is_dir(dir)       (S_ISDIR((dir)->info.st_mode))				//	是否是目录
+#define ngx_de_is_file(dir)      (S_ISREG((dir)->info.st_mode))				//	检查是否是常规文件
+#define ngx_de_is_link(dir)      (S_ISLNK((dir)->info.st_mode))				//	是否是链接
 
 #endif
 
 #define ngx_de_access(dir)       (((dir)->info.st_mode) & 0777)
 #define ngx_de_size(dir)         (dir)->info.st_size
+
+//	占用的文件系统空间大小
 #define ngx_de_fs_size(dir)                                                  \
     ngx_max((dir)->info.st_size, (dir)->info.st_blocks * 512)
 #define ngx_de_mtime(dir)        (dir)->info.st_mtime

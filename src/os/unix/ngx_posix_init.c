@@ -42,10 +42,10 @@ ngx_os_init(ngx_log_t *log)
 
     ngx_init_setproctitle(log);
 
-    ngx_pagesize = getpagesize();
+    ngx_pagesize = getpagesize();				//	4K或8K（1000000000000或10000000000000）
     ngx_cacheline_size = NGX_CPU_CACHE_LINE;
 
-    for (n = ngx_pagesize; n >>= 1; ngx_pagesize_shift++) { /* void */ }
+    for (n = ngx_pagesize; n >>= 1; ngx_pagesize_shift++) { /* void */ }			//	计算内存页大小的2进制位数
 
 #if (NGX_HAVE_SC_NPROCESSORS_ONLN)
     if (ngx_ncpu == 0) {

@@ -750,16 +750,17 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
         c = r->cache;
 
-        c->min_uses = u->conf->cache_min_uses;			//	最小请求次数后将被缓存
+        c->min_uses = u->conf->cache_min_uses;			//	达到多少次数后将被缓存
         c->body_start = u->conf->buffer_size;			//	接收后端服务器反馈数据的大小（指令"proxy_buffer_size" 设置）
-        c->file_cache = u->conf->cache->data;			//	???
+        c->file_cache = u->conf->cache->data;			//	file_cache 在函数 ngx_http_file_cache_set_slot（）中创建，通过指令"proxy_cache"使file_cache 与 u->conf->cache关联在一起
 
-        c->lock = u->conf->cache_lock;
-        c->lock_timeout = u->conf->cache_lock_timeout;
+        c->lock = u->conf->cache_lock;						//	???
+        c->lock_timeout = u->conf->cache_lock_timeout;		//	???
 
         u->cache_status = NGX_HTTP_CACHE_MISS;
     }
 
+	//	???????
     rc = ngx_http_file_cache_open(r);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -2826,6 +2827,7 @@ ngx_http_upstream_process_request(ngx_http_request_t *r)
 
     if (u->peer.connection) {
 
+		//	开始了store
         if (u->store) {
 
             if (p->upstream_eof || p->upstream_done) {
@@ -2844,11 +2846,14 @@ ngx_http_upstream_process_request(ngx_http_request_t *r)
 
 #if (NGX_HTTP_CACHE)
 
+		//	开始了缓存
         if (u->cacheable) {
 
+			//	后端服务器数据已经全部接受完毕
             if (p->upstream_done) {
                 ngx_http_file_cache_update(r, u->pipe->temp_file);
 
+			//	后端服务器断开了??????????
             } else if (p->upstream_eof) {
 
                 tf = u->pipe->temp_file;
@@ -2863,6 +2868,7 @@ ngx_http_upstream_process_request(ngx_http_request_t *r)
                     ngx_http_file_cache_free(r->cache, tf);
                 }
 
+			//	后端服务器出错啦
             } else if (p->upstream_error) {
                 ngx_http_file_cache_free(r->cache, u->pipe->temp_file);
             }

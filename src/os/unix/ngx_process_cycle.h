@@ -28,8 +28,8 @@
 
 
 typedef struct {
-    ngx_event_handler_pt       handler;
-    char                      *name;
+    ngx_event_handler_pt       handler;				//	进程处理句柄
+    char                      *name;				//	进程名称
     ngx_msec_t                 delay;
 } ngx_cache_manager_ctx_t;
 

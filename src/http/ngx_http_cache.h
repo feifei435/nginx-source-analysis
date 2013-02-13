@@ -38,17 +38,17 @@ typedef struct {
     u_char                           key[NGX_HTTP_CACHE_KEY_LEN
                                          - sizeof(ngx_rbtree_key_t)];
 
-    unsigned                         count:20;
-    unsigned                         uses:10;
+    unsigned                         count:20;					//	引用计数？？？？？？？
+    unsigned                         uses:10;					//	缓存文件被多少请求在使用
     unsigned                         valid_msec:10;
     unsigned                         error:10;
-    unsigned                         exists:1;
+    unsigned                         exists:1;					//	存在对应的cache文件；ngx_http_file_cache_add()设置
     unsigned                         updating:1;
     unsigned                         deleting:1;
                                      /* 11 unused bits */
 
     ngx_file_uniq_t                  uniq;
-    time_t                           expire;
+    time_t                           expire;					//	缓存文件的失效时间
     time_t                           valid_sec;
     size_t                           body_start;
     off_t                            fs_size;
@@ -56,10 +56,10 @@ typedef struct {
 
 
 struct ngx_http_cache_s {
-    ngx_file_t                       file;
+    ngx_file_t                       file;								//	???
     ngx_array_t                      keys;
     uint32_t                         crc32;
-    u_char                           key[NGX_HTTP_CACHE_KEY_LEN];
+    u_char                           key[NGX_HTTP_CACHE_KEY_LEN];		//	???
 
     ngx_file_uniq_t                  uniq;
     time_t                           valid_sec;
@@ -67,9 +67,9 @@ struct ngx_http_cache_s {
     time_t                           date;
 
     size_t                           header_start;
-    size_t                           body_start;
-    off_t                            length;
-    off_t                            fs_size;
+    size_t                           body_start;				//	u->conf->buffer_size; 接收后端服务器反馈数据缓冲区的大小
+    off_t                            length;					//	????
+    off_t                            fs_size;					//	???/
 
     ngx_uint_t                       min_uses;					//	u->conf->cache_min_uses, proxy模块使用指令 "proxy_cache_min_uses" 指定
     ngx_uint_t                       error;
@@ -78,7 +78,7 @@ struct ngx_http_cache_s {
     ngx_buf_t                       *buf;
 
     ngx_http_file_cache_t           *file_cache;
-    ngx_http_file_cache_node_t      *node;
+    ngx_http_file_cache_node_t      *node;						//	在哪里设置？？
 
     ngx_msec_t                       lock_timeout;				//	u->conf->cache_lock_timeout, proxy模块使用指令 "proxy_cache_lock_timeout" 指定
     ngx_msec_t                       wait_time;
@@ -88,7 +88,7 @@ struct ngx_http_cache_s {
     unsigned                         lock:1;					//	u->conf->cache_lock, proxy模块使用指令 "proxy_cache_lock" 指定
     unsigned                         waiting:1;
 
-    unsigned                         updated:1;
+    unsigned                         updated:1;					//	???
     unsigned                         updating:1;
     unsigned                         exists:1;
     unsigned                         temp_file:1;
@@ -117,23 +117,23 @@ typedef struct {
 
 
 struct ngx_http_file_cache_s {
-    ngx_http_file_cache_sh_t        *sh;
-    ngx_slab_pool_t                 *shpool;
+    ngx_http_file_cache_sh_t        *sh;							//	在函数 ngx_http_file_cache_init（）中设置
+    ngx_slab_pool_t                 *shpool;						//	在函数 ngx_http_file_cache_init（）中设置
 
-    ngx_path_t                      *path;
+    ngx_path_t                      *path;							//	cache的路径，在函数中 ngx_http_file_cache_set_slot（）设置
 
-    off_t                            max_size;
-    size_t                           bsize;
+    off_t                            max_size;						//	cache磁盘的最大空间，在函数中 ngx_http_file_cache_set_slot（）设置
+    size_t                           bsize;							//	每个块的字节数；在函数 ngx_http_file_cache_init（）中设置
 
-    time_t                           inactive;
+    time_t                           inactive;						//	不活跃时间，多久不使用就被删除；在函数中 ngx_http_file_cache_set_slot（）设置
 
-    ngx_uint_t                       files;
-    ngx_uint_t                       loader_files;
-    ngx_msec_t                       last;
-    ngx_msec_t                       loader_sleep;
-    ngx_msec_t                       loader_threshold;
+    ngx_uint_t                       files;							//	当前有多少个cache文件（在函数 ngx_http_file_cache_manage_fil()中设置）
+    ngx_uint_t                       loader_files;					//	默认100，在函数中 ngx_http_file_cache_set_slot（）设置
+    ngx_msec_t                       last;							//	最后被manage或者loader访问的时间（在函数 ngx_http_file_cache_manager()中设置 ）
+    ngx_msec_t                       loader_sleep;					//	默认50，在函数中 ngx_http_file_cache_set_slot（）设置 
+    ngx_msec_t                       loader_threshold;				//	默认200，在函数中 ngx_http_file_cache_set_slot（）设置
 
-    ngx_shm_zone_t                  *shm_zone;
+    ngx_shm_zone_t                  *shm_zone;						//	在函数中 ngx_http_file_cache_set_slot（）设置
 };
 
 

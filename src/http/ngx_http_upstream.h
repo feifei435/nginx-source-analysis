@@ -178,7 +178,7 @@ typedef struct {
     ngx_flag_t                       cache_lock;						//	指令 "proxy_cache_lock" 设置, 默认是OFF
     ngx_msec_t                       cache_lock_timeout;				//	指令 "proxy_cache_lock_timeout" 设置，默认是5s
 
-    ngx_array_t                     *cache_valid;						//	指令 "proxy_cache_valid" 设置
+    ngx_array_t                     *cache_valid;						//	array of ngx_http_cache_valid_t; 指令 "proxy_cache_valid" 设置
     ngx_array_t                     *cache_bypass;						//	指令 "proxy_cache_bypass" 设置
     ngx_array_t                     *no_cache;							//	指令 "proxy_no_cache" 设置
 #endif

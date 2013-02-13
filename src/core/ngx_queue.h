@@ -36,7 +36,7 @@ struct ngx_queue_s {
     (h == (h)->prev)
 
 /* 
- *	[analy]	在头结点之后插入新节点 
+ *	[analy]	在头结点之后插入新节点 （先插入的排在队列尾部）
  */
 #define ngx_queue_insert_head(h, x)                                           \
     (x)->next = (h)->next;                                                    \
