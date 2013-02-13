@@ -30,8 +30,8 @@ typedef struct {
     sem_t          sem;
 #endif
 #else
-    ngx_fd_t       fd;
-    u_char        *name;
+    ngx_fd_t       fd;				//	使用记录锁时，使用的文件FD
+    u_char        *name;			//	使用记录锁时，使用的文件全称
 #endif
     ngx_uint_t     spin;
 } ngx_shmtx_t;

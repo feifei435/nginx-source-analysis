@@ -130,13 +130,16 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         p = ngx_cpystrn(p, (u_char *) ngx_argv[i], size);
     }
 
-    ngx_setproctitle(title);				/* [analysis?]	进程标题相关待整理 */
+    ngx_setproctitle(title);				/* 进程标题相关待整理 */
 
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
+	//	启动 worker 进程
     ngx_start_worker_processes(cycle, ccf->worker_processes,
                                NGX_PROCESS_RESPAWN);
+
+	//	启动 cache manager 和 cache loader 进程
     ngx_start_cache_manager_processes(cycle, 0);
 
     ngx_new_binary = 0;
@@ -392,6 +395,7 @@ ngx_start_cache_manager_processes(ngx_cycle_t *cycle, ngx_uint_t respawn)
     manager = 0;
     loader = 0;
 
+	//	检查是否有path的manager和loader初始化
     path = ngx_cycle->pathes.elts;
     for (i = 0; i < ngx_cycle->pathes.nelts; i++) {
 
@@ -404,6 +408,7 @@ ngx_start_cache_manager_processes(ngx_cycle_t *cycle, ngx_uint_t respawn)
         }
     }
 
+	//	没有cache manager进程，loader进程也就没有必要启动了
     if (manager == 0) {
         return;
     }
@@ -419,6 +424,7 @@ ngx_start_cache_manager_processes(ngx_cycle_t *cycle, ngx_uint_t respawn)
 
     ngx_pass_open_channel(cycle, &ch);
 
+	//	有manager进程可以没有loader进程
     if (loader == 0) {
         return;
     }
@@ -846,7 +852,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
 
 static void
-ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	)
+ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t	priority)
 {
     sigset_t          set;
     ngx_int_t         n;
@@ -1326,10 +1332,12 @@ ngx_worker_thread_cycle(void *data)
 
 #endif
 
-
+//	cache manager 管理进程（cache manager和cache loader进程均在此函数中处理）
 static void
 ngx_cache_manager_process_cycle(ngx_cycle_t *cycle, void *data)
 {
+	/*	cache manager 进程使用的是 ngx_cache_manager_ctx 
+		cache loader 进程使用的是 ngx_cache_loader_ctx   */
     ngx_cache_manager_ctx_t *ctx = data;
 
     void         *ident[4];
@@ -1339,22 +1347,29 @@ ngx_cache_manager_process_cycle(ngx_cycle_t *cycle, void *data)
 
     ngx_process = NGX_PROCESS_HELPER;
 
+	//	worker进程初始化
     ngx_worker_process_init(cycle, 0);
 
+	//	关闭listen socket
     ngx_close_listening_sockets(cycle);
 
     ngx_memzero(&ev, sizeof(ngx_event_t));
-    ev.handler = ctx->handler;
+
+	/*	ngx_cache_manager_process_handler
+		ngx_cache_loader_process_handler  */
+    ev.handler = ctx->handler;					//	设置事件处理handler
     ev.data = ident;
     ev.log = cycle->log;
     ident[3] = (void *) -1;
 
     ngx_use_accept_mutex = 0;
 
+	//	设置进程标题
     ngx_setproctitle(ctx->name);
 
     ngx_add_timer(&ev, ctx->delay);
 
+	//	循环处理cache
     for ( ;; ) {
 
         if (ngx_terminate || ngx_quit) {
@@ -1382,14 +1397,20 @@ ngx_cache_manager_process_handler(ngx_event_t *ev)
 
     next = 60 * 60;
 
+	//	检查所有path查看是否有设置manager handler, 
     path = ngx_cycle->pathes.elts;
     for (i = 0; i < ngx_cycle->pathes.nelts; i++) {
 
         if (path[i]->manager) {
-            n = path[i]->manager(path[i]->data);
 
+			/*	path->manager = ngx_http_file_cache_manager() 
+				path->data = 设置 ngx_http_file_cache_t 结构 */
+            n = path[i]->manager(path[i]->data);					//	???
+	
+			//	???
             next = (n <= next) ? n : next;
 
+			//	更新下系统时间
             ngx_time_update();
         }
     }
@@ -1398,10 +1419,11 @@ ngx_cache_manager_process_handler(ngx_event_t *ev)
         next = 1;
     }
 
+	//	下一次handler出发的时间
     ngx_add_timer(ev, next * 1000);
 }
 
-
+//	loader 进程仅执行一次，在进程启动后60s被调用
 static void
 ngx_cache_loader_process_handler(ngx_event_t *ev)
 {
@@ -1419,7 +1441,13 @@ ngx_cache_loader_process_handler(ngx_event_t *ev)
         }
 
         if (path[i]->loader) {
+
+			/*	path->loader = ngx_http_file_cache_loader;() 
+				path->data = 设置 ngx_http_file_cache_t 结构, 函数ngx_http_file_cache_set_slot（）中设置 */
+
             path[i]->loader(path[i]->data);
+
+			//	为什么在这里更新系统时间？？？
             ngx_time_update();
         }
     }

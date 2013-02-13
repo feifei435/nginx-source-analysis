@@ -436,6 +436,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             i = 0;
         }
 
+		//	检查共享内存等于0的情况
         if (shm_zone[i].shm.size == 0) {
             ngx_log_error(NGX_LOG_EMERG, log, 0,
                           "zero size shared memory zone \"%V\"",
@@ -443,6 +444,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             goto failed;
         }
 
+		//	设置共享内存使用的log
         shm_zone[i].shm.log = cycle->log;
 
         opart = &old_cycle->shared_memory.part;
@@ -493,11 +495,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             goto failed;
         }
 
+		//	初始化共享内存区域
         if (ngx_init_zone_pool(cycle, &shm_zone[i]) != NGX_OK) {
             goto failed;
         }
 
-        if (shm_zone[i].init(&shm_zone[i], NULL) != NGX_OK) {
+		//	在函数 ngx_http_file_cache_set_slot()中 进行设置
+        if (shm_zone[i].init(&shm_zone[i], NULL) != NGX_OK) {			//	ngx_http_file_cache_init() | ngx_http_limit_conn_init_zone() | ngx_ssl_session_cache_init()
             goto failed;
         }
 
@@ -939,7 +943,11 @@ ngx_cmp_sockaddr(struct sockaddr *sa1, struct sockaddr *sa2)
     return NGX_OK;
 }
 
-
+/*
+ *	初始化共享内存区，
+ *			创建共享内存互斥锁
+ *			ngx_slab_init()	
+ */
 static ngx_int_t
 ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
 {
@@ -948,6 +956,7 @@ ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
 
     sp = (ngx_slab_pool_t *) zn->shm.addr;
 
+	//	??????
     if (zn->shm.exists) {
 
         if (sp == sp->addr) {
@@ -964,25 +973,31 @@ ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
     sp->min_shift = 3;
     sp->addr = zn->shm.addr;
 
+
 #if (NGX_HAVE_ATOMIC_OPS)
 
     file = NULL;
 
 #else
 
+	//	使用文件记录锁实现进程间互斥
     file = ngx_pnalloc(cycle->pool, cycle->lock_file.len + zn->shm.name.len);
     if (file == NULL) {
         return NGX_ERROR;
     }
 
+	//	拼装文件名称
     (void) ngx_sprintf(file, "%V%V%Z", &cycle->lock_file, &zn->shm.name);
 
 #endif
 
+
+	//	创建共享内存互斥对象
     if (ngx_shmtx_create(&sp->mutex, &sp->lock, file) != NGX_OK) {
         return NGX_ERROR;
     }
 
+	//	????
     ngx_slab_init(sp);
 
     return NGX_OK;

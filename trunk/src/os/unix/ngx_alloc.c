@@ -9,8 +9,8 @@
 #include <ngx_core.h>
 
 
-ngx_uint_t  ngx_pagesize;
-ngx_uint_t  ngx_pagesize_shift;
+ngx_uint_t  ngx_pagesize;				//	内存页大小（4K或8K）
+ngx_uint_t  ngx_pagesize_shift;			//	内存页大小的2进制0的位数（12或13）
 ngx_uint_t  ngx_cacheline_size;
 
 

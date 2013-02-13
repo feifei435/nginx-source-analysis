@@ -26,10 +26,10 @@ typedef struct ngx_shm_zone_s  ngx_shm_zone_t;
 
 typedef ngx_int_t (*ngx_shm_zone_init_pt) (ngx_shm_zone_t *zone, void *data);
 
-struct ngx_shm_zone_s {
-    void                     *data;
+struct ngx_shm_zone_s {	
+    void                     *data;				//	e.g. 在函数 ngx_http_file_cache_set_slot（） 被设置成 ngx_http_file_cache_t 
     ngx_shm_t                 shm;				//	共享内存属性
-    ngx_shm_zone_init_pt      init;
+    ngx_shm_zone_init_pt      init;				//	e.g. 在函数 ngx_http_file_cache_set_slot（） 被设置成  ngx_http_file_cache_init()
     void                     *tag;				//	使用共享内存的模块名称（内存地址）
 };
 

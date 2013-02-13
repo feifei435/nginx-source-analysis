@@ -1016,7 +1016,7 @@ ngx_atotm(u_char *line, size_t n)
     }
 }
 
-
+//	hex --> int
 ngx_int_t
 ngx_hextoi(u_char *line, size_t n)
 {

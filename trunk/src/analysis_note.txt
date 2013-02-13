@@ -608,7 +608,16 @@ static void ngx_http_upstream_process_upstream(ngx_http_request_t *r, ngx_http_u
 static void ngx_http_upstream_process_request(ngx_http_request_t *r);
 	
 	
+ngx_http_cache_t
+	|--	ngx_http_file_cache_t
+		|--	ngx_http_file_cache_sh_t
+	|-- ngx_http_file_cache_node_t
 	
+ngx_cache_manager_process_cycle()
+	|-- ngx_cache_manager_process_handler()
+			|-- ngx_http_file_cache_manager()
+	|-- ngx_cache_loader_process_handler()
+			|-- ngx_http_file_cache_loader()
 					
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	

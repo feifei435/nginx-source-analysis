@@ -41,13 +41,13 @@ typedef void (*ngx_path_loader_pt) (void *data);
 //	ngx_conf_set_path_slot()函数中设置
 typedef struct {
     ngx_str_t                  name;				//	路径的名称
-    size_t                     len;					//	子目录文件名称长度大小（e.g. /ABC/sub1/sub2/sub3/ --> 3+1+3+1+3+1=12
+    size_t                     len;					//	子目录文件名称长度大小包括斜杠长度（e.g. /ABC/sub1/sub2/sub3/ --> 3+1+3+1+3+1=12
     size_t                     level[3];			//	3级子目录，每个子目录的名称长度
 
 //	对应的回调，以及回调数据
     ngx_path_manager_pt        manager;				//	ngx_http_file_cache_set_slot()函数中设置
     ngx_path_loader_pt         loader;				//	ngx_http_file_cache_set_slot()函数中设置
-    void                      *data;
+    void                      *data;				//	设置为ngx_http_file_cache_t 在ngx_http_file_cache_set_slot()函数中设置
 
     u_char                    *conf_file;			//	配置文件的地址指针
     ngx_uint_t                 line;				//	解析的行号
@@ -76,15 +76,15 @@ typedef struct {
 
 
 typedef struct {
-    ngx_uint_t                 access;
-    ngx_uint_t                 path_access;
-    time_t                     time;
+    ngx_uint_t                 access;					//	文件的访问权限
+    ngx_uint_t                 path_access;				//	目录的访问权限
+    time_t                     time;					//	文件的最后修改时间
     ngx_fd_t                   fd;
 
-    unsigned                   create_path:1;
-    unsigned                   delete_file:1;
+    unsigned                   create_path:1;			//	当访问的文件目录不存在时，将创建目录
+    unsigned                   delete_file:1;			//	删除文件
 
-    ngx_log_t                 *log;
+    ngx_log_t                 *log;						//	使用的日志文件
 } ngx_ext_rename_file_t;
 
 
@@ -105,10 +105,10 @@ typedef ngx_int_t (*ngx_tree_init_handler_pt) (void *ctx, void *prev);
 typedef ngx_int_t (*ngx_tree_handler_pt) (ngx_tree_ctx_t *ctx, ngx_str_t *name);
 
 struct ngx_tree_ctx_s {
-    off_t                      size;
-    off_t                      fs_size;
-    ngx_uint_t                 access;
-    time_t                     mtime;
+    off_t                      size;					//	文件大小
+    off_t                      fs_size;					//	???
+    ngx_uint_t                 access;					//	访问权限
+    time_t                     mtime;					//	最后修改时间
 
     ngx_tree_init_handler_pt   init_handler;
     ngx_tree_handler_pt        file_handler;
@@ -116,10 +116,10 @@ struct ngx_tree_ctx_s {
     ngx_tree_handler_pt        post_tree_handler;
     ngx_tree_handler_pt        spec_handler;
 
-    void                      *data;
+    void                      *data;					//	
     size_t                     alloc;
 
-    ngx_log_t                 *log;
+    ngx_log_t                 *log;						//	使用的log
 };
 
 

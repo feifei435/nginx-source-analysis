@@ -40,7 +40,9 @@ ngx_write_chain_to_temp_file(ngx_temp_file_t *tf, ngx_chain_t *chain)
     return ngx_write_chain_to_file(&tf->file, chain, tf->offset, tf->pool);
 }
 
-
+/*
+ *	创建临时文件，包括子目录的创建
+ */
 ngx_int_t
 ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
     ngx_uint_t persistent, ngx_uint_t clean, ngx_uint_t access)
@@ -108,7 +110,7 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
 
         err = ngx_errno;
 
-		//	如果文件已经存在，将继续创建文件
+		//	如果文件已经存在，将重新生成文件名并创建文件
         if (err == NGX_EEXIST) {
             n = (uint32_t) ngx_next_temp_number(1);
             continue;
@@ -121,6 +123,7 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
             return NGX_ERROR;
         }
 
+		//	循环创建子目录
         if (ngx_create_path(file, path) == NGX_ERROR) {
             return NGX_ERROR;
         }
@@ -158,7 +161,7 @@ ngx_create_hashed_filename(ngx_path_t *path, u_char *file, size_t len)
     }
 }
 
-
+//	循环创建子目录
 ngx_int_t
 ngx_create_path(ngx_file_t *file, ngx_path_t *path)
 {
@@ -168,6 +171,7 @@ ngx_create_path(ngx_file_t *file, ngx_path_t *path)
 
     pos = path->name.len;
 
+	//	循环创建子目录
     for (i = 0; i < 3; i++) {
         if (path->level[i] == 0) {
             break;
@@ -587,6 +591,8 @@ ngx_ext_rename_file(ngx_str_t *src, ngx_str_t *to, ngx_ext_rename_file_t *ext)
 #if !(NGX_WIN32)
 
     if (ext->access) {
+
+		//	改变文件的访问权限
         if (ngx_change_file_access(src->data, ext->access) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_CRIT, ext->log, ngx_errno,
                           ngx_change_file_access_n " \"%s\" failed", src->data);
@@ -598,6 +604,8 @@ ngx_ext_rename_file(ngx_str_t *src, ngx_str_t *to, ngx_ext_rename_file_t *ext)
 #endif
 
     if (ext->time != -1) {
+
+		//	更改文件的最后修改时间（mtime)
         if (ngx_set_file_time(src->data, ext->fd, ext->time) != NGX_OK) {
             ngx_log_error(NGX_LOG_CRIT, ext->log, ngx_errno,
                           ngx_set_file_time_n " \"%s\" failed", src->data);
@@ -606,18 +614,21 @@ ngx_ext_rename_file(ngx_str_t *src, ngx_str_t *to, ngx_ext_rename_file_t *ext)
         }
     }
 
+	//	更改文件名字
     if (ngx_rename_file(src->data, to->data) != NGX_FILE_ERROR) {
         return NGX_OK;
     }
 
     err = ngx_errno;
 
-    if (err == NGX_ENOPATH) {
+    if (err == NGX_ENOPATH) {		/* No such file or directory */
 
+		//	调用rename（）更改文件时，如果目录不存在，将根据 create_path 标记检查是否需要创建目录
         if (!ext->create_path) {
             goto failed;
         }
 
+		//	创建目录
         err = ngx_create_full_path(to->data, ngx_dir_access(ext->path_access));
 
         if (err) {
@@ -627,6 +638,7 @@ ngx_ext_rename_file(ngx_str_t *src, ngx_str_t *to, ngx_ext_rename_file_t *ext)
             goto failed;
         }
 
+		//	rename()
         if (ngx_rename_file(src->data, to->data) != NGX_FILE_ERROR) {
             return NGX_OK;
         }
@@ -876,6 +888,7 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, ctx->log, 0,
                    "walk tree \"%V\"", tree);
 
+	//	打开目录
     if (ngx_open_dir(tree, &dir) == NGX_ERROR) {
         ngx_log_error(NGX_LOG_CRIT, ctx->log, ngx_errno,
                       ngx_open_dir_n " \"%s\" failed", tree->data);
@@ -904,6 +917,7 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
 
         ngx_set_errno(0);
 
+		//	读取目录项
         if (ngx_read_dir(&dir) == NGX_ERROR) {
             err = ngx_errno;
 
@@ -919,8 +933,8 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             goto done;
         }
 
-        len = ngx_de_namelen(&dir);
-        name = ngx_de_name(&dir);
+        len = ngx_de_namelen(&dir);			//	文件名长度
+        name = ngx_de_name(&dir);			//	文件名字符串
 
         ngx_log_debug2(NGX_LOG_DEBUG_CORE, ctx->log, 0,
                       "tree name %uz:\"%s\"", len, name);
@@ -933,7 +947,7 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             continue;
         }
 
-        file.len = tree->len + 1 + len;
+        file.len = tree->len + 1 + len;				//	拼装 文件名总长度
 
         if (file.len + NGX_DIR_MASK_LEN > buf.len) {
 
@@ -949,6 +963,7 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             }
         }
 
+		//	拷贝完整路径到buf
         p = ngx_cpymem(buf.data, tree->data, tree->len);
         *p++ = '/';
         ngx_memcpy(p, name, len + 1);
@@ -959,6 +974,8 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
                        "tree path \"%s\"", file.data);
 
         if (!dir.valid_info) {
+
+			//	获取目录项的文件信息
             if (ngx_de_info(file.data, &dir) == NGX_FILE_ERROR) {
                 ngx_log_error(NGX_LOG_CRIT, ctx->log, ngx_errno,
                               ngx_de_info_n " \"%s\" failed", file.data);
@@ -966,7 +983,10 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             }
         }
 
+
         if (ngx_de_is_file(&dir)) {
+
+			//	常规文件
 
             ngx_log_debug1(NGX_LOG_DEBUG_CORE, ctx->log, 0,
                            "tree file \"%s\"", file.data);
@@ -976,11 +996,14 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             ctx->access = ngx_de_access(&dir);
             ctx->mtime = ngx_de_mtime(&dir);
 
+			//	e.g. ngx_http_file_cache_manage_file()
             if (ctx->file_handler(ctx, &file) == NGX_ABORT) {
                 goto failed;
             }
 
         } else if (ngx_de_is_dir(&dir)) {
+
+			//	是目录
 
             ngx_log_debug1(NGX_LOG_DEBUG_CORE, ctx->log, 0,
                            "tree enter dir \"%s\"", file.data);
@@ -988,10 +1011,12 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             ctx->access = ngx_de_access(&dir);
             ctx->mtime = ngx_de_mtime(&dir);
 
+			//	e.g. ngx_http_file_cache_noop
             if (ctx->pre_tree_handler(ctx, &file) == NGX_ABORT) {
                 goto failed;
             }
 
+			//	递归遍历目录中的文件
             if (ngx_walk_tree(ctx, &file) == NGX_ABORT) {
                 goto failed;
             }
@@ -999,20 +1024,23 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             ctx->access = ngx_de_access(&dir);
             ctx->mtime = ngx_de_mtime(&dir);
 
+			//	e.g. ngx_http_file_cache_noop
             if (ctx->post_tree_handler(ctx, &file) == NGX_ABORT) {
                 goto failed;
             }
 
         } else {
 
+			//	非文件或目录将直接删除掉
             ngx_log_debug1(NGX_LOG_DEBUG_CORE, ctx->log, 0,
                            "tree special \"%s\"", file.data);
 
+			//	e.g. ngx_http_file_cache_delete_file()
             if (ctx->spec_handler(ctx, &file) == NGX_ABORT) {
                 goto failed;
             }
         }
-    }
+    }		//	end for
 
 failed:
 
@@ -1029,6 +1057,7 @@ done:
         ctx->data = prev;
     }
 
+	//	关闭目录
     if (ngx_close_dir(&dir) == NGX_ERROR) {
         ngx_log_error(NGX_LOG_CRIT, ctx->log, ngx_errno,
                       ngx_close_dir_n " \"%s\" failed", tree->data);

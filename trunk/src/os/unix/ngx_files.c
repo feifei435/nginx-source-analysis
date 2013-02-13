@@ -255,15 +255,19 @@ ngx_write_chain_to_file(ngx_file_t *file, ngx_chain_t *cl, off_t offset,
     return total;
 }
 
-
+/*  设置文件的访问时间（atime)和修改时间（mtime)	
+ *	times[0] specifies the new access time
+ *	times[1] specifies the new modification time.   
+ *	If  times  is NULL, then analogously to utime(), the access and modification times of the file are set to the current time.
+ */
 ngx_int_t
 ngx_set_file_time(u_char *name, ngx_fd_t fd, time_t s)
 {
     struct timeval  tv[2];
 
-    tv[0].tv_sec = ngx_time();
+    tv[0].tv_sec = ngx_time();			//	access time , 当前时间
     tv[0].tv_usec = 0;
-    tv[1].tv_sec = s;
+    tv[1].tv_sec = s;					//	modification time, 根据参数指定
     tv[1].tv_usec = 0;
 
     if (utimes((char *) name, tv) != -1) {
@@ -325,7 +329,7 @@ ngx_close_file_mapping(ngx_file_mapping_t *fm)
     }
 }
 
-
+//	打开目录
 ngx_int_t
 ngx_open_dir(ngx_str_t *name, ngx_dir_t *dir)
 {
@@ -335,19 +339,19 @@ ngx_open_dir(ngx_str_t *name, ngx_dir_t *dir)
         return NGX_ERROR;
     }
 
-    dir->valid_info = 0;
+    dir->valid_info = 0;			//	???
 
     return NGX_OK;
 }
 
-
+//	读取目录项
 ngx_int_t
 ngx_read_dir(ngx_dir_t *dir)
 {
     dir->de = readdir(dir->dir);
 
     if (dir->de) {
-#if (NGX_HAVE_D_TYPE)
+#if (NGX_HAVE_D_TYPE)				//	在编译时检查struct dirent是否有d_type字段
         dir->type = dir->de->d_type;
 #else
         dir->type = 0;
@@ -531,7 +535,7 @@ ngx_directio_off(ngx_fd_t fd)
 #endif
 
 
-#if (NGX_HAVE_STATFS)
+#if (NGX_HAVE_STATFS)				//	my system supports statfs() function
 
 size_t
 ngx_fs_bsize(u_char *name)
@@ -542,7 +546,7 @@ ngx_fs_bsize(u_char *name)
         return 512;
     }
 
-    if ((fs.f_bsize % 512) != 0) {
+    if ((fs.f_bsize % 512) != 0) {		//	每个块包含的字节数
         return 512;
     }
 

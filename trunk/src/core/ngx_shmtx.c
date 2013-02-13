@@ -216,7 +216,7 @@ ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
         ngx_shmtx_destory(mtx);
     }
 
-	/*	[analy]	打开文件，赋值给mtx */
+	/*	打开文件，赋值给mtx */
     mtx->fd = ngx_open_file(name, NGX_FILE_RDWR, NGX_FILE_CREATE_OR_OPEN,
                             NGX_FILE_DEFAULT_ACCESS);
 
@@ -226,7 +226,7 @@ ngx_shmtx_create(ngx_shmtx_t *mtx, ngx_shmtx_sh_t *addr, u_char *name)
         return NGX_ERROR;
     }
 
-	/*	[analy]	unlink文件，当文件被close()时从磁盘上删掉 */
+	/*	unlink文件，当文件被close()时从磁盘上删掉 */
     if (ngx_delete_file(name) == NGX_FILE_ERROR) {
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, ngx_errno,
                       ngx_delete_file_n " \"%s\" failed", name);

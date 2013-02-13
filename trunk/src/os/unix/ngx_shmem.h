@@ -14,7 +14,7 @@
 
 
 typedef struct {
-    u_char      *addr;
+    u_char      *addr;		//	共享内存使用的地址
     size_t       size;		//	共享内存的大小
     ngx_str_t    name;		//	共享内存的名称
     ngx_log_t   *log;		//	共享内存使用的log
