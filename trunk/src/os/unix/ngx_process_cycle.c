@@ -1423,7 +1423,7 @@ ngx_cache_manager_process_handler(ngx_event_t *ev)
     ngx_add_timer(ev, next * 1000);
 }
 
-//	loader 进程仅执行一次，在进程启动后60s被调用
+//	loader 进程仅执行一次，在进程启动后60s被调用, 加载完cache后将直接退出进程
 static void
 ngx_cache_loader_process_handler(ngx_event_t *ev)
 {

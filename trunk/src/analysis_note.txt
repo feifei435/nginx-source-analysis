@@ -618,6 +618,11 @@ ngx_cache_manager_process_cycle()
 			|-- ngx_http_file_cache_manager()
 	|-- ngx_cache_loader_process_handler()
 			|-- ngx_http_file_cache_loader()
+			
+			
+############################################################
+1. 每个缓存区对应一个 ngx_http_file_cache_t 结构，
+			
 					
 	
 ngx_http_upstream_t.ngx_http_upstream_conf_t.ngx_http_upstream_srv_conf_t	

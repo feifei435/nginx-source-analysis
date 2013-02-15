@@ -658,6 +658,7 @@ ngx_ext_rename_file(ngx_str_t *src, ngx_str_t *to, ngx_ext_rename_file_t *ext)
 
 #endif
 
+	//	?????
     if (err == NGX_EXDEV) {
 
         cf.size = -1;
@@ -947,7 +948,7 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             continue;
         }
 
-        file.len = tree->len + 1 + len;				//	拼装 文件名总长度
+        file.len = tree->len + 1 + len;				//	拼装路径名，len:文件的长度或目录的长度（tree->len: 不包括"/"）
 
         if (file.len + NGX_DIR_MASK_LEN > buf.len) {
 
@@ -963,7 +964,7 @@ ngx_walk_tree(ngx_tree_ctx_t *ctx, ngx_str_t *tree)
             }
         }
 
-		//	拷贝完整路径到buf
+		//	拷贝完整路径到buf, buf中保存了目录和子目录，file与buf同时指向了文件路径
         p = ngx_cpymem(buf.data, tree->data, tree->len);
         *p++ = '/';
         ngx_memcpy(p, name, len + 1);

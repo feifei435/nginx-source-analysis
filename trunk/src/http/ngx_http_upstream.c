@@ -499,10 +499,13 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
             return;
         }
 
+		//	状态码不是 NGX_DECLINED 是，将报错并返回。
         if (rc != NGX_DECLINED) {
             ngx_http_finalize_request(r, rc);
             return;
         }
+
+		//	其他
     }
 
 #endif
@@ -699,6 +702,7 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     if (c == NULL) {
 
+		//	检查客户端请求中是否有
         if (!(r->method & u->conf->cache_methods)) {
             return NGX_DECLINED;
         }
@@ -713,13 +717,14 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
             return NGX_ERROR;
         }
 
-		//	
+		//	创建key？？？？？？？？？
         if (u->create_key(r) != NGX_OK) {			//	proxy模块注册的：ngx_http_proxy_create_key
             return NGX_ERROR;
         }
 
         /* TODO: add keys */
 
+		//	???????????
         ngx_http_file_cache_create_key(r);
 
         if (r->cache->header_start + 256 >= u->conf->buffer_size) {
@@ -735,13 +740,14 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
         u->cacheable = 1;
 
+		//	检查此请求是否跳过缓存
         switch (ngx_http_test_predicates(r, u->conf->cache_bypass)) {
 
         case NGX_ERROR:
             return NGX_ERROR;
 
         case NGX_DECLINED:
-            u->cache_status = NGX_HTTP_CACHE_BYPASS;
+            u->cache_status = NGX_HTTP_CACHE_BYPASS;			//	设置cache_status = 跳过缓存
             return NGX_DECLINED;
 
         default: /* NGX_OK */
@@ -2222,8 +2228,9 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-	//	不缓存后端服务器的响应body部分
     if (!u->buffering) {
+
+//###########################	不缓存后端服务器的响应body部分	###########################
 
         if (u->input_filter == NULL) {
             u->input_filter_init = ngx_http_upstream_non_buffered_filter_init;
@@ -2302,8 +2309,11 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     /* TODO: preallocate event_pipe bufs, look "Content-Length" */
 
+//###########################	缓存后端服务器的响应body部分	###########################
+
 #if (NGX_HTTP_CACHE)
 
+	//	????
     if (r->cache && r->cache->file.fd != NGX_INVALID_FILE) {
         ngx_pool_run_cleanup_file(r->pool, r->cache->file.fd);
         r->cache->file.fd = NGX_INVALID_FILE;
@@ -2344,6 +2354,8 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         valid = r->cache->valid_sec;
 
         if (valid == 0) {
+
+			//	获取后端服务器响应状态码对应的缓存时间，如果缓存时间等于0，将不缓存响应数据
             valid = ngx_http_file_cache_valid(u->conf->cache_valid,
                                               u->headers_in.status_n);
             if (valid) {
@@ -2387,7 +2399,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->cacheable = u->cacheable || u->store;			//	proxy_cache与proxy_store开启其中一个 p->cacheable就等于1
 
-	//	????
+	//	创建保存后端响应数据的临时文件的结构
     p->temp_file = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
     if (p->temp_file == NULL) {
         ngx_http_upstream_finalize_request(r, u, 0);

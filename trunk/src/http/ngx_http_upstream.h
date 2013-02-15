@@ -173,7 +173,7 @@ typedef struct {
 
     ngx_uint_t                       cache_min_uses;					//	多少次请求后应答将被缓存默认是1， 指令 "proxy_cache_min_uses" 设置.
     ngx_uint_t                       cache_use_stale;					//	指令 "proxy_cache_use_stale" 设置
-    ngx_uint_t                       cache_methods;						//	指令 "proxy_cache_methods" 设置
+    ngx_uint_t                       cache_methods;						//	指定缓存的method；指令 "proxy_cache_methods" 设置
 
     ngx_flag_t                       cache_lock;						//	指令 "proxy_cache_lock" 设置, 默认是OFF
     ngx_msec_t                       cache_lock_timeout;				//	指令 "proxy_cache_lock_timeout" 设置，默认是5s
