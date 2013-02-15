@@ -369,8 +369,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_msec_t    keepalive_timeout;       /* keepalive_timeout指令的第一个参数使用此字段，服务器主动关闭连接的超时时间， 默认是75000
 													参数的第一个值指定了客户端与服务器长连接的超时时间，超过这个时间，服务器将关闭连接。
 													参数的第二个值（可选）指定了应答头中Keep-Alive: timeout=time的time值，这个值可以使一些浏览器知道什么时候关闭连接，
-													以便服务器不用重复关闭，如果不指定这个参数，nginx不会在应答头中发送Keep-Alive信息。
-										   */
+													以便服务器不用重复关闭，如果不指定这个参数，nginx不会在应答头中发送Keep-Alive信息, 设置参数2到keepalive_header字段 */
 
     ngx_msec_t    lingering_time;          /* lingering_time 指令指定，参数指定的时间单位为秒，在内存中存放的是毫秒（msec) */
     ngx_msec_t    lingering_timeout;       /* lingering_timeout 指令指定, 参数指定的时间单位为秒，在内存中存放的是毫秒（msec)  */
@@ -379,12 +378,11 @@ struct ngx_http_core_loc_conf_s {
     ngx_msec_t    resolver_timeout;        //	指令 "resolver_timeout" 默认30s
     ngx_resolver_t  *resolver;             //	指令 "resolver" 被使用时，申请的结构空间
 
-    time_t        keepalive_header;        // keepalive_timeout指令的第二个参数使用
-										   // 决定是否在响应头中发送包含timeout=time的值
+    time_t        keepalive_header;        // keepalive_timeout指令的第二个参数使用，决定是否在响应头中发送包含timeout=time的值
 										   
 
     ngx_uint_t    keepalive_requests;      // keepalive_requests指令指定服务器保持长连接的请求数???????????????????????。默认是100
-    ngx_uint_t    keepalive_disable;       /* keepalive_disable */
+    ngx_uint_t    keepalive_disable;       // 指令 "keepalive_disable" 指定
     ngx_uint_t    satisfy;                 /* satisfy */
     ngx_uint_t    lingering_close;         /* lingering_close 指令默认是开启的，指定socket的SO_LINGER选项 */
     ngx_uint_t    if_modified_since;       // 指令 "if_modified_since" 指定将文件最后修改时间与请求头中的”If-Modified-Since”时间相比较的方式，默认exact
@@ -401,8 +399,8 @@ struct ngx_http_core_loc_conf_s {
 #endif
 
     ngx_flag_t    tcp_nopush;              /* tcp_nopush */
-    ngx_flag_t    tcp_nodelay;             // 指令 "tcp_nodelay" 指定是否关闭Nagle算法
-    ngx_flag_t    reset_timedout_connection; /* reset_timedout_connection */
+    ngx_flag_t    tcp_nodelay;							// 指令 "tcp_nodelay" 指定是否关闭Nagle算法
+    ngx_flag_t    reset_timedout_connection;			// 指令 "reset_timedout_connection" 
     ngx_flag_t    server_name_in_redirect; /* server_name_in_redirect */
     ngx_flag_t    port_in_redirect;        /* port_in_redirect */
     ngx_flag_t    msie_padding;            /* msie_padding */

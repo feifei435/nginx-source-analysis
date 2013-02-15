@@ -328,7 +328,7 @@ struct ngx_http_upstream_s {
     ngx_str_t                        schema;						//	请求的schema，ngx_http_proxy_eval()中设置
     ngx_str_t                        uri;							//	在create_request中填充；使用变量时ngx_http_proxy_create_key（）函数中也有相应设置
 
-    ngx_http_cleanup_pt             *cleanup;						//	指向r->cleanup循环单链表中申请的处理upstream模块用的， ngx_http_upstream_init_request（）在函数中申请
+    ngx_http_cleanup_pt             *cleanup;						//	指向r->cleanup循环单链表中申请的处理upstream模块用的handler(ngx_http_upstream_cleanup())， ngx_http_upstream_init_request（）在函数中申请
 
     unsigned                         store:1;						//	当指令 "proxy_store" 开启时，此值为1（在函数ngx_http_upstream_init_request（）中设置）
     unsigned                         cacheable:1;					//	???

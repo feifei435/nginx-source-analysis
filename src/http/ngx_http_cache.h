@@ -15,7 +15,7 @@
 
 
 #define NGX_HTTP_CACHE_MISS          1				//	缓存未命中
-#define NGX_HTTP_CACHE_BYPASS        2				//	跳过缓存，不检查缓存
+#define NGX_HTTP_CACHE_BYPASS        2				//	不在缓存获取到后端服务器获取响应
 #define NGX_HTTP_CACHE_EXPIRED       3
 #define NGX_HTTP_CACHE_STALE         4
 #define NGX_HTTP_CACHE_UPDATING      5
@@ -41,7 +41,7 @@ typedef struct {
     unsigned                         count:20;					//	引用计数？？？？？？？
     unsigned                         uses:10;					//	缓存文件被多少请求在使用
     unsigned                         valid_msec:10;
-    unsigned                         error:10;
+    unsigned                         error:10;					//	????
     unsigned                         exists:1;					//	存在对应的cache文件；ngx_http_file_cache_add()设置
     unsigned                         updating:1;
     unsigned                         deleting:1;
@@ -72,7 +72,7 @@ struct ngx_http_cache_s {
     off_t                            fs_size;					//	在函数 ngx_http_file_cache_add_file（）中设置
 
     ngx_uint_t                       min_uses;					//	u->conf->cache_min_uses, proxy模块使用指令 "proxy_cache_min_uses" 指定
-    ngx_uint_t                       error;
+    ngx_uint_t                       error;						//	函数中 ngx_http_upstream_finalize_request（）设置
     ngx_uint_t                       valid_msec;
 
     ngx_buf_t                       *buf;						//	函数 ngx_http_file_cache_ope（）中创建

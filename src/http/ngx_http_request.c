@@ -1948,6 +1948,10 @@ ngx_http_post_request(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
 }
 
 
+/*
+
+
+ */
 void
 ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 {
@@ -1978,6 +1982,7 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
+	//	子请求
     if (r != r->main && r->post_subrequest) {
         rc = r->post_subrequest->handler(r, r->post_subrequest->data, rc);
     }
@@ -2209,7 +2214,7 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-	//	???
+	//	1. ???
     if (r->main->count != 1) {
 
         if (r->discard_body) {
@@ -2226,6 +2231,7 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
         return;
     }
 
+	//	2. 建立与客户端的长久连接
     if (!ngx_terminate						//	未接收到相应的信号时
          && !ngx_exiting
          && r->keepalive					//	此请求为长连接 （nginx对收到的请求检查connection_type后设置此字段）
@@ -2235,6 +2241,7 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
         return;
     }
 
+	//	3. 
     if (clcf->lingering_close == NGX_HTTP_LINGERING_ALWAYS
         || (clcf->lingering_close == NGX_HTTP_LINGERING_ON
             && (r->lingering_close
@@ -2501,6 +2508,7 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
     hc = r->http_connection;
     b = r->header_in;
 
+	//	????
     if (b->pos < b->last) {
 
         /* the pipelined request */
@@ -2539,12 +2547,13 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
         }
     }
 
-    r->keepalive = 0;
+    r->keepalive = 0;			//	为什么要将此字段赋值为0呢？？？？
 
     ngx_http_free_request(r, 0);
 
     c->data = hc;
 
+	//	对客户端的读事件进行计时
     ngx_add_timer(rev, clcf->keepalive_timeout);
 
     if (ngx_handle_read_event(rev, 0) != NGX_OK) {
@@ -2570,6 +2579,8 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
         ngx_post_event(rev, &ngx_posted_events);
         return;
     }
+
+//######################	到达这里，则说明不是pipeline的请求，因此就开始对request， http_connection 进行清理工作 ######################
 
     hc->pipeline = 0;
 
@@ -2631,6 +2642,7 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
     }
 #endif
 
+	//	设置长连接的处理句柄
     rev->handler = ngx_http_keepalive_handler;
 
     if (wev->active && (ngx_event_flags & NGX_USE_LEVEL_EVENT)) {
@@ -2688,7 +2700,7 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
 #endif
 
     c->idle = 1;
-    ngx_reusable_connection(c, 1);
+    ngx_reusable_connection(c, 1);				//	设置当前keepalive连接可以被复用
 
     if (rev->ready) {
         ngx_post_event(rev, &ngx_posted_events);
@@ -2708,6 +2720,7 @@ ngx_http_keepalive_handler(ngx_event_t *rev)
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "http keepalive handler");
 
+	//	检查是否超时或连接已经关闭
     if (rev->timedout || c->close) {
         ngx_http_close_connection(c);
         return;
@@ -2763,7 +2776,7 @@ ngx_http_keepalive_handler(ngx_event_t *rev)
     c->log_error = NGX_ERROR_IGNORE_ECONNRESET;
     ngx_set_socket_errno(0);
 
-    n = c->recv(c, b->last, size);
+    n = c->recv(c, b->last, size);					//	ngx_unix_recv()
     c->log_error = NGX_ERROR_INFO;
 
     if (n == NGX_AGAIN) {
@@ -2798,6 +2811,8 @@ ngx_http_keepalive_handler(ngx_event_t *rev)
     c->log->action = "reading client request line";
 
     c->idle = 0;
+
+	//	在resuable_connection队列中删除此连接，此连接件将不会被复用
     ngx_reusable_connection(c, 0);
 
     ngx_http_init_request(rev);
@@ -2924,7 +2939,10 @@ ngx_http_request_empty_handler(ngx_http_request_t *r)
     return;
 }
 
-//	这里貌似发送了一个特殊的Buf（ngx_buf_special()）
+/*
+ *	这里貌似发送了一个特殊的Buf（ngx_buf_special()）, 发送一个特殊的buf作用是什么呢？？？
+ *	参数 flags:		NGX_HTTP_LAST 和 NGX_HTTP_FLUSH
+ */
 ngx_int_t
 ngx_http_send_special(ngx_http_request_t *r, ngx_uint_t flags)
 {
@@ -3040,7 +3058,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
-	//	调用所有request上的清理函数（ngx_http_cleanup_add()函数添加的）
+	//	1. 调用所有request上的清理函数（ngx_http_cleanup_add()函数添加的）
     for (cln = r->cleanup; cln; cln = cln->next) {
         if (cln->handler) {
             cln->handler(cln->data);
@@ -3065,12 +3083,12 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
     log->action = "logging request";
 
-	//	运行所有 "NGX_HTTP_LOG_PHASE" 阶段注册的handler
+	//	2. 运行所有 "NGX_HTTP_LOG_PHASE" 阶段注册的handler
     ngx_http_log_request(r);
 
     log->action = "closing request";
 
-	//	???
+	//	3. ???
     if (r->connection->timedout) {
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
@@ -3095,7 +3113,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
     r->connection->destroyed = 1;
 
-    ngx_destroy_pool(r->pool);			//	释放请求request的内存池
+    ngx_destroy_pool(r->pool);			//	释放request的内存池
 }
 
 /*

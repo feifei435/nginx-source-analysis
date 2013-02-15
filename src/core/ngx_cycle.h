@@ -41,7 +41,7 @@ struct ngx_cycle_s {
     ngx_log_t                *log;									/* [analy]   日志指针   */
     ngx_log_t                 new_log;
 
-    ngx_connection_t        **files;
+    ngx_connection_t        **files;								//	貌似epoll模块不使用
     ngx_connection_t         *free_connections;						//	指向空闲连接的链表
     ngx_uint_t                free_connection_n;					//	空闲连接的个数
 
@@ -53,7 +53,7 @@ struct ngx_cycle_s {
     ngx_list_t                shared_memory;						//	共享内存列表 array of ngx_shm_zone_t
 
     ngx_uint_t                connection_n;							/* [analy]   每个进程预先创建的connection数目(worker_connections指令指定) */
-    ngx_uint_t                files_n;
+    ngx_uint_t                files_n;								//	貌似epoll模块不使用
 
     ngx_connection_t         *connections;							/* [analy]   连接池   */	
     ngx_event_t              *read_events;							/* [analy]   读事件   */	

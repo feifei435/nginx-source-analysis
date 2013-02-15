@@ -241,7 +241,12 @@ ngx_http_file_cache_create_key(ngx_http_request_t *r)
     ngx_md5_final(c->key, &md5);			//	设置KEY
 }
 
-
+/*
+	返回值：
+			NGX_AGAIN
+			NGX_ERROR
+			NGX_HTTP_CACHE_SCARCE
+ */
 ngx_int_t
 ngx_http_file_cache_open(ngx_http_request_t *r)
 {
@@ -279,7 +284,7 @@ ngx_http_file_cache_open(ngx_http_request_t *r)
         cln->data = c;
     }
 
-	//	检查获取的cache是否存在
+	//	检查cache是否存在，不存在创建一个cache node
     rc = ngx_http_file_cache_exists(cache, c);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -644,7 +649,14 @@ ngx_http_cache_aio_event_handler(ngx_event_t *ev)
 
 #endif
 
+/*
+	NGX_OK
+	NGX_AGAIN
+	NGX_ERROR
+	NGX_DECLINED:	cache索引表中没有查找到，创建node并插入到红黑树和队列中，并且设置node节点到 c->node
 
+
+ */
 static ngx_int_t
 ngx_http_file_cache_exists(ngx_http_file_cache_t *cache, ngx_http_cache_t *c)
 {
@@ -668,11 +680,13 @@ ngx_http_file_cache_exists(ngx_http_file_cache_t *cache, ngx_http_cache_t *c)
 		//	在队列中删除？？？？
         ngx_queue_remove(&fcn->queue);
 
+		//	????
         if (c->node == NULL) {
             fcn->uses++;
             fcn->count++;
         }
 
+		//	????
         if (fcn->error) {
 
             if (fcn->valid_sec < ngx_time()) {
@@ -702,9 +716,9 @@ ngx_http_file_cache_exists(ngx_http_file_cache_t *cache, ngx_http_cache_t *c)
     }
 
 
-//################	在共享内存索引表中没有查找到此cache ################
+//################	在共享内存cache索引表中没有查找到此cache ################
 
-	//	申请一个cache节点
+	//	1. 申请一个cache节点
     fcn = ngx_slab_alloc_locked(cache->shpool,
                                 sizeof(ngx_http_file_cache_node_t));
     if (fcn == NULL) {
@@ -725,13 +739,13 @@ ngx_http_file_cache_exists(ngx_http_file_cache_t *cache, ngx_http_cache_t *c)
         }
     }
 
-	//	拷贝节点key
+	//	2. 拷贝节点key
     ngx_memcpy((u_char *) &fcn->node.key, c->key, sizeof(ngx_rbtree_key_t));
 
     ngx_memcpy(fcn->key, &c->key[sizeof(ngx_rbtree_key_t)],
                NGX_HTTP_CACHE_KEY_LEN - sizeof(ngx_rbtree_key_t));
 
-	//	插入到红黑树中
+	//	3. 插入到红黑树中
     ngx_rbtree_insert(&cache->sh->rbtree, &fcn->node);
 
     fcn->uses = 1;
@@ -1096,9 +1110,9 @@ ngx_http_file_cache_free(ngx_http_cache_t *c, ngx_temp_file_t *tf)
         }
 
     } else if (!fcn->exists && fcn->count == 0 && c->min_uses == 1) {
-        ngx_queue_remove(&fcn->queue);
-        ngx_rbtree_delete(&cache->sh->rbtree, &fcn->node);
-        ngx_slab_free_locked(cache->shpool, fcn);
+        ngx_queue_remove(&fcn->queue);								//	在队列中删除
+        ngx_rbtree_delete(&cache->sh->rbtree, &fcn->node);			//	在红黑树中删除
+        ngx_slab_free_locked(cache->shpool, fcn);					//	释放在 ngx_http_upstream_cache() 函数中申请的 node 内存空间
         c->node = NULL;
     }
 

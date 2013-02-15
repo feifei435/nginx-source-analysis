@@ -811,7 +811,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     } while (i);
 
-	/* [analy]	初始化free_connections空闲连接池和空闲连接个数;指向connections连接池首地址 */
+	/* 初始化free_connections空闲连接池和空闲连接个数;指向connections连接池首地址 */
     cycle->free_connections = next;
     cycle->free_connection_n = cycle->connection_n;
 
