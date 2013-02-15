@@ -299,7 +299,9 @@ ngx_http_init_request(ngx_event_t *rev)
 	*/
     r = hc->request;				 
 
-    if (r) {						
+    if (r) {				
+
+		//	将request_t结构清0
         ngx_memzero(r, sizeof(ngx_http_request_t));
 
         r->pipeline = hc->pipeline;
