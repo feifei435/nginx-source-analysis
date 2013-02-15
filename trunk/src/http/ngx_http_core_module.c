@@ -1510,11 +1510,14 @@ ngx_http_update_location_config(ngx_http_request_t *r)
 
     r->request_body_in_single_buf = clcf->client_body_in_single_buffer;
 
-	//	设置请求的keepalive
+	//	再次检查客户端的请求是否保持长连接，即设置 r->keepalive 字段的值
     if (r->keepalive) {
+	
+		//	指令 “keepalive_timeout” 指定的时间为0时，将采用短连接
         if (clcf->keepalive_timeout == 0) {
             r->keepalive = 0;
 
+		//	保持长连接的的“连接”中请求个数达到系统上限
         } else if (r->connection->requests >= clcf->keepalive_requests) {
             r->keepalive = 0;
 

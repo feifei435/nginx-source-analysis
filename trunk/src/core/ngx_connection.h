@@ -154,7 +154,7 @@ struct ngx_connection_s {
 
     ngx_atomic_uint_t   number;
 
-    ngx_uint_t          requests;
+    ngx_uint_t          requests;			//	连接中所有请求之和
 
     unsigned            buffered:8;		//	数据被延迟发送了(在函数ngx_http_write_filter()中设置NGX_HTTP_WRITE_BUFFERED)
 
@@ -162,13 +162,13 @@ struct ngx_connection_s {
 
     unsigned            single_connection:1;
     unsigned            unexpected_eof:1;	//	????
-    unsigned            timedout:1;
+    unsigned            timedout:1;						//	连接超时
     unsigned            error:1;
     unsigned            destroyed:1;		//	说明此连接是否已经销毁，如果已经销毁等于1
 
-    unsigned            idle:1;
-    unsigned            reusable:1;
-    unsigned            close:1;
+    unsigned            idle:1;					//	说明当前连接处于空闲（在函数 中设置）
+    unsigned            reusable:1;				//	连接是否为再利用的（在函数 ngx_reusable_connection（）中设置）
+    unsigned            close:1;				//	ngx_drain_connections()函数中设置
 
     unsigned            sendfile:1;			//	此连接是否使用sendfile系统调用（ngx_http_update_location_config()函数中有设置）
     unsigned            sndlowat:1;			//	是否设置了发送缓冲区下限 （ngx_send_lowat()函数中设置的）

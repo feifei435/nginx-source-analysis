@@ -467,7 +467,7 @@ ngx_slab_free_locked(ngx_slab_pool_t *pool, void *p)
     n = ((u_char *) p - pool->start) >> ngx_pagesize_shift;
     page = &pool->pages[n];
     slab = page->slab;
-    type = page->prev & NGX_SLAB_PAGE_MASK;
+    type = page->prev & NGX_SLAB_PAGE_MASK;				//	获取slab类型
 
     switch (type) {
 

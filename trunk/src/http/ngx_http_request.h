@@ -470,7 +470,7 @@ struct ngx_http_request_s {
     unsigned                          waited:1;
 
 #if (NGX_HTTP_CACHE)
-    unsigned                          cached:1;
+    unsigned                          cached:1;							//	当前请求是否在cache缓存中获取的. ngx_http_upstream_cache_send()、ngx_http_file_cache_read() 中设置
 #endif
 
 #if (NGX_HTTP_GZIP)
@@ -506,7 +506,7 @@ struct ngx_http_request_s {
     unsigned                          error_page:1;
     unsigned                          ignore_content_encoding:1;
     unsigned                          filter_finalize:1;			//	仅在 ngx_http_filter_finalize_request（）函数中调用
-    unsigned                          post_action:1;
+    unsigned                          post_action:1;				//	???
     unsigned                          request_complete:1;
     unsigned                          request_output:1;				//	作用？？？？？？？在函数 ngx_http_copy_filter()中有设置
     unsigned                          header_sent:1;

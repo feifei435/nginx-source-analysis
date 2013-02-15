@@ -397,7 +397,7 @@ ngx_http_upstream_create(ngx_http_request_t *r)
 
 	//?????????
     if (u && u->cleanup) {
-        r->main->count++;
+        r->main->count++;			//	???
         ngx_http_upstream_cleanup(r);
     }
 
@@ -702,17 +702,17 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     if (c == NULL) {
 
-		//	检查客户端请求中是否有
+		//	1. 检查客户端请求方式是否在允许请求方式列表中，如果在其中将准备缓存响应数据
         if (!(r->method & u->conf->cache_methods)) {
             return NGX_DECLINED;
         }
 
+		//	2. 如果客户端的请求方式=HEAD, 将修改向后端发送的请求方式为GET方式
         if (r->method & NGX_HTTP_HEAD) {
             u->method = ngx_http_core_get_method;
         }
 
-
-		//	申请一个 ngx_http_cache_t 结构， 使其指向 r->cache
+		//	3. 申请一个 ngx_http_cache_t 结构， 使其指向 r->cache
         if (ngx_http_file_cache_new(r) != NGX_OK) {
             return NGX_ERROR;
         }
@@ -2319,6 +2319,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         r->cache->file.fd = NGX_INVALID_FILE;
     }
 
+	//	检查是否需要缓存
     switch (ngx_http_test_predicates(r, u->conf->no_cache)) {
 
     case NGX_ERROR:
@@ -2326,10 +2327,14 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return;
 
     case NGX_DECLINED:
+
+		//	不需要缓存
         u->cacheable = 0;
         break;
 
     default: /* NGX_OK */
+
+		//	#################	需要缓存	#################
 
         if (u->cache_status == NGX_HTTP_CACHE_BYPASS) {
 
@@ -2366,8 +2371,10 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         if (valid) {
             r->cache->last_modified = r->headers_out.last_modified_time;
             r->cache->date = now;
-            r->cache->body_start = (u_short) (u->buffer.pos - u->buffer.start);
+            r->cache->body_start = (u_short) (u->buffer.pos - u->buffer.start);				//	记录body部分开始的偏移量
 
+
+			//	填充缓存文件通用头（不会将之前已经接收到的响应头给覆盖掉吗？）
             ngx_http_file_cache_set_header(r, u->buffer.start);
 
         } else {
@@ -2435,7 +2442,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     p->preread_size = u->buffer.last - u->buffer.pos;				//	后端服务器已经反馈的Body数据部分大小
 
-	//	如果开启了缓存，
+	//	是否允许缓存
     if (u->cacheable) {
 
 		//	缓存到文件的buf，这里应该是缓存后端服务器的响应行和头域
@@ -3175,6 +3182,7 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
 
     u->finalize_request(r, rc);				//	proxy模块将调用 ngx_http_proxy_finalize_request()
 
+	//	???
     if (u->peer.free) {
         u->peer.free(&u->peer, u->peer.data, 0);
     }
@@ -3243,7 +3251,7 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
 
                 if (valid) {
                     r->cache->valid_sec = ngx_time() + valid;
-                    r->cache->error = rc;
+                    r->cache->error = rc;											//	???
                 }
             }
         }
@@ -3268,7 +3276,7 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
 
     if (rc == 0
 #if (NGX_HTTP_CACHE)
-        && !r->cached
+        && !r->cached				//	本次请求从后端服务器获取的响应
 #endif
        )
     {
