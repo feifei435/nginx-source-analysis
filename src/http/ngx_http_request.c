@@ -280,7 +280,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-    c->requests++;					//	此连接的所有请求数之和，是指？？？？？？？？？？？？？
+    c->requests++;					//	此连接的所有请求数之和，是指
 
     hc = c->data;					//	2. 在 ngx_connection_t 中获取 ngx_http_connection_t 	
 

@@ -15,7 +15,7 @@
 
 
 #define NGX_HTTP_CACHE_MISS          1				//	缓存未命中
-#define NGX_HTTP_CACHE_BYPASS        2
+#define NGX_HTTP_CACHE_BYPASS        2				//	跳过缓存，不检查缓存
 #define NGX_HTTP_CACHE_EXPIRED       3
 #define NGX_HTTP_CACHE_STALE         4
 #define NGX_HTTP_CACHE_UPDATING      5
@@ -35,7 +35,7 @@ typedef struct {
     ngx_rbtree_node_t                node;
     ngx_queue_t                      queue;
 
-    u_char                           key[NGX_HTTP_CACHE_KEY_LEN
+    u_char                           key[NGX_HTTP_CACHE_KEY_LEN			//	保存文件名的后12个字节
                                          - sizeof(ngx_rbtree_key_t)];
 
     unsigned                         count:20;					//	引用计数？？？？？？？
@@ -59,26 +59,26 @@ struct ngx_http_cache_s {
     ngx_file_t                       file;								//	???
     ngx_array_t                      keys;
     uint32_t                         crc32;
-    u_char                           key[NGX_HTTP_CACHE_KEY_LEN];		//	???
+    u_char                           key[NGX_HTTP_CACHE_KEY_LEN];		//	在函数 ngx_http_file_cache_create_key（）中设置
 
     ngx_file_uniq_t                  uniq;
     time_t                           valid_sec;
     time_t                           last_modified;
     time_t                           date;
 
-    size_t                           header_start;
+    size_t                           header_start;				//	cache文件头部自定义的数据；ngx_http_file_cache_create_key（）函数中创建
     size_t                           body_start;				//	u->conf->buffer_size; 接收后端服务器反馈数据缓冲区的大小
     off_t                            length;					//	????
-    off_t                            fs_size;					//	???/
+    off_t                            fs_size;					//	在函数 ngx_http_file_cache_add_file（）中设置
 
     ngx_uint_t                       min_uses;					//	u->conf->cache_min_uses, proxy模块使用指令 "proxy_cache_min_uses" 指定
     ngx_uint_t                       error;
     ngx_uint_t                       valid_msec;
 
-    ngx_buf_t                       *buf;
+    ngx_buf_t                       *buf;						//	函数 ngx_http_file_cache_ope（）中创建
 
-    ngx_http_file_cache_t           *file_cache;
-    ngx_http_file_cache_node_t      *node;						//	在哪里设置？？
+    ngx_http_file_cache_t           *file_cache;				//	ngx_http_upstream_cache()函数中设置；
+    ngx_http_file_cache_node_t      *node;						//	ngx_http_file_cache_exists（）函数中设置
 
     ngx_msec_t                       lock_timeout;				//	u->conf->cache_lock_timeout, proxy模块使用指令 "proxy_cache_lock_timeout" 指定
     ngx_msec_t                       wait_time;
@@ -86,7 +86,7 @@ struct ngx_http_cache_s {
     ngx_event_t                      wait_event;
 
     unsigned                         lock:1;					//	u->conf->cache_lock, proxy模块使用指令 "proxy_cache_lock" 指定
-    unsigned                         waiting:1;
+    unsigned                         waiting:1;					//	???
 
     unsigned                         updated:1;					//	???
     unsigned                         updating:1;
@@ -122,12 +122,12 @@ struct ngx_http_file_cache_s {
 
     ngx_path_t                      *path;							//	cache的路径，在函数中 ngx_http_file_cache_set_slot（）设置
 
-    off_t                            max_size;						//	cache磁盘的最大空间，在函数中 ngx_http_file_cache_set_slot（）设置
-    size_t                           bsize;							//	每个块的字节数；在函数 ngx_http_file_cache_init（）中设置
+    off_t                            max_size;						//	当前cache占用多少个文件系统块；（cache磁盘的最大空间，通过指令在配置文件中指定；在函数中 ngx_http_file_cache_set_slot（）设置）
+    size_t                           bsize;							//	文件系统每块大小；在函数 ngx_http_file_cache_init（）中设置
 
     time_t                           inactive;						//	不活跃时间，多久不使用就被删除；在函数中 ngx_http_file_cache_set_slot（）设置
 
-    ngx_uint_t                       files;							//	当前有多少个cache文件（在函数 ngx_http_file_cache_manage_fil()中设置）
+    ngx_uint_t                       files;							//	当前有多少个cache文件, 启动时被loader进程设置。（在函数 ngx_http_file_cache_manage_file()中设置）
     ngx_uint_t                       loader_files;					//	默认100，在函数中 ngx_http_file_cache_set_slot（）设置
     ngx_msec_t                       last;							//	最后被manage或者loader访问的时间（在函数 ngx_http_file_cache_manager()中设置 ）
     ngx_msec_t                       loader_sleep;					//	默认50，在函数中 ngx_http_file_cache_set_slot（）设置 
