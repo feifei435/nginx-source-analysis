@@ -10,7 +10,13 @@
 #include <ngx_event.h>
 #include <ngx_event_connect.h>
 
-
+/*
+	NGX_DECLINED;
+	NGX_AGAIN;
+	NGX_OK;
+	NGX_ERROR;
+	NGX_BUSY:	说明后端服务器均不可使用
+*/
 ngx_int_t
 ngx_event_connect_peer(ngx_peer_connection_t *pc)
 {

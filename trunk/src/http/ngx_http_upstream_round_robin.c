@@ -37,7 +37,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_http_upstream_server_t    *server;
     ngx_http_upstream_rr_peers_t  *peers, *backup;
 
-	//	1. ????
+	//	1. 设置负载均衡初始化函数
     us->peer.init = ngx_http_upstream_init_round_robin_peer;
 
 	//	检查当前的upstream块中是否有 ngx_http_upstream_server_t
@@ -86,7 +86,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             }
         }
 
-		//	保存负载均衡实用的管理结构地址
+		//	保存负载均衡使用的管理结构地址
         us->peer.data = peers;
 
 		//	权重大的值，排放在前边
@@ -154,6 +154,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
     /* an upstream implicitly defined by proxy_pass, etc. */
 
+//#####################################		主要是处理proxy_pass指令的	#####################################
     if (us->port == 0 && us->default_port == 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "no port in upstream \"%V\" in %s:%ui",
@@ -166,6 +167,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     u.host = us->host;
     u.port = (in_port_t) (us->port ? us->port : us->default_port);
 
+	//	解析域名
     if (ngx_inet_resolve_host(cf->pool, &u) != NGX_OK) {
         if (u.err) {
             ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
@@ -176,6 +178,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
         return NGX_ERROR;
     }
 
+	//	域名对应的IP地址个数
     n = u.naddrs;
 
     peers = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_rr_peers_t)
@@ -184,7 +187,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
         return NGX_ERROR;
     }
 
-    peers->single = (n == 1);
+    peers->single = (n == 1);				//	是否只有单个后端服务器（一个后端服务器可能对应多个IP）
     peers->number = n;
     peers->name = &us->host;
 
@@ -244,17 +247,21 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
 
     n = rrp->peers->number;				//	获取的后端服务器的正常列表个数
 
-	//	当存在backup后端服务器列表时，比较backup后端服务器列表个数是否大于正常后端服务器个数
+	//	当存在backup后端服务器列表时，如果backup后端服务器列表个数大于正常后端服务器个数，则取backup服务器的个数来用于申请尝试位图
     if (rrp->peers->next && rrp->peers->next->number > n) {
         n = rrp->peers->next->number;
     }
 
+	/*	tried中记录了服务器当前是否被尝试连接过。他是一个位图。如果服务器数量小于32/64，
+		则只需在一个int中即可记录下所有服务器状态。如果服务器数量大于32/64，则需在内存池中申请内存来存储 */
+
     if (n <= 8 * sizeof(uintptr_t)) {
+
         rrp->tried = &rrp->data;
         rrp->data = 0;
 
     } else {
-        n = (n + (8 * sizeof(uintptr_t) - 1)) / (8 * sizeof(uintptr_t));
+        n = (n + (8 * sizeof(uintptr_t) - 1)) / (8 * sizeof(uintptr_t));	//	计算用于保存服务器状态的空间
 
         rrp->tried = ngx_pcalloc(r->pool, n * sizeof(uintptr_t));
         if (rrp->tried == NULL) {
@@ -264,7 +271,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
 
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
-    r->upstream->peer.tries = rrp->peers->number;									//	设置尝试连接的服务器个数
+    r->upstream->peer.tries = rrp->peers->number;									//	设置尝试连接的次数（等于后端正常服务器的个数）
 
 #if (NGX_HTTP_SSL)
     r->upstream->peer.set_session =
@@ -385,7 +392,7 @@ ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
 ngx_int_t
 ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
 {
-    ngx_http_upstream_rr_peer_data_t  *rrp = data;			
+    ngx_http_upstream_rr_peer_data_t  *rrp = data;			//	在函数 ngx_http_upstream_init_round_robin_peer() 中设置
 
     time_t                         now;
     uintptr_t                      m;
@@ -425,6 +432,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
     pc->cached = 0;
     pc->connection = NULL;
 
+	//	只有一个服务器，直接返回第0项
     if (rrp->peers->single) {
         peer = &rrp->peers->peer[0];
 
@@ -448,10 +456,11 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
                                rrp->current,
                                rrp->peers->peer[rrp->current].current_weight);
 
+				//	计算当前获取的服务器在位图中的标记
                 n = rrp->current / (8 * sizeof(uintptr_t));
                 m = (uintptr_t) 1 << rrp->current % (8 * sizeof(uintptr_t));
 
-                if (!(rrp->tried[n] & m)) {
+                if (!(rrp->tried[n] & m)) {	//	未尝试过时， 获取服务器信息
                     peer = &rrp->peers->peer[rrp->current];
 
                     if (!peer->down) {
@@ -491,6 +500,8 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
             peer->current_weight--;
 
         } else {
+
+			//	已经不是第一次尝试连接后端服务器时
 
             i = pc->tries;
 
@@ -570,6 +581,7 @@ failed:
 
     peers = rrp->peers;
 
+	//	有backup服务器
     if (peers->next) {
 
         /* ngx_unlock_mutex(peers->mutex); */
@@ -579,11 +591,13 @@ failed:
         rrp->peers = peers->next;
         pc->tries = rrp->peers->number;
 
+		//	reset bitmap variable
         n = rrp->peers->number / (8 * sizeof(uintptr_t)) + 1;
         for (i = 0; i < n; i++) {
              rrp->tried[i] = 0;
         }
 
+		//	再次获取一个服务器
         rc = ngx_http_upstream_get_round_robin_peer(pc, rrp);
 
         if (rc != NGX_BUSY) {
@@ -595,6 +609,7 @@ failed:
 
     /* all peers failed, mark them as live for quick recovery */
 
+//	################	所有服务器已经无效	 ################
     for (i = 0; i < peers->number; i++) {
         peers->peer[i].fails = 0;
     }

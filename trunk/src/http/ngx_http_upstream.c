@@ -487,6 +487,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
         rc = ngx_http_upstream_cache(r, u);
 
+		//	???
         if (rc == NGX_BUSY) {
             r->write_event_handler = ngx_http_upstream_init_request;
             return;
@@ -792,7 +793,7 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     switch (rc) {
 
-    case NGX_OK:
+    case NGX_OK:		//	在cache中找到
 
         rc = ngx_http_upstream_cache_send(r, u);
 
@@ -1178,6 +1179,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http upstream connect: %i", rc);
 
+	//	????
     if (rc == NGX_ERROR) {
         ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1186,12 +1188,14 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     u->state->peer = u->peer.name;
 
+	//	后端服务器均不能使用
     if (rc == NGX_BUSY) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "no live upstreams");
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_NOLIVE);
         return;
     }
 
+	//	???
     if (rc == NGX_DECLINED) {
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_ERROR);
         return;
@@ -1811,6 +1815,7 @@ ngx_http_upstream_test_next(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     status = u->headers_in.status_n;
 
+	//	遍历错误码，后端反馈指定的错误码时将按特殊方式处理
     for (un = ngx_http_upstream_next_errors; un->status; un++) {
 
         if (status != un->status) {
@@ -3098,6 +3103,9 @@ ngx_http_upstream_next(ngx_http_request_t *r, ngx_http_upstream_t *u,
     }
 
     if (u->peer.connection) {
+
+		//	关闭与后端的连接
+
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "close http upstream connection: %d",
                        u->peer.connection->fd);
@@ -3126,6 +3134,7 @@ ngx_http_upstream_next(ngx_http_request_t *r, ngx_http_upstream_t *u,
     }
 #endif
 
+	//	连接后端服务器
     ngx_http_upstream_connect(r, u);
 }
 
@@ -4562,7 +4571,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 	//	
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
-		//	检查host是否已经存在
+		//	a. 检查host是否已经存在
         if (uscfp[i]->host.len != u->host.len
             || ngx_strncasecmp(uscfp[i]->host.data, u->host.data, u->host.len)
                != 0)
@@ -4570,7 +4579,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             continue;
         }
 
-		//	检查是否重复配置upstream块
+		//	b. 检查是否重复配置upstream block {...}
         if ((flags & NGX_HTTP_UPSTREAM_CREATE)
              && (uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE))
         {
@@ -4579,7 +4588,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
-		//	使用 "proxy_pass" 指令时， 指定的后端服务器组名字时，不允许出现端口信息
+		//	c. 使用 "proxy_pass" 指令时， 指定的后端服务器组名字时，不允许出现端口信息
         if ((uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE) && u->port) {
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "upstream \"%V\" may not have port %d",
@@ -4587,7 +4596,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
-		//	当解析"upstream"指令时， 如果已经存在的配置中有端口信息，将会引起冲突
+		//	d. 当解析"upstream"指令时， 如果已经存在的配置中有端口信息，将会引起冲突
         if ((flags & NGX_HTTP_UPSTREAM_CREATE) && uscfp[i]->port) {
             ngx_log_error(NGX_LOG_WARN, cf->log, 0,
                           "upstream \"%V\" may not have port %d in %s:%ui",
@@ -4898,7 +4907,7 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 
     uscfp = umcf->upstreams.elts;
 
-	//	循环检查 ngx_http_upstream_main_conf_t 中的upstreams是否有 ngx_http_upstream_srv_conf_t
+	//	循环处理 ngx_http_upstream_srv_conf_t 中的每个字段
 	//	ngx_http_upstream_add()函数可以向 ngx_http_upstream_main_conf_t的upstreams中添加 ngx_http_upstream_srv_conf_t
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 

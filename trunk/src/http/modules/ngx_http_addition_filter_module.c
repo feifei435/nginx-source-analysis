@@ -105,22 +105,24 @@ ngx_http_addition_header_filter(ngx_http_request_t *r)
     ngx_http_addition_ctx_t   *ctx;
     ngx_http_addition_conf_t  *conf;
 
+	//	1. 当前请求不是根请求或向客户端响应出错，将直接执行下一个header_filter
     if (r->headers_out.status != NGX_HTTP_OK || r != r->main) {
         return ngx_http_next_header_filter(r);
     }
 
     conf = ngx_http_get_module_loc_conf(r, ngx_http_addition_filter_module);
 
+	//	2. 如果指令 "add_before_body" 和 "add_after_body" 均没有使用,将执行下一个filter
     if (conf->before_body.len == 0 && conf->after_body.len == 0) {
         return ngx_http_next_header_filter(r);
     }
 
-	//	??????????
+	//	3. ??????????
     if (ngx_http_test_content_type(r, &conf->types) == NULL) {
         return ngx_http_next_header_filter(r);
     }
 
-	//	申请 addition模块 的ctx 并设置到 request_t 结构中
+	//	4. 申请 addition模块 的ctx 并设置到主请求的结构中
     ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_addition_ctx_t));
     if (ctx == NULL) {
         return NGX_ERROR;
@@ -152,6 +154,7 @@ ngx_http_addition_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_addition_filter_module);
 
+	//	子请求这里将返回NULL，将执行下一个body_filter
     if (ctx == NULL) {
         return ngx_http_next_body_filter(r, in);
     }

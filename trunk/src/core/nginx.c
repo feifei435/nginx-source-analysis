@@ -95,7 +95,7 @@ static ngx_command_t  ngx_core_commands[] = {
       0,
       NULL },
 
-    { ngx_string("worker_cpu_affinity"),
+    { ngx_string("worker_cpu_affinity"),				//	指定进程到指定的CPU上工作
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_1MORE,
       ngx_set_cpu_affinity,
       0,
