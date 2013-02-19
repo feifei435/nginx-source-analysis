@@ -199,6 +199,7 @@ ngx_http_userid_filter(ngx_http_request_t *r)
     ngx_http_userid_ctx_t   *ctx;
     ngx_http_userid_conf_t  *conf;
 
+	//	不是主请求，执行下一个header filter
     if (r != r->main) {
         return ngx_http_next_header_filter(r);
     }

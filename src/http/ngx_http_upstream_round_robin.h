@@ -45,7 +45,7 @@ typedef struct ngx_http_upstream_rr_peers_s  ngx_http_upstream_rr_peers_t;
 
 struct ngx_http_upstream_rr_peers_s {
     ngx_uint_t                      single;					//	是否只有单个服务器，如果仅有单个服务器将不进行轮询方式处理（在函数ngx_http_upstream_get_round_robin_peer()中有用到）	/* unsigned  single:1; */
-    ngx_uint_t                      number;					//	所管理的后端服务器个数（多个IP的服务器将会被解析成多个 ngx_http_upstream_rr_peer_t ）
+    ngx_uint_t                      number;					//	所管理的后端服务器个数（一个服务器对应多个IO，那么多个IP的服务器将会被解析成多个 ngx_http_upstream_rr_peer_t ）
     ngx_uint_t                      last_cached;
 
  /* ngx_mutex_t                    *mutex; */
@@ -62,8 +62,8 @@ struct ngx_http_upstream_rr_peers_s {
 typedef struct {
     ngx_http_upstream_rr_peers_t   *peers;				//	指向正在使用的负载均衡的列表
     ngx_uint_t                      current;	
-    uintptr_t                      *tried;
-    uintptr_t                       data;
+    uintptr_t                      *tried;				//	负载均衡服务器管理表中每个服务器的状态（是否已经尝试连接过）
+    uintptr_t                       data;				//	与tried关联
 } ngx_http_upstream_rr_peer_data_t;
 
 

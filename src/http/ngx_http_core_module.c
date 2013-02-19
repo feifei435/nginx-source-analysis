@@ -860,7 +860,7 @@ ngx_http_handler(ngx_http_request_t *r)
     r->gzip_vary = 0;
 #endif
 
-    r->write_event_handler = ngx_http_core_run_phases;		//	为什么注册这个函数？？？
+    r->write_event_handler = ngx_http_core_run_phases;		//	为什么注册这个函数？？？ 再此函数返回后 ngx_http_run_posted_requests（）函数中会调用此handler
     ngx_http_core_run_phases(r);							//	运行所有phase
 }
 
@@ -2444,7 +2444,8 @@ ngx_http_subrequest(ngx_http_request_t *r,
     ngx_http_core_srv_conf_t      *cscf;
     ngx_http_postponed_request_t  *pr, *p;
 
-    r->main->subrequests--;												//	父request下的子请求总个数
+	//	1. 检查所有子请求个数是否超过限制
+    r->main->subrequests--;												
 
     if (r->main->subrequests == 0) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -2518,8 +2519,8 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->read_event_handler = ngx_http_request_empty_handler;			//	为什么这么设置？？？
     sr->write_event_handler = ngx_http_handler;
 
-    if (c->data == r && r->postponed == NULL) {							//	设置同一层级的第一个subrequest
-        c->data = sr;
+    if (c->data == r && r->postponed == NULL) {							/*	设置同一层级的第一个subrequest(一个request会有多个sub_request, 这里仅设置第一个）*/
+        c->data = sr;													/*	为什么同一层级的c->data, 都指向第一个sub_request呢？？？ */
     }
 
     sr->variables = r->variables;										//	子请求与父请求共享同一个索引变量数组
@@ -2543,7 +2544,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
         r->postponed = pr;
     }
 
-    sr->internal = 1;											//	此请求为内部请求
+    sr->internal = 1;														//	此请求为内部请求
 
     sr->discard_body = r->discard_body;
     sr->expect_tested = 1;

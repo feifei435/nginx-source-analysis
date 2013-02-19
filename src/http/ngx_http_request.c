@@ -456,7 +456,8 @@ ngx_http_init_request(ngx_event_t *rev)
         c->log->log_level = clcf->error_log->log_level;
     }
 
-    if (c->buffer == NULL) {															//	connection的buffer缓冲区为空时，申请 ngx_buf_t 缓冲区
+	//	申请存放客户端请求头的缓存区
+    if (c->buffer == NULL) {															
         c->buffer = ngx_create_temp_buf(c->pool,
                                         cscf->client_header_buffer_size);
         if (c->buffer == NULL) {
@@ -465,11 +466,13 @@ ngx_http_init_request(ngx_event_t *rev)
         }
     }
 
-    if (r->header_in == NULL) {															//	如果request的header_in缓冲区为空时，将使用connection的buffer缓冲区
+	//	将request->header_in 指向此缓冲区
+    if (r->header_in == NULL) {															
         r->header_in = c->buffer;
     }
 
-    r->pool = ngx_create_pool(cscf->request_pool_size, c->log);							//	创建请求使用的内存池根据指令"request_pool_size"大小
+	//	创建请求使用的内存池根据指令"request_pool_size"大小
+    r->pool = ngx_create_pool(cscf->request_pool_size, c->log);							
     if (r->pool == NULL) {
         ngx_http_close_connection(c);
         return;
@@ -1702,8 +1705,10 @@ ngx_http_process_request(ngx_http_request_t *r)
     c->write->handler = ngx_http_request_handler;
     r->read_event_handler = ngx_http_block_reading;				//	边缘触发时不起作用
 
+	//	开始处理主请求
     ngx_http_handler(r);
 
+	//	运行所有子请求
     ngx_http_run_posted_requests(c);
 }
 
@@ -1887,7 +1892,9 @@ ngx_http_request_handler(ngx_event_t *ev)
     ngx_http_run_posted_requests(c);
 }
 
-
+/*
+ *	运行所有子请求
+ */
 void
 ngx_http_run_posted_requests(ngx_connection_t *c)
 {
@@ -1897,10 +1904,12 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
 
     for ( ;; ) {
 
+		//	???
         if (c->destroyed) {
             return;
         }
 
+		//	获取主请求的posted_requests, 取出一个sub_request执行。
         r = c->data;
         pr = r->main->posted_requests;
 
@@ -1918,7 +1927,10 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "http posted request: \"%V?%V\"", &r->uri, &r->args);
 
-        r->write_event_handler(r);
+		r->write_event_handler(r);	/*	ngx_http_subrequest() 函数中设置了     
+										sr->read_event_handler = ngx_http_request_empty_handler;
+										sr->write_event_handler = ngx_http_handler; 
+										所以此处会调用 ngx_http_handler()函数, 在函数 ngx_http_handler（）中被设置为 ngx_http_core_run_phases() */
     }
 }
 

@@ -148,23 +148,23 @@ struct ngx_connection_s {
 
     struct sockaddr    *local_sockaddr;		//	保存本地监听的套接口信息
 
-    ngx_buf_t          *buffer;
+    ngx_buf_t          *buffer;					//	存放客户端请求头的缓冲区，大小根据指令“client_header_buffer_size”（在函数 ngx_http_init_request() 中申请）
 
-    ngx_queue_t         queue;			//	连接队列的结点（ngx_reusable_connection（））
+    ngx_queue_t         queue;					//	连接队列的结点（ngx_reusable_connection（））
 
     ngx_atomic_uint_t   number;
 
-    ngx_uint_t          requests;			//	连接中所有请求之和
+    ngx_uint_t          requests;				//	连接中所有请求之和
 
     unsigned            buffered:8;		//	数据被延迟发送了(在函数ngx_http_write_filter()中设置NGX_HTTP_WRITE_BUFFERED)
 
     unsigned            log_error:3;     /* ngx_connection_log_error_e */
 
     unsigned            single_connection:1;
-    unsigned            unexpected_eof:1;	//	????
+    unsigned            unexpected_eof:1;				//	????
     unsigned            timedout:1;						//	连接超时
-    unsigned            error:1;
-    unsigned            destroyed:1;		//	说明此连接是否已经销毁，如果已经销毁等于1
+    unsigned            error:1;						//	在函数 ngx_http_output_filter（）中会被设置，如果
+    unsigned            destroyed:1;					//	说明此连接是否已经销毁，如果已经销毁等于1
 
     unsigned            idle:1;					//	说明当前连接处于空闲（在函数 中设置）
     unsigned            reusable:1;				//	连接是否为再利用的（在函数 ngx_reusable_connection（）中设置）

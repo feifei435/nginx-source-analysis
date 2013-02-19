@@ -538,6 +538,7 @@ ngx_http_upstream_keepalive(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+	//	解析参数1
     n = ngx_atoi(value[1].data, value[1].len);
 
     if (n == NGX_ERROR || n == 0) {
@@ -549,6 +550,7 @@ ngx_http_upstream_keepalive(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     kcf->max_cached = n;
 
+	//	检查是否有参数2，如果有检查是否为single
     for (i = 2; i < cf->args->nelts; i++) {
 
         if (ngx_strcmp(value[i].data, "single") == 0) {

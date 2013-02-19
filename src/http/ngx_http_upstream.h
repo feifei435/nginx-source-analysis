@@ -17,14 +17,14 @@
 #include <ngx_http.h>
 
 
-#define NGX_HTTP_UPSTREAM_FT_ERROR           0x00000002
-#define NGX_HTTP_UPSTREAM_FT_TIMEOUT         0x00000004
-#define NGX_HTTP_UPSTREAM_FT_INVALID_HEADER  0x00000008
-#define NGX_HTTP_UPSTREAM_FT_HTTP_500        0x00000010
-#define NGX_HTTP_UPSTREAM_FT_HTTP_502        0x00000020
-#define NGX_HTTP_UPSTREAM_FT_HTTP_503        0x00000040
-#define NGX_HTTP_UPSTREAM_FT_HTTP_504        0x00000080
-#define NGX_HTTP_UPSTREAM_FT_HTTP_404        0x00000100
+#define NGX_HTTP_UPSTREAM_FT_ERROR           0x00000002				//	
+#define NGX_HTTP_UPSTREAM_FT_TIMEOUT         0x00000004				//	向后端服务器接收或发送数据超时
+#define NGX_HTTP_UPSTREAM_FT_INVALID_HEADER  0x00000008				//	后端服务器反馈的头域太大或无效
+#define NGX_HTTP_UPSTREAM_FT_HTTP_500        0x00000010				//	后端服务器返回500
+#define NGX_HTTP_UPSTREAM_FT_HTTP_502        0x00000020				//	后端服务器返回502
+#define NGX_HTTP_UPSTREAM_FT_HTTP_503        0x00000040				//	后端服务器返回503
+#define NGX_HTTP_UPSTREAM_FT_HTTP_504        0x00000080				//	后端服务器返回504
+#define NGX_HTTP_UPSTREAM_FT_HTTP_404        0x00000100				//	后端服务器返回404
 #define NGX_HTTP_UPSTREAM_FT_UPDATING        0x00000200
 #define NGX_HTTP_UPSTREAM_FT_BUSY_LOCK       0x00000400
 #define NGX_HTTP_UPSTREAM_FT_MAX_WAITING     0x00000800
@@ -77,8 +77,17 @@ typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r,
 
 
 typedef struct {
-    ngx_http_upstream_init_pt        init_upstream;			//	使用负载均衡的类型，默认采用 ngx_http_upstream_init_round_robin（）
-    ngx_http_upstream_init_peer_pt   init;					//	使用的负载均衡类型的初始化函数
+    ngx_http_upstream_init_pt        init_upstream;			/*	负载均衡模块配置初始化
+																ngx_http_upstream_init_round_robin（） 默认采用，
+																ngx_http_upstream_init_ip_hash（）
+																ngx_http_upstream_init_keepalive（） */
+
+    ngx_http_upstream_init_peer_pt   init;					/*	负载均衡初始化 
+																ngx_http_upstream_init_round_robin_peer（）
+																ngx_http_upstream_init_ip_hash_peer（）
+																ngx_http_upstream_init_keepalive_peer（） */
+
+
     void                            *data;					//	指向负载均衡使用的管理结构	；us->peer.data = peers; 指向的是 ngx_http_upstream_rr_peers_t（函数 ngx_http_upstream_init_round_robin()中设置）
 } ngx_http_upstream_peer_t;
 

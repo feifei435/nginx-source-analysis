@@ -11,14 +11,14 @@
 
 
 typedef struct {
-    ngx_str_t                  match;
-    ngx_http_complex_value_t   value;
+    ngx_str_t                  match;						//	检索匹配的值
+    ngx_http_complex_value_t   value;						//	准备替换的值
 
-    ngx_hash_t                 types;
+    ngx_hash_t                 types;						
 
-    ngx_flag_t                 once;
+    ngx_flag_t                 once;						//	指令 "sub_filter_once"
 
-    ngx_array_t               *types_keys;
+    ngx_array_t               *types_keys;					//	
 } ngx_http_sub_loc_conf_t;
 
 
@@ -163,7 +163,7 @@ ngx_http_sub_header_filter(ngx_http_request_t *r)
     ctx->match = slcf->match;
     ctx->last_out = &ctx->out;
 
-    r->filter_need_in_memory = 1;
+    r->filter_need_in_memory = 1;					//	???
 
     if (r == r->main) {
         ngx_http_clear_content_length(r);
@@ -633,6 +633,7 @@ ngx_http_sub_filter(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+	//	转换成小写
     ngx_strlow(value[1].data, value[1].data, value[1].len);
 
     slcf->match = value[1];

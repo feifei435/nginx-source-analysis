@@ -3480,7 +3480,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u.url.data = url->data + add;
     u.default_port = port;					//	http://的端口是80，https;//端口是443
     u.uri_part = 1;
-    u.no_resolve = 1;						//	设置不解析域名
+    u.no_resolve = 1;						//	设置不解析域名， 在函数 ngx_http_upstream_init_round_robin（）中会对指令 “proxy_pass”指定的参数（host或IP地址）进行解析
 
     plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
     if (plcf->upstream.upstream == NULL) {

@@ -134,7 +134,9 @@ ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
     return chain;
 }
 
-
+/*
+ *	遍历chain链表找到尾节点，将in加入到chain尾部
+ */
 ngx_int_t
 ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 {
@@ -154,8 +156,8 @@ ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 
         cl->buf = in->buf;
         *ll = cl;
-        ll = &cl->next;
-        in = in->next;
+        ll = &cl->next;				
+        in = in->next;				//	取in的下一个chain
     }
 
     *ll = NULL;

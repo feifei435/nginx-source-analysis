@@ -147,6 +147,7 @@ ngx_http_postpone_filter_add(ngx_http_request_t *r, ngx_chain_t *in)
         ppr = &r->postponed;
     }
 
+	//	申请一个空的postponed_request_t节点用于存放数据，并挂载到 r->postponed 末尾
     pr = ngx_palloc(r->pool, sizeof(ngx_http_postponed_request_t));
     if (pr == NULL) {
         return NGX_ERROR;
@@ -160,6 +161,7 @@ ngx_http_postpone_filter_add(ngx_http_request_t *r, ngx_chain_t *in)
 
 found:
 
+	//	拷贝in到pr->out中
     if (ngx_chain_add_copy(r->pool, &pr->out, in) == NGX_OK) {
         return NGX_OK;
     }
