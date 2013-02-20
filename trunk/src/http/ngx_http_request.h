@@ -498,7 +498,7 @@ struct ngx_http_request_s {
     unsigned                          pipeline:1;
     unsigned                          plain_http:1;					//	用在ssl中
     unsigned                          chunked:1;					//	是否为chunked传输
-    unsigned                          header_only:1;				//	是否仅有消息头（在哪里赋值？？？）
+    unsigned                          header_only:1;				//	此字段说明响应给客户端的反馈是否仅有消息头（函数ngx_http_header_filter() 和 ngx_http_post_action()函数中赋值 ）
     unsigned                          keepalive:1;					//	是否为keepalive连接( ngx_http_handler()函数中根据 r->headers_in.connection_type类型确定)
     unsigned                          lingering_close:1;			//	???????
     unsigned                          discard_body:1;				//	如果已经调用 ngx_http_discard_request_body（）函数，将设置为1
@@ -518,7 +518,7 @@ struct ngx_http_request_s {
     unsigned                          buffered:4;					//	
 
     unsigned                          main_filter_need_in_memory:1;		//	???
-    unsigned                          filter_need_in_memory:1;
+    unsigned                          filter_need_in_memory:1;			//	???
     unsigned                          filter_need_temporary:1;			//	 ngx_http_charset_filter_module.c 文件中有设置, 此字段将影响 ngx_output_chain_ctx_t ->need_in_temp 的值
     unsigned                          allow_ranges:1;
 

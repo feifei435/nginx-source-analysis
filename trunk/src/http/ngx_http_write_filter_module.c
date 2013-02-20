@@ -43,7 +43,11 @@ ngx_module_t  ngx_http_write_filter_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+/*
+ *	NGX_ERROR		发送出错
+ *	NGX_OK			已发送完毕
+ *	NGX_AGAIN		未发送完，稍后将重试
+ */
 ngx_int_t
 ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {

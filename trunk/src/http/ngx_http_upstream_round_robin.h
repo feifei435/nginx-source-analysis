@@ -61,7 +61,7 @@ struct ngx_http_upstream_rr_peers_s {
 
 typedef struct {
     ngx_http_upstream_rr_peers_t   *peers;				//	指向正在使用的负载均衡的列表
-    ngx_uint_t                      current;	
+    ngx_uint_t                      current;			//	用于保存服务器在正常服务器列表或backup服务器列表中的位置
     uintptr_t                      *tried;				//	负载均衡服务器管理表中每个服务器的状态（是否已经尝试连接过）
     uintptr_t                       data;				//	与tried关联
 } ngx_http_upstream_rr_peer_data_t;

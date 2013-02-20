@@ -271,7 +271,9 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
 
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
-    r->upstream->peer.tries = rrp->peers->number;									//	设置尝试连接的次数（等于后端正常服务器的个数）
+
+	//	设置尝试连接的次数（等于后端正常服务器的个数），因为需要先在正常服务器的列表中尝试
+    r->upstream->peer.tries = rrp->peers->number;						
 
 #if (NGX_HTTP_SSL)
     r->upstream->peer.set_session =
@@ -448,7 +450,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
 
             for ( ;; ) {
 
-				//	获取权重最高的服务器
+				//	获取权重最高的服务器，并获取该服务器的位置
                 rrp->current = ngx_http_upstream_get_peer(rrp->peers);
 
                 ngx_log_debug2(NGX_LOG_DEBUG_HTTP, pc->log, 0,
@@ -463,14 +465,16 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
                 if (!(rrp->tried[n] & m)) {	//	未尝试过时， 获取服务器信息
                     peer = &rrp->peers->peer[rrp->current];
 
-                    if (!peer->down) {
+                    if (!peer->down) {			//	
 
+						//	关闭了最大失败次数检查或失败次数没有达到上限时
                         if (peer->max_fails == 0
                             || peer->fails < peer->max_fails)
                         {
                             break;
                         }
 
+						//	当失败次数达到上限时，将检查当前时间是否已经超过间隔时间
                         if (now - peer->checked > peer->fail_timeout) {
                             peer->checked = now;
                             break;
@@ -479,12 +483,13 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
                         peer->current_weight = 0;
 
                     } else {
-                        rrp->tried[n] |= m;
+                        rrp->tried[n] |= m;			//	如果服务器被指定为down(即不参与运算)，将至标记为已经尝试过
                     }
 
                     pc->tries--;
                 }
 
+				//	当前这组服务器均尝试过连接了，准备退出
                 if (pc->tries == 0) {
                     goto failed;
                 }
@@ -581,7 +586,7 @@ failed:
 
     peers = rrp->peers;
 
-	//	有backup服务器
+	//	有backup服务器，将尝试在backup服务器中获取
     if (peers->next) {
 
         /* ngx_unlock_mutex(peers->mutex); */
@@ -609,7 +614,7 @@ failed:
 
     /* all peers failed, mark them as live for quick recovery */
 
-//	################	所有服务器已经无效	 ################
+//	################	设置所有正常列表的服务器为无效	 ################
     for (i = 0; i < peers->number; i++) {
         peers->peer[i].fails = 0;
     }
@@ -698,11 +703,13 @@ ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
 
     /* TODO: NGX_PEER_KEEPALIVE */
 
+	//	单个服务器直接返回
     if (rrp->peers->single) {
         pc->tries = 0;
         return;
     }
 
+	//	获取当前服务器的信息
     peer = &rrp->peers->peer[rrp->current];
 
     if (state & NGX_PEER_FAILED) {
@@ -710,7 +717,7 @@ ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
 
         /* ngx_lock_mutex(rrp->peers->mutex); */
 
-        peer->fails++;
+        peer->fails++;						//	失败次数++
         peer->accessed = now;
         peer->checked = now;
 

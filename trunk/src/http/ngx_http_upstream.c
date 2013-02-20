@@ -1741,11 +1741,13 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     if (u->headers_in.status_n > NGX_HTTP_SPECIAL_RESPONSE) {
 
-		//	???
+		/*	subrequest 独有的标记 */
         if (r->subrequest_in_memory) {
             u->buffer.last = u->buffer.pos;
         }
 
+		/*	后端服务器报错时，测试客户端请求是否允许向其他服务器发送，
+			后端服务器全部宕机或此错误码不允许向其他服务器转发时，将直接发送给客户端 */
         if (ngx_http_upstream_test_next(r, u) == NGX_OK) {
             return;
         }
@@ -1761,7 +1763,7 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return;
     }
 
-	//	????
+	//	subrequest_in_memory 是sub_request独有的标记，父请求是不会有此标记的
     if (!r->subrequest_in_memory) {
         ngx_http_upstream_send_response(r, u);
         return;
@@ -1815,13 +1817,15 @@ ngx_http_upstream_test_next(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     status = u->headers_in.status_n;
 
-	//	遍历错误码，后端反馈指定的错误码时将按特殊方式处理
+	/*	后端反馈的错误码在（500、502、503、504、404）中时， 将检查指令 "proxy_next_upstream" 中是否指定了此错误码，
+		如果指定了将尝试下一个服务器。	*/
     for (un = ngx_http_upstream_next_errors; un->status; un++) {
 
         if (status != un->status) {
             continue;
         }
 
+		//	u->peer.tries > 1 说明还有可以尝试的服务器，等于1或0时说明已经没有可以尝试的服务器了
         if (u->peer.tries > 1 && (u->conf->next_upstream & un->mask)) {
             ngx_http_upstream_next(r, u, un->mask);
             return NGX_OK;
@@ -1864,6 +1868,7 @@ ngx_http_upstream_intercept_errors(ngx_http_request_t *r,
 
     status = u->headers_in.status_n;
 
+	//	????
     if (status == NGX_HTTP_NOT_FOUND && u->conf->intercept_404) {
         ngx_http_upstream_finalize_request(r, u, NGX_HTTP_NOT_FOUND);
         return NGX_OK;
@@ -2204,7 +2209,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c = r->connection;				//	获取与客户端的连接connection
 
-	//	？？？？？？？
+	//	如果给客户端的反馈仅有响应头时， 并且未开启cache和store将直接结束
     if (r->header_only) {
 
         if (u->cacheable || u->store) {
@@ -3027,7 +3032,7 @@ ngx_http_upstream_next(ngx_http_request_t *r, ngx_http_upstream_t *u,
     }
 
     if (ft_type != NGX_HTTP_UPSTREAM_FT_NOLIVE) {
-        u->peer.free(&u->peer, u->peer.data, state);
+        u->peer.free(&u->peer, u->peer.data, state);				//	e.g. ngx_http_upstream_free_round_robin_peer()
     }
 
     if (ft_type == NGX_HTTP_UPSTREAM_FT_TIMEOUT) {
@@ -3102,9 +3107,8 @@ ngx_http_upstream_next(ngx_http_request_t *r, ngx_http_upstream_t *u,
         }
     }
 
+	//	关闭与后端的连接 and 释放连接的内存池
     if (u->peer.connection) {
-
-		//	关闭与后端的连接
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "close http upstream connection: %d",
@@ -3196,7 +3200,9 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
         u->peer.free(&u->peer, u->peer.data, 0);
     }
 
-    if (u->peer.connection) {				//	后端服务器连接存在时，销毁连接内存池，关闭连接
+
+	//	后端服务器连接存在时，销毁连接内存池，关闭连接
+    if (u->peer.connection) {				
 
 #if (NGX_HTTP_SSL)
 

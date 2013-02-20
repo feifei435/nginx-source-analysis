@@ -559,7 +559,7 @@ ngx_http_range_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return ngx_http_next_body_filter(r, in);
     }
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_range_body_filter_module);			//	此模块什么时候设置ctx???
+    ctx = ngx_http_get_module_ctx(r, ngx_http_range_body_filter_module);			//	在header_filter时设置，仅设置在主请求的结构中，子请求获取ctx=NULL
 
     if (ctx == NULL) {
         return ngx_http_next_body_filter(r, in);

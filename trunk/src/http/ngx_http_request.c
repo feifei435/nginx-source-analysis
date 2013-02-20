@@ -412,7 +412,7 @@ ngx_http_init_request(ngx_event_t *rev)
     r->loc_conf = cscf->ctx->loc_conf;
 
     rev->handler = ngx_http_process_request_line;						//	重新设置当前请求的处理句柄，修改为 ngx_http_process_request_line
-    r->read_event_handler = ngx_http_block_reading;						//	为什么要注册此handler??
+    r->read_event_handler = ngx_http_block_reading;						//	为什么要注册此handler，注册了貌似没有用到??
 
 #if (NGX_HTTP_SSL)
 
@@ -2397,7 +2397,9 @@ ngx_http_request_finalizer(ngx_http_request_t *r)
     ngx_http_finalize_request(r, 0);
 }
 
-
+/*
+ *	阻塞水平触发时读事件的频繁触发
+ */
 void
 ngx_http_block_reading(ngx_http_request_t *r)
 {
@@ -2406,11 +2408,12 @@ ngx_http_block_reading(ngx_http_request_t *r)
 
     /* aio does not call this handler */
 
-    if ((ngx_event_flags & NGX_USE_LEVEL_EVENT)						//	使用水平触发，并且此连接的读事件在激活状态，将删除此连接上的读事件，使用阻塞的方式。
+	/* 使用水平触发，并且此连接的读事件在epoll监听队列中，将删除此连接上的读事件 */
+    if ((ngx_event_flags & NGX_USE_LEVEL_EVENT)						
         && r->connection->read->active)
     {
-        if (ngx_del_event(r->connection->read, NGX_READ_EVENT, 0) != NGX_OK) {
-            ngx_http_close_request(r, 0);
+        if (ngx_del_event(r->connection->read, NGX_READ_EVENT, 0) != NGX_OK) {			//	ngx_epoll_del_event()
+            ngx_http_close_request(r, 0);	
         }
     }
 }
@@ -3053,7 +3056,11 @@ ngx_http_close_request(ngx_http_request_t *r, ngx_int_t rc)
     ngx_http_close_connection(c);
 }
 
-
+/*
+ *	1. 调用所有request上cleanup清理函数
+ *	2. 
+ *
+ */
 static void
 ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 {
@@ -3091,6 +3098,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
 #endif
 
+	//	rc>0 and 后端没有反馈数据并且也没有向客户端发送过数据
     if (rc > 0 && (r->headers_out.status == 0 || r->connection->sent == 0)) {
         r->headers_out.status = rc;
     }
@@ -3150,7 +3158,9 @@ ngx_http_log_request(ngx_http_request_t *r)
     }
 }
 
-
+/*
+ *	关闭连接和释放connection的内存池
+ */
 static void
 ngx_http_close_connection(ngx_connection_t *c)
 {
