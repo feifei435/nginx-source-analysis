@@ -38,6 +38,12 @@ static ngx_int_t ngx_output_chain_get_buf(ngx_output_chain_ctx_t *ctx,
 static ngx_int_t ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx);
 
 
+/*
+ *	NGX_ERROR		发送出错
+ *	NGX_OK			已发送完毕
+ *	NGX_AGAIN		未发送完，稍后将重试
+ *	NGX_DONE		
+ */
 ngx_int_t
 ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 {
@@ -77,7 +83,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
     }
 
     out = NULL;
-    last_out = &out;
+    last_out = &out;					//	设置out为准备输出的chain，下边将会对last_out进行赋值
     last = NGX_NONE;
 
     for ( ;; ) {
@@ -88,7 +94,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
         }
 #endif
 
-		//	循环处理ctx->in中的数据
+		//	循环处理ctx->in中的数据, 处理完后将把数据挂载到以out为首的chain链上。
         while (ctx->in) {
 
             /*
@@ -98,6 +104,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
             bsize = ngx_buf_size(ctx->in->buf);
 
+			//	buf等于0，并且不是特殊buf，说明有BUG需要debug
             if (bsize == 0 && !ngx_buf_special(ctx->in->buf)) {
 
                 ngx_log_error(NGX_LOG_ALERT, ctx->pool->log, 0,
@@ -120,7 +127,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
                 continue;
             }
 
-			//	检查是否需要复制buf
+			//	检查是否需要复制buf，返回1说明不需要拷贝
             if (ngx_output_chain_as_is(ctx, ctx->in->buf)) {
 
                 /* move the chain link to the output chain */
@@ -136,7 +143,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
                 continue;
             }
 
-
+			//	ctx->buf如果为空，将申请一个buf使用，下边的合并函数将要使用此buf
             if (ctx->buf == NULL) {
 
 				//	为文件申请一个buf, ctx->buf指向的是新申请的
@@ -168,7 +175,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
                 }
             }
 
-			//	拷贝 ctx->in->buf 中的数据到 ctx->buf
+			//	拷贝 ctx->in 的数据到 ctx->buf
             rc = ngx_output_chain_copy_buf(ctx);
 
             if (rc == NGX_ERROR) {
@@ -185,8 +192,8 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
             /* delete the completed buf from the ctx->in chain */
 
-			//	此处获取缓冲数据大小时由于在 ngx_output_chain_copy_buf（）函数中已经将解析完的偏移指针指向了解析后的地址，所以这里等于0；
-			//	并将ctx->in指针指向下一个节点
+			/*	此处获取缓冲数据大小时由于在 ngx_output_chain_copy_buf（）函数中已经将解析完的偏移指针指向了解析后的地址，所以这里等于0；
+				并将ctx->in指针指向下一个节点，也就是说此处仅拷贝了chain链中的第一个chain */
             if (ngx_buf_size(ctx->in->buf) == 0) {			
                 ctx->in = ctx->in->next;
             }
@@ -199,7 +206,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 
             cl->buf = ctx->buf;
             cl->next = NULL;
-            *last_out = cl;
+            *last_out = cl;						//	将cl 指向 out
             last_out = &cl->next;
             ctx->buf = NULL;
 
@@ -214,12 +221,14 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
             return last;
         }
 
+		//	调用后续filter链
         last = ctx->output_filter(ctx->filter_ctx, out);				//	ngx_http_next_filter 或 ngx_chain_writer
 
         if (last == NGX_ERROR || last == NGX_DONE) {
             return last;
         }
 
+		//	更新已发送完的chain到free, 为发送完的到Busy
         ngx_chain_update_chains(ctx->pool, &ctx->free, &ctx->busy, &out,
                                 ctx->tag);
         last_out = &out;

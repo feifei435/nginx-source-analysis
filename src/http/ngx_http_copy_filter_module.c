@@ -93,11 +93,11 @@ ngx_http_copy_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http copy filter: \"%V?%V\"", &r->uri, &r->args);
 
+	//	主请求和子请求分别有各自的ctx
     ctx = ngx_http_get_module_ctx(r, ngx_http_copy_filter_module);
 
     if (ctx == NULL) {
 
-		//	copy filter ctx 为空时，申请一个并设置到request的ctx中
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_output_chain_ctx_t));
         if (ctx == NULL) {
             return NGX_ERROR;

@@ -156,7 +156,7 @@ struct ngx_connection_s {
 
     ngx_uint_t          requests;				//	连接中所有请求之和
 
-    unsigned            buffered:8;		//	数据被延迟发送了(在函数ngx_http_write_filter()中设置NGX_HTTP_WRITE_BUFFERED)
+    unsigned            buffered:8;				//	数据被延迟发送了(在函数ngx_http_write_filter()中设置NGX_HTTP_WRITE_BUFFERED)
 
     unsigned            log_error:3;     /* ngx_connection_log_error_e */
 
