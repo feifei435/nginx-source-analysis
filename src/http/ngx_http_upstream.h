@@ -348,7 +348,7 @@ struct ngx_http_upstream_s {
 #endif
 
     unsigned                         buffering:1;					//	缓存后端服务器发来的响应数据；ngx_http_proxy_handler()函数中设置, 根据proxy模块的指令 "proxy_buffering"设置
-    unsigned                         keepalive:1;					//	与字段 u->headers_in.connection_close 相关
+    unsigned                         keepalive:1;					//	与字段 u->headers_in.connection_close 相关(proxy模块在函数 ngx_http_proxy_non_buffered_copy_filter() 和 ngx_http_proxy_copy_filter())
 
     unsigned                         request_sent:1;				//	是否已经向后端服务器发送过请求，在 ngx_http_upstream_send_request()函数中设置
     unsigned                         header_sent:1;					//	后端服务器的响应头是否已经发送给客户端 (ngx_http_upstream_send_response()函数中设置)

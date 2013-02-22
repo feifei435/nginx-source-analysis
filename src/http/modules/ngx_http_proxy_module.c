@@ -33,7 +33,7 @@ struct ngx_http_proxy_rewrite_s {
 typedef struct {
     ngx_str_t                      key_start;				//	
     ngx_str_t                      schema;					//	"http://" 或 "https://"
-    ngx_str_t                      host_header;				//	url中的host
+    ngx_str_t                      host_header;				//	url中的host					(ngx_http_proxy_set_var()函数中设置)
     ngx_str_t                      port;					//	端口
     ngx_str_t                      uri;						//	url中的uri（ngx_http_proxy_set_vars()函数中设置）
 } ngx_http_proxy_vars_t;
