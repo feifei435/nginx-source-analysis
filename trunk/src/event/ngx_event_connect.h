@@ -62,7 +62,7 @@ struct ngx_peer_connection_s {
 
     ngx_log_t                       *log;
 
-    unsigned                         cached:1;
+    unsigned                         cached:1;				//	说明此连接被缓存了（再ngx_http_upstream_get_keepalive_peer（）中设置）
 
                                      /* ngx_connection_log_error_e */
     unsigned                         log_error:2;

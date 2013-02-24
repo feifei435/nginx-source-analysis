@@ -360,6 +360,8 @@ ngx_http_upstream_free_keepalive_peer(ngx_peer_connection_t *pc, void *data,
     item->connection = c;
     ngx_queue_insert_head(&kp->conf->cache, q);
 
+	/*	这里为什么需要置 pc->connection为NULL？由于在 ngx_http_upstream_finalize_request（）函数中需要检查此字段是否为
+		空，如果为空不关闭连接！*/
     pc->connection = NULL;
 
     if (c->read->timer_set) {
