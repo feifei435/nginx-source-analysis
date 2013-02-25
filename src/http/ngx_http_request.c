@@ -1134,7 +1134,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "http header done");
 
-            r->request_length += r->header_in->pos - r->header_in->start;			//	r->header_in->pos 这里指向了请求头的结尾地址部分
+            r->request_length += r->header_in->pos - r->header_in->start;			//	r->header_in->pos 这里指向了请求头的结尾地址部分， 这里计算了请求头的长度
 
             r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
 

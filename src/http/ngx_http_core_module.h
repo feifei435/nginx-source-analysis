@@ -382,7 +382,7 @@ struct ngx_http_core_loc_conf_s {
 										   
 
     ngx_uint_t    keepalive_requests;      // keepalive_requests指令指定服务器保持长连接的请求数???????????????????????。默认是100
-    ngx_uint_t    keepalive_disable;       // 指令 "keepalive_disable" 指定
+    ngx_uint_t    keepalive_disable;       // 指令 "keepalive_disable" 指定（在行为不正常的浏览器中取消客户端的长连接）
     ngx_uint_t    satisfy;                 /* satisfy */
     ngx_uint_t    lingering_close;         /* lingering_close 指令默认是开启的，指定socket的SO_LINGER选项 */
     ngx_uint_t    if_modified_since;       // 指令 "if_modified_since" 指定将文件最后修改时间与请求头中的”If-Modified-Since”时间相比较的方式，默认exact
