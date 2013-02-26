@@ -2688,7 +2688,10 @@ ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name)
 }
 
 /* 
- *	增加一个节点 ngx_http_cleanup_t 到 r->cleanup 链表中，组成一个单向循环列表
+ *	增加一个节点 ngx_http_cleanup_t 到 r->cleanup 链表中，组成一个单向循环列表；
+ *	ngx_http_cleanup_t 结构是在请求池上申请的， 在结束请求时应该先调用 r->cleanup 链表
+ *	然后才能释放请求池；
+ *	参数size: 等于0时，cln->data 在函数外申请； 不等于0时，cln->data在请求池上申请，函数外部需要申请就可以直接拷贝数据
  */
 ngx_http_cleanup_t *
 ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
@@ -2713,7 +2716,7 @@ ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
     }
 
     cln->handler = NULL;
-    cln->next = r->cleanup;
+	cln->next = r->cleanup;
 
     r->cleanup = cln;
 
