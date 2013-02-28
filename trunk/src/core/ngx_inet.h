@@ -78,7 +78,7 @@ typedef struct {
     ngx_str_t                 url;						//	保存IP地址+端口信息（e.g. 192.168.124.129:8011 或 money.163.com）
     ngx_str_t                 host;						//	保存IP地址信息
     ngx_str_t                 port_text;				//	保存port字符串
-    ngx_str_t                 uri;
+    ngx_str_t                 uri;						//	uri部分，在函数ngx_parse_inet_url()中设置
 
     in_port_t                 port;						//	端口，e.g. listen指令中指定的端口（listen 192.168.124.129:8011）
     in_port_t                 default_port;				//	默认端口（当no_port字段为真时，将默认端口赋值给port字段， 默认端口通常是80）
