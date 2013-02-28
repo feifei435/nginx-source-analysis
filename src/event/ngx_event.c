@@ -41,7 +41,7 @@ sig_atomic_t          ngx_event_timer_alarm;				//	÷∏¡Ó"timer_resolution"…Ë÷√∫Û£
 	
 static ngx_uint_t     ngx_event_max_module;
 
-ngx_uint_t            ngx_event_flags;						/*	my system is 1100100(NGX_USE_AIO_EVENT|) 
+ngx_uint_t            ngx_event_flags;						/*	my system is 1100100
 																0x20	- 100000		NGX_USE_GREEDY_EVENT
 																0x40	- 1000000		NGX_USE_EPOLL_EVENT
 																0x04	- 100			NGX_USE_CLEAR_EVENT															
