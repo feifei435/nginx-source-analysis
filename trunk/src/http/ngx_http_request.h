@@ -449,7 +449,7 @@ struct ngx_http_request_s {
     unsigned                          plus_in_uri:1;
 
     /* URI with " " */
-    unsigned                          space_in_uri:1;					//	???????????
+    unsigned                          space_in_uri:1;					//	uri中存在空格
 
     unsigned                          invalid_header:1;					//	标识当前解析的请求头是否有效（单行中的）
 
