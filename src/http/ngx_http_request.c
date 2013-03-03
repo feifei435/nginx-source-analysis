@@ -1919,7 +1919,7 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
 
         r->main->posted_requests = pr->next;
 
-        r = pr->request;
+        r = pr->request;					//	子请求
 
         ctx = c->log->data;
         ctx->current_request = r;
@@ -1928,9 +1928,10 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
                        "http posted request: \"%V?%V\"", &r->uri, &r->args);
 
 		r->write_event_handler(r);	/*	ngx_http_subrequest() 函数中设置了     
-										sr->read_event_handler = ngx_http_request_empty_handler;
 										sr->write_event_handler = ngx_http_handler; 
-										所以此处会调用 ngx_http_handler()函数, 在函数 ngx_http_handler（）中被设置为 ngx_http_core_run_phases() */
+										所以此处会调用 ngx_http_handler()函数, 在函数 ngx_http_handler（）中被设置为 ngx_http_core_run_phases() 										
+										ngx_http_terminate_request() 函数中会设置 r->write_event_handler = ngx_http_terminate_handler() 用来终止请求。
+									*/
     }
 }
 
