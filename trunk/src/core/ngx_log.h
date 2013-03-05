@@ -203,6 +203,7 @@ void ngx_cdecl ngx_log_debug_core(ngx_log_t *log, ngx_err_t err,
 
 #else /* NO NGX_DEBUG */
 
+//	debug模式下会关闭debug日志输出
 #define ngx_log_debug0(level, log, err, fmt)
 #define ngx_log_debug1(level, log, err, fmt, arg1)
 #define ngx_log_debug2(level, log, err, fmt, arg1, arg2)
