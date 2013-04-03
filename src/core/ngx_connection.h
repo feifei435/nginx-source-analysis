@@ -138,7 +138,7 @@ struct ngx_connection_s {
 
     ngx_pool_t         *pool;				//	内存池指针
 
-    struct sockaddr    *sockaddr;			//	保存客户端的地址信息(有什么用？？？？)
+    struct sockaddr    *sockaddr;			//	保存客户端的地址信息(在ngx_http_access_handler()中有使用)
     socklen_t           socklen;
     ngx_str_t           addr_text;			//	保存与服务器连接的客户端socket信息（ngx_event_accept（）函数中赋值，并且保存格式为ACSII）
 
