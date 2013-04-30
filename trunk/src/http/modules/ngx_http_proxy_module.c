@@ -688,7 +688,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
         u->rewrite_cookie = ngx_http_proxy_rewrite_cookie;
     }
 
-    u->buffering = plcf->upstream.buffering;						//	设置buffering， 是否缓存后端服务器的响应
+    u->buffering = plcf->upstream.buffering;						//	设置buffering，是否缓存后端服务器的响应
 
     u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));		//	创建 ngx_event_pipe_t
     if (u->pipe == NULL) {
