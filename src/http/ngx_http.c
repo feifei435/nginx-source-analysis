@@ -1065,7 +1065,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
             return NGX_ERROR;
         }
 
-        ngx_queue_init(*locations);		//	初始化节点
+        ngx_queue_init(*locations);		//	初始化头节点
     }
 
     lq = ngx_palloc(cf->temp_pool, sizeof(ngx_http_location_queue_t));	//	申请节点
@@ -1243,6 +1243,7 @@ ngx_http_create_locations_list(ngx_queue_t *locations, ngx_queue_t *q)
         return;
     }
 
+    //  执行到这里，应该都是字符串匹配的location
     len = lq->name->len;
     name = lq->name->data;
 

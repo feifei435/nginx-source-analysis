@@ -1993,17 +1993,20 @@ ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *path,
 
         *root_length = clcf->root.len;			//	root或alias指令指定的参数长度
 
-		/*
-			location  /i/ {
-				alias  /spool/w3/images/;
-				root   /spool/w3/images/;	
-			}
-			alias - request uri:	/i/  --> /spool/w3/images/
-			root  - request uri:	/i/  --> /spool/w3/images/i/
-		
-			root指令时： strlen("/spool/w3/images") + sizeof("index.html") + strlen("/i/") - 0 + 1;
-			alias指令时： strlen("/spool/w3/images/") + sizeof("index.html") + strlen("/i/") - strlen("/i/") + 1;
-		*/
+        /*  e.g. 
+         *  location  /i/ {
+         *      alias  /spool/w3/images/;
+         *      root   /spool/w3/images/;	
+         *   }
+         *  
+         *   执行curl -v localhost:8080/i/时，实际访问的本地路径是以下路径:
+         *   
+         *       alias:	/i/  --> /spool/w3/images/
+         *       root:	/i/  --> /spool/w3/images/i/
+         *
+         *   使用了root指令：   strlen("/spool/w3/images") + sizeof("index.html") + strlen("/i/") - 0 + 1;
+         *   使用了alias指令：  strlen("/spool/w3/images/") + sizeof("index.html") + strlen("/i/") - strlen("/i/") + 1;
+         */
         path->len = clcf->root.len + reserved + r->uri.len - alias + 1;
 
         path->data = ngx_pnalloc(r->pool, path->len);
@@ -4629,7 +4632,9 @@ ngx_http_core_try_files(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-	//	设置 ngx_http_core_main_conf_t 结构中的 try_files 字段
+    /*  设置此字段的含义是当配置文件中使用了指令"try_files" 在对phase初始化时（ngx_http_init_phase_handlers()），
+        会将try_files阶段的checker和handler注册到phase数组中，如果没有使用将不注册try_files阶段的checker和handler, 
+        也就是说在执行完POST_ACCESS_PHASE将直接执行CONTENT_PHASE */
     cmcf->try_files = 1;
 
     tf = ngx_pcalloc(cf->pool, cf->args->nelts * sizeof(ngx_http_try_file_t));

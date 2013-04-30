@@ -386,7 +386,7 @@ ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[] = {
 };
 
 /* 
- *	[analy]  在r->upstream上创建ngx_http_upstream_t
+ *	在r->upstream上创建ngx_http_upstream_t
  */
 ngx_int_t
 ngx_http_upstream_create(ngx_http_request_t *r)
@@ -2231,6 +2231,7 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     u->header_sent = 1;		//	设置后端服务器响应头已发送标记
 
+    //      ???
     if (r->request_body && r->request_body->temp_file) {
         ngx_pool_run_cleanup_file(r->pool, r->request_body->temp_file->file.fd);
         r->request_body->temp_file->file.fd = NGX_INVALID_FILE;
@@ -4574,7 +4575,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 
     uscfp = umcf->upstreams.elts;
 
-	//	
+	//	traverse ngx_http_upstream_srv_conf_t array
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
 		//	a. 检查host是否已经存在
